@@ -16,8 +16,12 @@ public class Test
 
         for (int i=0; i < tests.length; i++) {
             System.out.print(" test " + tests[i].name() + "... ");
+            for (int j=tests[i].name().length(); j < 30; j++)
+                System.out.print(' ');
+
             ran++;
             boolean res = false;
+            long startAt = System.currentTimeMillis();
 
             try {
                 res = tests[i].run();
@@ -29,7 +33,14 @@ public class Test
             }
 
             if (res) {
-                System.out.println("pass");
+                String time = String.valueOf(
+                    System.currentTimeMillis() - startAt);
+
+                System.out.print("pass ");
+                for (int j=time.length(); j < 5; j++)
+                    System.out.print(' ');
+                System.out.print(time);
+                System.out.println("ms");
                 pass++;
             } else {
                 System.out.println("FAIL");
