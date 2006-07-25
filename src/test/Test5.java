@@ -41,6 +41,21 @@ public class Test5 implements Test.Case
             error = "expected result of 1 to update, got " + res;
             return false;
         }
+
+        prepInsert.clearParameters();
+        prepInsert.setString(1, "Hello World, this is a string.");
+        if ((res = prepInsert.executeUpdate()) != 1) {
+            error = "expected result of 1 to update, got " + res;
+            return false;
+        }
+
+        prepInsert.clearParameters();
+        prepInsert.setString(1, "Testing euro sign: \u20ac");
+        if ((res = prepInsert.executeUpdate()) != 1) {
+            error = "expected result of 1 to update, got " + res;
+            return false;
+        }
+
         prepInsert.clearParameters();
         prepInsert.setInt(1, 3);
         if ((res = prepInsert.executeUpdate()) != 1) {
