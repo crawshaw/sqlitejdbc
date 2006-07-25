@@ -30,7 +30,7 @@ class DB implements Codes
 
     native int bind_null  (long stmt, int pos);
     native int bind_text  (long stmt, int pos, String value);
-    /*native int bind_blob(long stmt, int pos, byte[] value); TODO */
+    native int bind_blob  (long stmt, int pos, byte[] value);
     native int bind_double(long stmt, int pos, double value);
     native int bind_long  (long stmt, int pos, long   value);
     native int bind_int   (long stmt, int pos, int    value);
@@ -41,7 +41,7 @@ class DB implements Codes
     native String column_table_name (long stmt, int col);
     native String column_name       (long stmt, int col);
     native String column_text       (long stmt, int col);
-    /*native byte[] column_blob       (long stmt, int col); TODO */
+    native byte[] column_blob       (long stmt, int col);
     native double column_double     (long stmt, int col);
     native long   column_long       (long stmt, int col);
     native int    column_int        (long stmt, int col);

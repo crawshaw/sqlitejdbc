@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "DB.h"
 #include "sqlite3.h"
 
@@ -27,13 +28,11 @@ static void throwex(JNIEnv *env, jobject this)
     (*env)->CallVoidMethod(env, this, MTH_throwex);
 }
 
-
 static void throwexmsg(JNIEnv *env, jobject this, const char *str)
 {
     (*env)->CallVoidMethod(env, this, MTH_throwexmsg,
                            (*env)->NewStringUTF(env, str));
 }
-
 
 static sqlite3 * gethandle(JNIEnv *env, jobject this)
 {
@@ -44,6 +43,22 @@ static void sethandle(JNIEnv *env, jobject this, sqlite3 * ref)
 {
     (*env)->SetLongField(env, this, JNI_DB_pointer, fromref(ref));
 }
+
+static jsize jstrlen(const jchar *str)
+{
+    const jchar *s;
+    int suppChars = 0;
+
+    // any UTF-16 character that is greater than \xD800 is the first
+    // of a supplementary character, represented by a pair of 16-bit
+    // blocks. So we ignore one of the two (the second must always
+    // be less than \xD800 according to the standard).
+    for (s = str; *s; s++)
+        if (*s > 0xD800) suppChars++;
+
+    return s - str - suppChars;
+}
+
 
 JNIEXPORT void JNICALL Java_org_sqlite_DB_init(JNIEnv *env, jclass cls)
 {
@@ -154,9 +169,23 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1null(
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1text(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jstring value)
 {
-    const char *str = (*env)->GetStringUTFChars(env, value, 0);
-    jint ret = sqlite3_bind_text(toref(stmt), pos, str, -1, SQLITE_TRANSIENT);
-    (*env)->ReleaseStringUTFChars(env, value, str);
+    const jchar *str =(*env)->GetStringCritical(env, value, 0);
+    if (str == NULL) exit(1);
+    jint ret = sqlite3_bind_text16(toref(stmt), pos, str, -1, SQLITE_TRANSIENT);
+    (*env)->ReleaseStringCritical(env, value, str);
+    return ret;
+}
+
+JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1blob(
+        JNIEnv *env, jobject this, jlong stmt, jint pos, jbyteArray value)
+{
+    if (value == NULL) return sqlite3_bind_null(toref(stmt), pos);
+
+    jint length = (*env)->GetArrayLength(env, value); 
+    jbyte *a = (*env)->GetPrimitiveArrayCritical(env, value, 0);
+    if (a == NULL) exit(1);
+    jint ret = sqlite3_bind_blob(toref(stmt), pos, a, length, SQLITE_TRANSIENT);
+    (*env)->ReleasePrimitiveArrayCritical(env, value, a, JNI_ABORT);
     return ret;
 }
 
@@ -200,23 +229,38 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1decltype(
 JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1table_1name(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    const char *str = sqlite3_column_table_name(toref(stmt), col);
-    return (*env)->NewStringUTF(env, str);
+    const void *str = sqlite3_column_table_name16(toref(stmt), col);
+    return str ? (*env)->NewString(env, str, jstrlen(str)) : NULL;
 }
 
 JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1name(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    const char *str = sqlite3_column_name(toref(stmt), col);
-    return (*env)->NewStringUTF(env, str);
+    const void *str = sqlite3_column_name16(toref(stmt), col);
+    return str ? (*env)->NewString(env, str, jstrlen(str)) : NULL;
 }
 
 JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1text(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    const unsigned char *str = sqlite3_column_text(toref(stmt), col);
-    // FIXME: cast is bad
-    return str ? (*env)->NewStringUTF(env, (const char*)str) : NULL;
+    const void *str = sqlite3_column_text16(toref(stmt), col);
+    return str ? (*env)->NewString(env, str, jstrlen(str)) : NULL;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_org_sqlite_DB_column_1blob(
+        JNIEnv *env, jobject this, jlong stmt, jint col)
+{
+    const void *blob = sqlite3_column_blob(toref(stmt), col);
+    if (!blob) return NULL;
+
+    jsize length = sqlite3_column_bytes(toref(stmt), col);
+    jbyteArray jBlob = (*env)->NewByteArray(env, length);
+    if (jBlob == NULL) exit(1);
+    jbyte *a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
+    memcpy(a, blob, length);
+    (*env)->ReleasePrimitiveArrayCritical(env, jBlob, a, 0);
+
+    return jBlob;
 }
 
 JNIEXPORT jdouble JNICALL Java_org_sqlite_DB_column_1double(
@@ -251,11 +295,12 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1names(
             (*env)->NewStringUTF(env, "")
     );
 
+    const void *str;
     for (i=0; i < col_count; i++) {
+        str = sqlite3_column_name16(dbstmt, i);
         (*env)->SetObjectArrayElement(
             env, names, i,
-            (*env)->NewStringUTF(env, sqlite3_column_name(dbstmt, i))
-        );
+            str ? (*env)->NewString(env, str, jstrlen(str)) : NULL);
     }
 
     return names;

@@ -170,7 +170,7 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public byte getByte(String col) throws SQLException {
         return getByte(findColumn(col)); }
     public byte[] getBytes(int col) throws SQLException {
-        throw new SQLException("NYI"); }
+        markCol(col); return db.column_blob(stmt.pointer, col - 1); }
     public byte[] getBytes(String col) throws SQLException {
         return getBytes(findColumn(col)); }
     public Reader getCharacterStream(int col) throws SQLException {
