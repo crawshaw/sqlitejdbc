@@ -43,6 +43,7 @@ class RS implements ResultSet, ResultSetMetaData, Codes
             "column " + col + " out of bounds [1," + cols.length + "]");
     }
     private void checkMeta() throws SQLException {
+        checkOpen();
         if (meta == null) meta = db.column_metadata(stmt.pointer, cols);
     }
     private void markCol(int col) throws SQLException {
@@ -85,7 +86,8 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     }
 
     public int getType() throws SQLException { return TYPE_FORWARD_ONLY; }
-    public int getFetchDirection() { return stmt.getFetchDirection(); }
+    public int getFetchDirection() throws SQLException {
+        return stmt.getFetchDirection(); }
     public void setFetchDirection(int d) throws SQLException {
         stmt.setFetchDirection(d);
     }
@@ -162,11 +164,11 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public Blob getBlob(String col) throws SQLException {
         return getBlob(findColumn(col)); }
     public boolean getBoolean(int col) throws SQLException {
-        throw new SQLException("NYI"); }
+        return getInt(col) == 0 ? false : true; }
     public boolean getBoolean(String col) throws SQLException {
         return getBoolean(findColumn(col)); }
     public byte getByte(int col) throws SQLException {
-        throw new SQLException("NYI"); }
+        return (byte)getInt(col); }
     public byte getByte(String col) throws SQLException {
         return getByte(findColumn(col)); }
     public byte[] getBytes(int col) throws SQLException {
@@ -181,8 +183,6 @@ class RS implements ResultSet, ResultSetMetaData, Codes
         throw new SQLException("NYI"); }
     public Clob getClob(String col) throws SQLException {
         return getClob(findColumn(col)); }
-    public int getConcurrency() throws SQLException {
-        throw new SQLException("NYI"); }
     public Date getDate(int col) throws SQLException {
         return getDate(col, Calendar.getInstance()); }
     public Date getDate(int col, Calendar cal) throws SQLException {
@@ -221,7 +221,7 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public Ref getRef(String col) throws SQLException {
         return getRef(findColumn(col)); }
     public short getShort(int col) throws SQLException {
-        throw new SQLException("NYI"); }
+        return (short)getInt(col); }
     public short getShort(String col) throws SQLException {
         return getShort(findColumn(col)); }
 
@@ -282,14 +282,14 @@ class RS implements ResultSet, ResultSetMetaData, Codes
         }
     }
     public String getColumnTypeName(int col) throws SQLException {
-        return db.column_decltype(stmt.pointer, col - 1);
+        checkOpen(); return db.column_decltype(stmt.pointer, col - 1);
     }
     public int getPrecision(int col) throws SQLException { return 0; } // FIXME
     public int getScale(int col) throws SQLException { return 0; }
     public String getSchemaName(int col) throws SQLException {
         throw new SQLException("NYI"); } 
     public String getTableName(int col) throws SQLException {
-        return db.column_table_name(stmt.pointer, col - 1); }
+        checkOpen(); return db.column_table_name(stmt.pointer, col - 1); }
     public int isNullable(int col) throws SQLException {
         checkMeta(); return meta[col - 1][1] ? columnNoNulls: columnNullable;
     }
@@ -303,6 +303,8 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public boolean isSearchable(int col) throws SQLException { return true; }
     public boolean isSigned(int col) throws SQLException { return false; }
     public boolean isWritable(int col) throws SQLException { return true; }
+
+    public int getConcurrency() throws SQLException { return CONCUR_READ_ONLY; }
 
 
     // UNUSED FUNCTIONS /////////////////////////////////////////////
