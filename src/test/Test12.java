@@ -39,6 +39,9 @@ public class Test12 implements Test.Case
         if (rs.getBoolean(5)) { error = "bad boolean"; return false; }
         if (rs.getByte(6) != (byte)7) { error = "bad byte"; return false; }
         byte[] getbytes = rs.getBytes(7);
+        if (origbytes.length != getbytes.length) {
+            error = "bad bytes length, got " + getbytes.length; return false;
+        }
         for (int i=0; i < origbytes.length; i++) {
             if (origbytes[i] != getbytes[i]) {
                 error = "bad bytes["+i+"]"; return false;
