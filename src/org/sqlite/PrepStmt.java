@@ -35,10 +35,7 @@ class PrepStmt extends Stmt implements PreparedStatement, Codes
         return getResultSet();
     }
     public int executeUpdate() throws SQLException {
-        if (execute()) throw new SQLException("query returns results");
-        int changes = db.changes(pointer);
-        db.reset(pointer);
-        return changes;
+        return db.executeUpdate(pointer);
     }
 
     public ResultSetMetaData getMetaData() throws SQLException {

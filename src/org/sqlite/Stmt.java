@@ -127,14 +127,10 @@ class Stmt implements Statement, Codes
         return getResultSet();
     }
     public int executeUpdate(String sql) throws SQLException {
-        if (execute(sql)) {
-            finalizeStmt();
-            //FIXME: not sure we're actually meant to execute the SQL here
-            throw new SQLException(
-                "cannot call executeUpdate() on SQL that returns a ResultSet");
-        }
-        int changes = getUpdateCount();
-        finalizeStmt();
+        // FIXME: check current state
+        pointer = db.prepare(sql);
+        int changes = 0;
+        try { changes = db.executeUpdate(pointer); } finally { pointer = 0; }
         return changes;
     }
 

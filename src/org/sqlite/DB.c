@@ -281,6 +281,33 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_column_1int(
     return sqlite3_column_int(toref(stmt), col);
 }
 
+
+// COMPOUND FUNCTIONS ///////////////////////////////////////////////
+
+JNIEXPORT jint JNICALL Java_org_sqlite_DB_executeUpdate(
+        JNIEnv *env, jobject this, jlong stmt)
+{
+    sqlite3_stmt *dbstmt = toref(stmt);
+    jint changes = 0;
+
+    switch (sqlite3_step(dbstmt)) {
+        case SQLITE_DONE:
+            changes = sqlite3_changes(gethandle(env, this)); break;
+        case SQLITE_ROW:
+            throwexmsg(env, this, "query returns results"); break;
+        case SQLITE_BUSY:
+            throwexmsg(env, this, "db locked"); break; // FIXME
+        case SQLITE_MISUSE:
+            throwexmsg(env, this, "cannot execute, misuse"); break;
+        case SQLITE_ERROR:
+        default:
+            throwex(env, this); return 0;
+    }
+
+    sqlite3_reset(dbstmt);
+    return changes;
+}
+
 JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1names(
         JNIEnv *env, jobject this, jlong stmt)
 {

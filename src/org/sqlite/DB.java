@@ -16,6 +16,9 @@ class DB implements Codes
 
     private static native void init();
 
+
+    // WRAPPER FUNCTIONS ////////////////////////////////////////////
+
     native void open(String filename) throws SQLException;
     native void close() throws SQLException;
     native void interrupt();
@@ -46,6 +49,11 @@ class DB implements Codes
     native long   column_long       (long stmt, int col);
     native int    column_int        (long stmt, int col);
 
+
+    // COMPOUND FUNCTIONS (for optimisation) /////////////////////////
+
+    native int executeUpdate(long stmt) throws SQLException;
+
     native String[]    column_names    (long stmt);
 
     /** Provides metadata for the columns of a statement. Returns:
@@ -58,7 +66,10 @@ class DB implements Codes
         return column_metadata(stmt, column_names(stmt));
     }
 
+
+    // HELPER FUNCTIONS /////////////////////////////////////////////
+
     void throwex() throws SQLException { throw ex(); }
-    void throwex(String msg) throws SQLException { throw new SQLException(msg); }
+    void throwex(String msg) throws SQLException { throw new SQLException(msg);}
     SQLException ex() { return new SQLException("SQLite error: " + errmsg()); }
 }
