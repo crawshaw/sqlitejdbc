@@ -14,7 +14,6 @@ public class Test11 implements Test.Case
 
         Statement stat = conn.createStatement();
         stat.executeUpdate("CREATE TEMP TABLE Test10 (id);");
-        stat.close();
 
         PreparedStatement prep = conn.prepareStatement(
             "INSERT INTO Test10 VALUES ('Hello world');");
