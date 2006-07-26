@@ -16,7 +16,7 @@ public class Test
 
         for (int i=0; i < tests.length; i++) {
             System.out.print(" Test ");
-            if (i <= 10) System.out.print(' ');
+            if (i < 9) System.out.print(' ');
             System.out.print(i + 1);
             System.out.print("  " + tests[i].name() + "... ");
             for (int j=tests[i].name().length(); j < 30; j++)
