@@ -2,7 +2,7 @@ package test;
 
 import java.sql.*;
 
-public class Test6 implements Test.Case
+public class Test06 implements Test.Case
 {
     private String error;
     private Exception ex;
