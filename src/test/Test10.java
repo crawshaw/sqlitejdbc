@@ -10,8 +10,7 @@ public class Test10 implements Test.Case
     public boolean run() throws Exception {
         int res;
         Class.forName("org.sqlite.JDBC");
-        Connection conn = DriverManager.getConnection(
-            "jdbc:sqlite:build/test/test.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite::memory:");
 
         Statement stat = conn.createStatement();
         stat.executeUpdate("CREATE TEMP TABLE Test10 (id);");
