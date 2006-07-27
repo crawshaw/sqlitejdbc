@@ -16,8 +16,8 @@ Darwin_LINKFLAGS := -dynamiclib -framework JavaVM
 Darwin_LIBNAME   := libsqlitejdbc.jnilib
 
 Win_CC           := i386-mingw32msvc-gcc
-Win_CCFLAGS      := -I$(java_home)/include
-Win_LINKFLAGS    := -shared
+Win_CCFLAGS      := -D_JNI_IMPLEMENTATION_ -I$(java_home)/include -Iwork
+Win_LINKFLAGS    := -Wl,--kill-at -shared
 Win_LIBNAME      := sqlitejdbc.dll
 
 
