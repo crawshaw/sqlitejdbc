@@ -5,12 +5,15 @@ import java.util.*;
 
 class Conn implements Connection
 {
-    private final DB db = new DB();
-    private boolean open = false;
+    private DB db = new DB();
+    private boolean autoCommit = true;
 
     public Conn(String filename) throws SQLException {
         db.open(filename);
-        open = true;
+    }
+
+    private void checkOpen() throws SQLException {
+        if (db == null)  throw new SQLException("database connection closed");
     }
 
     private void checkCursor(int rst, int rsc, int rsh) throws SQLException {
@@ -22,30 +25,61 @@ class Conn implements Connection
             "SQLite only supports closing cursors at commit");
     }
 
-    public void clearWarnings() throws SQLException { throw new SQLException("NYI");}
     public void close() throws SQLException {
-        if (open) { db.close(); open = false; }
+        if (db != null) { db.close(); db = null; }
     }
-    public void commit() throws SQLException { throw new SQLException("NYI");}
+    public boolean isClosed() throws SQLException { return db == null; }
 
-    public String getCatalog() throws SQLException { throw new SQLException("NYI");}
-    public void setCatalog(String catalog) throws SQLException { throw new SQLException("NYI");}
-    public int getHoldability() throws SQLException { throw new SQLException("NYI");}
-    public void setHoldability(int holdable) throws SQLException { throw new SQLException("NYI");}
-    public DatabaseMetaData getMetaData() throws SQLException { throw new SQLException("NYI");}
+    public String getCatalog() throws SQLException { checkOpen(); return null; }
+    public void setCatalog(String catalog) throws SQLException { checkOpen(); }
+
+    public int getHoldability() throws SQLException {
+        checkOpen();  return ResultSet.CLOSE_CURSORS_AT_COMMIT; }
+    public void setHoldability(int h) throws SQLException {
+        checkOpen();
+        if (h != ResultSet.CLOSE_CURSORS_AT_COMMIT) throw new SQLException(
+            "SQLite only supports CLOSE_CURSORS_AT_COMMIT");
+    }
+
     public int getTransactionIsolation() throws SQLException { throw new SQLException("NYI");}
     public void setTransactionIsolation(int level) throws SQLException { throw new SQLException("NYI");}
+
     public Map getTypeMap() throws SQLException { throw new SQLException("NYI");}
     public void setTypeMap(Map map) throws SQLException { throw new SQLException("NYI");}
-    public SQLWarning getWarnings() throws SQLException { throw new SQLException("NYI");}
-    public boolean isClosed() throws SQLException { return !open; }
+
     public boolean isReadOnly() throws SQLException { return false; } // FIXME
     public void setReadOnly(boolean ro) throws SQLException { throw new SQLException("NYI"); }
-    public String nativeSQL(String sql) throws SQLException { return sql; }
-    public boolean getAutoCommit() throws SQLException { return true; }
-    public void setAutoCommit(boolean autocom) throws SQLException { throw new SQLException("NYI"); }
 
-    public void rollback() throws SQLException { throw new SQLException("NYI"); }
+    public DatabaseMetaData getMetaData() throws SQLException { throw new SQLException("NYI");}
+    public String nativeSQL(String sql) throws SQLException { return sql; }
+
+    public void clearWarnings() throws SQLException { }
+    public SQLWarning getWarnings() throws SQLException { return null; }
+
+    // TODO: optimise with direct jni calls for begin/commit/rollback
+    public boolean getAutoCommit() throws SQLException {
+        checkOpen(); return autoCommit; }
+    public void setAutoCommit(boolean ac) throws SQLException {
+        checkOpen();
+        if (autoCommit == ac) return;
+        autoCommit = ac;
+        db.exec(autoCommit ? "COMMIT;" : "BEGIN DEFERRED;");
+    }
+
+    public void commit() throws SQLException {
+        checkOpen();
+        if (autoCommit) throw new SQLException("database in auto-commit mode");
+        db.exec("COMMIT;");
+        db.exec("BEGIN DEFERRED;");
+    }
+
+    public void rollback() throws SQLException {
+        checkOpen();
+        if (autoCommit) throw new SQLException("database in auto-commit mode");
+        db.exec("ROLLBACK;");
+        db.exec("BEGIN DEFERRED;");
+    }
+
     public Statement createStatement() throws SQLException {
         return createStatement(ResultSet.TYPE_FORWARD_ONLY,
                                ResultSet.CONCUR_READ_ONLY,

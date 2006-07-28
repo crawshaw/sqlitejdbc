@@ -22,6 +22,7 @@ class DB implements Codes
     native void open(String filename) throws SQLException;
     native void close() throws SQLException;
     native void interrupt();
+    native void exec(String sql) throws SQLException;
     native long prepare(String sql) throws SQLException;
     native String errmsg();
 

@@ -102,6 +102,15 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_interrupt(JNIEnv *env, jobject this)
     sqlite3_interrupt(gethandle(env, this));
 }
 
+JNIEXPORT void JNICALL Java_org_sqlite_DB_exec(
+        JNIEnv *env, jobject this, jstring sql)
+{
+    const char *strsql = (*env)->GetStringUTFChars(env, sql, 0);
+    if (sqlite3_exec(gethandle(env, this), strsql, 0, 0, 0) != SQLITE_OK)
+        throwex(env, this);
+    (*env)->ReleaseStringUTFChars(env, sql, strsql);
+}
+
 JNIEXPORT jlong JNICALL Java_org_sqlite_DB_prepare(
         JNIEnv *env, jobject this, jstring sql)
 {
