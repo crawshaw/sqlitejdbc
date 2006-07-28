@@ -18,7 +18,9 @@ public class Test11 implements Test.Case
         PreparedStatement prep = conn.prepareStatement(
             "INSERT INTO Test10 VALUES ('Hello world');");
 
+        conn.setAutoCommit(false);
         for (int i=0; i < 1000; i++) prep.executeUpdate();
+        conn.commit();
 
         ResultSet rs = stat.executeQuery("SELECT COUNT(id) FROM Test10;");
         if (!rs.next()) { error = "expected result"; return false; }
