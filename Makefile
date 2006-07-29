@@ -6,22 +6,27 @@ target := $(shell uname)
 endif
 
 Linux_CC         := gcc
+Linux_STRIP      := strip
 Linux_CCFLAGS    := -I$(java_home)/include
 Linux_LINKFLAGS  := -shared
 Linux_LIBNAME    := libsqlitejdbc.so
 
 Darwin_CC        := gcc
+Darwin_STRIP 	 := echo  # FIXME
 Darwin_CCFLAGS   := -I/System/Library/Frameworks/JavaVM.framework/Headers
 Darwin_LINKFLAGS := -dynamiclib -framework JavaVM
 Darwin_LIBNAME   := libsqlitejdbc.jnilib
 
 Win_CC           := i386-mingw32msvc-gcc
+Win_STRIP        := i386-mingw32msvc-strip
 Win_CCFLAGS      := -D_JNI_IMPLEMENTATION_ -I$(java_home)/include -Iwork
 Win_LINKFLAGS    := -Wl,--kill-at -shared
 Win_LIBNAME      := sqlitejdbc.dll
 
 
+VERSION   := $(shell cat VERSION)
 CC        := $($(target)_CC)
+STRIP     := $($(target)_STRIP)
 CCFLAGS   := $($(target)_CCFLAGS) -Iwork/sqlite/$(target) -Ibuild/$(target)
 LINKFLAGS := $($(target)_LINKFLAGS)
 LIBNAME   := $($(target)_LIBNAME)
@@ -39,6 +44,13 @@ compile: work/sqlite/$(target)/main.o $(java_classes)
 	$(CC) $(CCFLAGS) -c -O -o build/$(target)/DB.o src/org/sqlite/DB.c
 	$(CC) $(CCFLAGS) $(LINKFLAGS) -o build/$(target)/$(LIBNAME) \
 		build/$(target)/DB.o work/sqlite/$(target)/*.o
+
+dist: compile
+	@mkdir -p dist
+	$(STRIP) build/$(target)/$(LIBNAME)
+	jar cf build/sqlitejdbc.jar -C build org
+	tar cfz dist/sqlitejdbc-v$(VERSION)-$(target).tgz \
+	    -C build sqlitejdbc.jar -C $(target) $(LIBNAME)
 
 work/sqlite-src.zip:
 	@mkdir -p work

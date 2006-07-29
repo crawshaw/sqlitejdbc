@@ -1,5 +1,6 @@
 # ignore build directories
 (^|/)build($|/)
+(^|/)dist($|/)
 (^|/)work($|/)
 # Boring file regexps:
 \.hi$
