@@ -173,7 +173,6 @@ class Stmt implements Statement, Codes
     public void clearBatch() throws SQLException {
         checkOpen(); if (batch != null) batch.clear(); }
 
-    // TODO: write test
     public int[] executeBatch() throws SQLException {
         // FIXME: optimise
         checkOpen(); finalizeStmt();
