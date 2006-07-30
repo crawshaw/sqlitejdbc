@@ -19,6 +19,10 @@ ifeq ($(arch),)
 arch := $(shell uname -m)
 endif
 
+ifeq ($(arch),Power Macintosh) # OS X gives funny result for 'uname -m'
+arch := powerpc
+endif
+
 
 # OS Specific Variables #############################################
 
@@ -32,7 +36,7 @@ Darwin_CC        := $(arch)-apple-darwin-gcc
 Darwin_STRIP     := $(arch)-apple-darwin-strip -x
 Darwin_CCFLAGS   := -Isrc/jni/Darwin
 Darwin_LINKFLAGS := -dynamiclib
-Darwin_LIBNAME   := libsqlitejdbc-$(arch).jnilib
+Darwin_LIBNAME   := libsqlitejdbc.jnilib
 
 Win_CC           := $(arch)-mingw32msvc-gcc
 Win_STRIP        := $(arch)-mingw32msvc-strip
@@ -73,7 +77,7 @@ compile: work/sqlite/$(target)/main.o $(java_classes)
 
 dist: compile
 	@mkdir -p dist
-	tar cfz dist/sqlitejdbc-v$(VERSION)-$(target).tgz \
+	tar cfz dist/sqlitejdbc-v$(VERSION)-$(target).tgz README \
 	    -C build sqlitejdbc.jar -C $(target) $(LIBNAME)
 
 all:
@@ -81,11 +85,12 @@ all:
 	@make os=Win arch=i586 dist
 	@make os=Darwin arch=powerpc compile
 	@make os=Darwin arch=i386 compile
+	@mkdir build/Darwin-lipo
 	$(LIPO) -create \
-	    build/Darwin-powerpc/libsqlitejdbc-powerpc.jnilib \
-	    build/Darwin-i386/libsqlitejdbc-i386.jnilib \
-	    -output build/Darwin-powerpc/libsqlitejdbc.jnilib
-	tar cfz dist/sqlitejdbc-v$(VERSION)-Mac.tgz \
+	    build/Darwin-powerpc/libsqlitejdbc.jnilib \
+	    build/Darwin-i386/libsqlitejdbc.jnilib \
+	    -output build/Darwin-lipo/libsqlitejdbc.jnilib
+	tar cfz dist/sqlitejdbc-v$(VERSION)-Mac.tgz README \
 	    -C build sqlitejdbc.jar -C Darwin-powerpc libsqlitejdbc.jnilib
 
 work/sqlite-src.zip:
