@@ -28,19 +28,19 @@ endif
 
 Linux_CC         := gcc
 Linux_STRIP      := strip
-Linux_CCFLAGS    := -Isrc/jni/Linux
+Linux_CCFLAGS    := -Isrc/jni/Linux -O
 Linux_LINKFLAGS  := -shared
 Linux_LIBNAME    := libsqlitejdbc.so
 
 Darwin_CC        := $(arch)-apple-darwin-gcc
 Darwin_STRIP     := $(arch)-apple-darwin-strip -x
-Darwin_CCFLAGS   := -Isrc/jni/Darwin
+Darwin_CCFLAGS   := -Isrc/jni/Darwin -O
 Darwin_LINKFLAGS := -dynamiclib
 Darwin_LIBNAME   := libsqlitejdbc.jnilib
 
 Win_CC           := $(arch)-mingw32msvc-gcc
 Win_STRIP        := $(arch)-mingw32msvc-strip
-Win_CCFLAGS      := -D_JNI_IMPLEMENTATION_ -Isrc/jni/Win -Iwork
+Win_CCFLAGS      := -D_JNI_IMPLEMENTATION_ -Isrc/jni/Win -Iwork -O
 Win_LINKFLAGS    := -Wl,--kill-at -shared
 Win_LIBNAME      := sqlitejdbc.dll
 
