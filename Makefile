@@ -91,7 +91,7 @@ all:
 	    build/Darwin-i386/libsqlitejdbc.jnilib \
 	    -output build/Darwin-lipo/libsqlitejdbc.jnilib
 	tar cfz dist/sqlitejdbc-v$(VERSION)-Mac.tgz README \
-	    -C build sqlitejdbc.jar -C Darwin-powerpc libsqlitejdbc.jnilib
+	    -C build sqlitejdbc.jar -C Darwin-lipo libsqlitejdbc.jnilib
 	tar cfz dist/sqlitejdbc-v$(VERSION)-src.tgz \
 		Makefile README LICENSE VERSION src/org
 	jar cfm dist/sqlitejdbc-test.jar src/test/manifest \
