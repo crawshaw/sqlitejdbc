@@ -1,0 +1,95 @@
+---------------------------------------------------------------------
+What:  SQLite 3.3.x JDBC Driver
+Who:   David Crawshaw <david@zentus.com>
+When:  2006
+Why:   Because Derby is bloated, HSQLDB has too many capital letters
+       in its name and I don't have the time to maintain a full Java
+       port of SQLite.
+How:   BSD License (dig in)
+---------------------------------------------------------------------
+
+
+-- USING ------------------------------------------------------------
+Download the binary for the platform you are developing on. Open the
+tarball and copy the two files into your application directory:
+    sqlitejdbc.jar
+    [lib]sqlitejdbc.[dll, so, jnilib]
+
+Reference the driver in your code:
+    Class.forName("org.sqlite.JDBC");
+    Connection conn = DriverManager.getConnection(
+        "jdbc:sqlite:filename");
+    // ... use the database ...
+    conn.close();
+
+And call your program with the driver's JAR file in the classpath
+and the C library in the librarypath. E.g.
+    java -cp lib/yourprog.jar lib/sqlitejdbc.jar \
+        -Djava.library.path=lib \
+        yourprog.Main
+
+It is so easy, you will wonder why someone didn't try to sell you
+some steak knives.
+
+
+-- COMPILING --------------------------------------------------------
+Ask yourself, do I really have to do this? Cross-compiling for
+different operating systems sucks. C ain't Java. Continue at risk to
+your innocence.
+
+This compile process does not use the auto-goop family. Instead, it
+is all done out of a single Makefile. Read it, you will become
+familiar with its behaviour. It downloads the stripped-source
+version of SQLite and compile it for the specified OS and
+architecture (the make variables 'os' and 'arch' respectively). Then
+the JNI-bridge file src/org/sqlite/DB.c is compiled. The resultant
+DB.o and *.o files for SQLite are linked into the OS-specific JNI
+library.
+
+I develop on a PowerPC Mac and compile everything on Linux. Your best
+bet is a Linux machine, though it should be possible under Mac OS or
+Cygwin. If you want to use MSVC, contact me, I'd be interested in
+helping.
+
+Before compiling, install your JNI headers in src/jni/$(os)/. I
+don't distribute these with the project as I worry about copyright
+issues. Two files are needed, 'jni.h' and 'jni_md.h'.
+
+On Windows:
+    C:\Program Files\Java\*jdk version*\include\, and include\win32
+On Mac:
+    /System/Library/Frameworks/JavaVM.framework/Headers
+On Linux:
+    $(JAVA_HOME)/include
+
+Start by getting the library to compile for the OS and architecture
+you are running on. Do this with:
+    make test
+
+When it works, it will build the library and run a series of
+JDBC-based tests to make sure the driver isn't broken. If you want
+to modifiy it, these tests will soon become your best friend. If you
+fix a bug, consider making a test for it.
+
+Often a compile on a new machine will fail just because the Maekfile
+gives the wrong name for gcc. E.g. it looks for
+$(arch)-apple-darwin-gcc when your installation uses
+$(arch)-apple-darwin8-gcc.
+
+
+-- COMPILING FOR ALL ------------------------------------------------
+
+Install your cross-compilers. There are many ways to do this; it is
+distro-specific (e.g. apt-get install mingw32). Make sure they are
+on your $PATH. Then check you have the following installed:
+    unzip
+    wget
+
+If you want to build for everyone, run:
+    make all
+
+The above command will fail the first few times. Google is an
+invaluable friend here. Alternatively, compile for only the OS and
+architecture you desire:
+    make os=Darwin arch=powerpc compile
+
