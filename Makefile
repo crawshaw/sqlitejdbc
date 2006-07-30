@@ -1,35 +1,59 @@
-java_sources := $(shell find src -name \*.java)
-java_classes := $(java_sources:src/%.java=build/%.class)
+# Makefile for SQLite JDBC Driver 
+# Author: David Crawshaw 2006
+# Released under New BSD License (see LICENSE file).
+#
+# No auto-goop. It is expected that this file will be run either with
+# all the cross-compilers installed by 'make all', or by using the
+# 'dist' target with two variables, 'os' and 'arch'. E.g.
+#
+#  	      make os=Linux arch=i386 dist
+#
+# See README for more.
+#
 
-ifeq ($(target),)
-target := $(shell uname)
+ifeq ($(os),)
+os := $(shell uname)
 endif
+
+ifeq ($(arch),)
+arch := $(shell uname -m)
+endif
+
+
+# OS Specific Variables #############################################
 
 Linux_CC         := gcc
 Linux_STRIP      := strip
-Linux_CCFLAGS    := -I$(java_home)/include
+Linux_CCFLAGS    := -Isrc/jni/Linux
 Linux_LINKFLAGS  := -shared
 Linux_LIBNAME    := libsqlitejdbc.so
 
-Darwin_CC        := gcc
-Darwin_STRIP 	 := echo  # FIXME
-Darwin_CCFLAGS   := -I/System/Library/Frameworks/JavaVM.framework/Headers
-Darwin_LINKFLAGS := -dynamiclib -framework JavaVM
-Darwin_LIBNAME   := libsqlitejdbc.jnilib
+Darwin_CC        := $(arch)-apple-darwin-gcc
+Darwin_STRIP     := $(arch)-apple-darwin-strip -x
+Darwin_CCFLAGS   := -Isrc/jni/Darwin
+Darwin_LINKFLAGS := -dynamiclib
+Darwin_LIBNAME   := libsqlitejdbc-$(arch).jnilib
 
-Win_CC           := i386-mingw32msvc-gcc
-Win_STRIP        := i386-mingw32msvc-strip
-Win_CCFLAGS      := -D_JNI_IMPLEMENTATION_ -I$(java_home)/include -Iwork
+Win_CC           := $(arch)-mingw32msvc-gcc
+Win_STRIP        := $(arch)-mingw32msvc-strip
+Win_CCFLAGS      := -D_JNI_IMPLEMENTATION_ -Isrc/jni/Win -Iwork
 Win_LINKFLAGS    := -Wl,--kill-at -shared
 Win_LIBNAME      := sqlitejdbc.dll
 
 
+# Makefile Variables, loaded from OS vars above #####################
+
+java_sources := $(shell find src -name \*.java)
+java_classes := $(java_sources:src/%.java=build/%.class)
+
+target    := $(os)-$(arch)
 VERSION   := $(shell cat VERSION)
-CC        := $($(target)_CC)
-STRIP     := $($(target)_STRIP)
-CCFLAGS   := $($(target)_CCFLAGS) -Iwork/sqlite/$(target) -Ibuild/$(target)
-LINKFLAGS := $($(target)_LINKFLAGS)
-LIBNAME   := $($(target)_LIBNAME)
+LIPO      := powerpc-apple-darwin-lipo
+CC        := $($(os)_CC)
+STRIP     := $($(os)_STRIP)
+CCFLAGS   := $($(os)_CCFLAGS) -Iwork/sqlite/$(target) -Ibuild
+LINKFLAGS := $($(os)_LINKFLAGS)
+LIBNAME   := $($(os)_LIBNAME)
 
 
 default: test
@@ -40,17 +64,29 @@ build/%.class: src/%.java
 
 compile: work/sqlite/$(target)/main.o $(java_classes)
 	@mkdir -p build/$(target)
-	javah -classpath build -jni -o build/$(target)/DB.h org.sqlite.DB
+	javah -classpath build -jni -o build/DB.h org.sqlite.DB
+	jar cf build/sqlitejdbc.jar -C build org
 	$(CC) $(CCFLAGS) -c -O -o build/$(target)/DB.o src/org/sqlite/DB.c
 	$(CC) $(CCFLAGS) $(LINKFLAGS) -o build/$(target)/$(LIBNAME) \
 		build/$(target)/DB.o work/sqlite/$(target)/*.o
+	$(STRIP) build/$(target)/$(LIBNAME)
 
 dist: compile
 	@mkdir -p dist
-	$(STRIP) build/$(target)/$(LIBNAME)
-	jar cf build/sqlitejdbc.jar -C build org
 	tar cfz dist/sqlitejdbc-v$(VERSION)-$(target).tgz \
 	    -C build sqlitejdbc.jar -C $(target) $(LIBNAME)
+
+all:
+	@make os=Linux arch=i386 dist
+	@make os=Win arch=i586 dist
+	@make os=Darwin arch=powerpc compile
+	@make os=Darwin arch=i386 compile
+	$(LIPO) -create \
+	    build/Darwin-powerpc/libsqlitejdbc-powerpc.jnilib \
+	    build/Darwin-i386/libsqlitejdbc-i386.jnilib \
+	    -output build/Darwin-powerpc/libsqlitejdbc.jnilib
+	tar cfz dist/sqlitejdbc-v$(VERSION)-Mac.tgz \
+	    -C build sqlitejdbc.jar -C Darwin-powerpc libsqlitejdbc.jnilib
 
 work/sqlite-src.zip:
 	@mkdir -p work
@@ -59,7 +95,7 @@ work/sqlite-src.zip:
 work/sqlite/%/main.o: work/sqlite-src.zip
 	mkdir -p work/sqlite/$*
 	(cd work/sqlite/$*; \
-	          unzip -o ../../sqlite-src.zip; \
+	          unzip -qo ../../sqlite-src.zip; \
 	          mv shell.c shell.c.old; \
 	          mv tclsqlite.c tclsqlite.c.not; \
 	          $(CC) -c -O -DSQLITE_ENABLE_COLUMN_METADATA *.c)
@@ -73,6 +109,7 @@ test: compile build/test/test.db
 
 clean:
 	rm -rf build
+	rm -rf dist
 	rm -rf work/sqlite
 
 distclean: clean
