@@ -85,7 +85,7 @@ all:
 	@make os=Win arch=i586 dist
 	@make os=Darwin arch=powerpc compile
 	@make os=Darwin arch=i386 compile
-	@mkdir build/Darwin-lipo
+	@mkdir -p build/Darwin-lipo
 	$(LIPO) -create \
 	    build/Darwin-powerpc/libsqlitejdbc.jnilib \
 	    build/Darwin-i386/libsqlitejdbc.jnilib \
