@@ -94,6 +94,8 @@ all:
 	    -C build sqlitejdbc.jar -C Darwin-powerpc libsqlitejdbc.jnilib
 	tar cfz dist/sqlitejdbc-v$(VERSION)-src.tgz \
 		Makefile README LICENSE VERSION src/org
+	jar cfm dist/sqlitejdbc-test.jar src/test/manifest \
+	    -C build org -C build test
 
 work/sqlite-src.zip:
 	@mkdir -p work
