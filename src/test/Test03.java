@@ -50,15 +50,15 @@ public class Test03 implements Test.Case
         if (rs.getInt(1) != 1) {
             error = "bad row 1 getInt(1): " + rs.getInt(1); return false;
         } else if (!"Mohandas".equals(rs.getString(2))) {
-            error = "bad getString(2): " + rs.getString(2); return false;
+            error = "bad row 1 getString(2): " + rs.getString(2); return false;
         }
         if (!rs.next()) {
             error = "one row found when two rows expected"; return false;
         }
         if (rs.getInt(1) != 2) {
-            error = "bad getInt(1): " + rs.getInt(1); return false;
+            error = "bad row 2 getInt(1): " + rs.getInt(1); return false;
         } else if (!"Winston".equals(rs.getString(2))) {
-            error = "bad getString(2): " + rs.getString(2); return false;
+            error = "bad row 2 getString(2): " + rs.getString(2); return false;
         }
         rs.close();
 
