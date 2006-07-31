@@ -3,45 +3,32 @@ package org.sqlite;
 import java.sql.*;
 import java.util.ArrayList;
 
-class Stmt implements Statement, Codes
+/** See comment in RS.java to explain the strange inheritance hierarchy. */
+class Stmt extends RS implements Statement, Codes
 {
     protected Conn conn;
-    protected DB db;
 
     private ArrayList batch = null;
 
-    protected boolean results = false;
-    protected RS rs = null;
+    protected boolean resultsWaiting = false;
 
-    long pointer = 0;
-    int  maxRows = 0;
     int  timeout = 0;
 
     Stmt(Conn conn, DB db) {
+        super(db);
         this.conn = conn;
-        this.db = db;
-    }
-
-
-    // INTERNAL FUNCTIONS ///////////////////////////////////////////
-
-    protected final void checkOpen() throws SQLException {
-        if (db == null) throw new SQLException("statement is closed");
-    }
-    protected final void checkExec() throws SQLException {
-        if (pointer == 0) throw new SQLException("statement is not executing");
     }
 
     /** Calls sqlite3_step() and sets up results. Expects a clean stmt. */
     protected boolean exec() throws SQLException {
         if (pointer == 0) throw new SQLException(
             "SQLite JDBC internal error: pointer == 0 on exec.");
-        if (rs != null) throw new SQLException(
-            "SQLite JDBC internal error: rs != null on exec.");
-        results = false;
+        if (isRS()) throw new SQLException(
+            "SQLite JDBC internal error: isRS() on exec.");
+        resultsWaiting = false;
         switch (db.step(pointer)) {
             case SQLITE_DONE:   break;
-            case SQLITE_ROW:    results = true; break;
+            case SQLITE_ROW:    resultsWaiting = true; break;
             case SQLITE_BUSY:   throw new SQLException("db locked");//FIXME
             case SQLITE_MISUSE: throw new SQLException("internal misuse");
             case SQLITE_ERROR:
@@ -52,31 +39,23 @@ class Stmt implements Statement, Codes
         return db.column_count(pointer) != 0;
     }
 
-    /** Overridden by PrepStmt to reduce RS instantiation work. */
-    protected RS createResultSet() throws SQLException { return new RS(this); }
-
-    /** Calls SQLite finalize() on current pointer and clears it. */
-    private void finalizeStmt() throws SQLException {
-        if (pointer == 0) return;
-        int resp = db.finalize(pointer);
-        if (resp != SQLITE_OK && resp != SQLITE_MISUSE) throw db.ex();
-        pointer = 0;
-    }
-
 
     // PUBLIC INTERFACE /////////////////////////////////////////////
 
     public Connection getConnection() throws SQLException {
         checkOpen(); return conn; }
 
-    /** Removes all connection references and makes Statement unusable. */
+    /** More lax than JDBC spec, a Statement can be reused after close().
+     *  This is to support Stmt and RS sharing a heap object. */
     public void close() throws SQLException {
-        if (db == null) return; // API says function returns if already closed
-        if (rs != null) rs.clear();
-        finalizeStmt();
-        conn = null;
-        db = null;
+        if (pointer == 0) return;
+        clear();
+        colsMeta = null;
+        meta = null;
         batch = null;
+        int resp = db.finalize(pointer);
+        pointer = 0;
+        if (resp != SQLITE_OK && resp != SQLITE_MISUSE) throw db.ex();
     }
 
     /** SQLite does not support multiple results from execute(). */
@@ -87,8 +66,8 @@ class Stmt implements Statement, Codes
     public boolean getMoreResults(int c) throws SQLException {
         checkOpen();
         // take this chance to clean up any open ResultSet
-        if (rs != null && (c == CLOSE_CURRENT_RESULT || c == CLOSE_ALL_RESULTS))
-            finalizeStmt();
+        if (isRS() && (c == CLOSE_CURRENT_RESULT || c == CLOSE_ALL_RESULTS))
+            close();
         return false;
     }
 
@@ -98,14 +77,6 @@ class Stmt implements Statement, Codes
         checkOpen(); return ResultSet.CLOSE_CURSORS_AT_COMMIT; }
     public int getResultSetType() throws SQLException {
         checkOpen(); return ResultSet.TYPE_FORWARD_ONLY; }
-
-    public int getFetchDirection() throws SQLException {
-        checkOpen(); return ResultSet.FETCH_FORWARD; }
-    public void setFetchDirection(int d) throws SQLException {
-        checkOpen();
-        if (d != ResultSet.FETCH_FORWARD)
-            throw new SQLException("only FETCH_FORWARD direction supported");
-    }
 
     // FIXME: use sqlite3_progress_handler
     public void cancel() throws SQLException { checkExec(); db.interrupt(); }
@@ -128,36 +99,40 @@ class Stmt implements Statement, Codes
 
     public ResultSet getResultSet() throws SQLException {
         checkOpen();
-        if (rs != null) throw new SQLException("ResultSet already requested");
+        if (isRS()) throw new SQLException("ResultSet already requested");
         if (db.column_count(pointer) == 0) throw new SQLException(
             "no ResultSet available");
-        rs = createResultSet();
-        if (results) results = false; else rs.isAfterLast = true;
-        return rs;
+        if (colsMeta == null) colsMeta = db.column_names(pointer);
+        cols = colsMeta;
+
+        isAfterLast = !resultsWaiting;
+        if (resultsWaiting) resultsWaiting = false;
+        return this;
     }
+
     public int getUpdateCount() throws SQLException {
         checkOpen();
-        if (pointer == 0 || results) return -1;
+        if (pointer == 0 || resultsWaiting) return -1;
         return db.changes(pointer);
     }
 
     public boolean execute(String sql) throws SQLException {
-        checkOpen(); finalizeStmt();
+        checkOpen(); close();
         pointer = db.prepare(sql); return exec();
     }
 
     public ResultSet executeQuery(String sql) throws SQLException {
-        checkOpen(); finalizeStmt();
+        checkOpen(); close();
         pointer = db.prepare(sql);
         if (!exec()) {
-            finalizeStmt();
+            close();
             throw new SQLException("query does not return ResultSet");
         }
         return getResultSet();
     }
 
     public int executeUpdate(String sql) throws SQLException {
-        checkOpen(); finalizeStmt();
+        checkOpen(); close();
         pointer = db.prepare(sql);
         int changes = 0;
         try { changes = db.executeUpdate(pointer); } finally { pointer = 0; }
@@ -175,7 +150,7 @@ class Stmt implements Statement, Codes
 
     public int[] executeBatch() throws SQLException {
         // FIXME: optimise
-        checkOpen(); finalizeStmt();
+        checkOpen(); close();
         if (batch == null) return new int[] {};
         int[] changes = new int[batch.size()];
         for (int i=0; i < changes.length; i++) {

@@ -42,12 +42,13 @@ public class Test03 implements Test.Case
 
         // test multi-row ResultSets
         rs = stat.executeQuery(
-            "SELECT pid, firstname FROM People WHERE pid = 1 OR pid = 2;");
+            "SELECT pid, firstname FROM People "
+            + "WHERE pid = 1 OR pid = 2 ORDER BY pid ASC;");
         if (!rs.next()) {
             error = "no results found when two rows expected"; return false;
         }
         if (rs.getInt(1) != 1) {
-            error = "bad getInt(1): " + rs.getInt(1); return false;
+            error = "bad row 1 getInt(1): " + rs.getInt(1); return false;
         } else if (!"Mohandas".equals(rs.getString(2))) {
             error = "bad getString(2): " + rs.getString(2); return false;
         }

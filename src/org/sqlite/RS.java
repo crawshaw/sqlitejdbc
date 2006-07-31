@@ -9,42 +9,64 @@ import java.net.URL;
 import java.util.Calendar;
 import java.util.Map;
 
-class RS implements ResultSet, ResultSetMetaData, Codes
+/** Implements a JDBC ResultSet.
+ *
+ * As only one ResultSet can exist per statement, this implementation
+ * takes the odd step of making the ResultSet and Statement the same
+ * object. This means:
+ *     ResultSet rs = statement.executeQuery("SELECT ...");
+ *
+ * Generates no temporary ResultSet object, it just returns itself.
+ * When a great many ResultSets are used (e.g. in a loop), this can
+ * help reduce the load on the Garbage collector.
+ *
+ * As a result of this odd arrangement, Stmt and PrepStmt must
+ * extend RS:
+ *     Object -- RS -- Stmt -- PrepStmt
+ *
+ * Such inheritance requires careful checking of the object state,
+ * for which the check...() functions and isRS() function handle.
+ */
+abstract class RS implements ResultSet, ResultSetMetaData, Codes
 {
-    private final DB db;
+    protected DB db;
+    protected long pointer = 0;
 
-    Stmt stmt;
     boolean isAfterLast = false;
-    String[] cols = null;
+    int maxRows;              // max. number of rows as set by a Statement
+    String[] cols = null;     // if null, the RS is closed()
+    String[] colsMeta = null; // same as cols, but used by Meta interface
     boolean[][] meta = null;
 
-    private int limitRows; // 0 means no limit, must check against stmt.maxRows
+    private int limitRows; // 0 means no limit, must check against maxRows
     private int row = 1;   // number of current row, starts at 1
     private int lastCol;   // last column accessed, for wasNull(). -1 if none
 
-    RS(Stmt stmt) {
-        this(stmt, stmt.db.column_names(stmt.pointer), null);
-    }
+    RS(DB db) { this.db = db; }
 
-    RS(Stmt stmt, String[] cols, boolean[][] meta) {
-        this.stmt = stmt;
-        this.db   = stmt.db;
-        this.cols = cols;
-        this.meta = meta;
-    }
 
-    private void checkOpen() throws SQLException {
-        if (stmt == null) throw new SQLException("ResultSet is closed");
-        if (cols == null) throw new SQLException("inconsistent internal state");
+    // INTERNAL FUNCTIONS ///////////////////////////////////////////
+
+    protected final void checkOpen() throws SQLException {
+        if (db == null) throw new SQLException("statement is closed");
     }
+    protected final void checkExec() throws SQLException {
+        if (pointer == 0) throw new SQLException("statement is not executing");
+    }
+    protected final void checkRS() throws SQLException {
+        if (db == null || !isRS()) throw new SQLException("ResultSet closed");
+    }
+    /** Returns true if this Statement is an currently an active ResultSet. */
+    protected final boolean isRS() { return cols != null; }
+
     private void checkCol(int col) throws SQLException {
-        checkOpen();
+        checkRS();
         if (col < 1 || col > cols.length) throw new SQLException(
             "column " + col + " out of bounds [1," + cols.length + "]");
     }
     private void checkMeta() throws SQLException {
-        checkOpen();
-        if (meta == null) meta = db.column_metadata(stmt.pointer, cols);
+        checkRS();
+        if (meta == null) meta = db.column_metadata(pointer, cols);
     }
     private void markCol(int col) throws SQLException {
         checkCol(col); lastCol = col;
@@ -65,11 +87,11 @@ class RS implements ResultSet, ResultSetMetaData, Codes
         if (row == 1) { row++; return true; }
 
         // check if we are row limited by the statement or the ResultSet
-        if (stmt.maxRows != 0 && row > stmt.maxRows) return false;
+        if (maxRows != 0 && row > maxRows) return false;
         if (limitRows != 0 && row >= limitRows) return false;
 
         // do the real work
-        switch (db.step(stmt.pointer)) {
+        switch (db.step(pointer)) {
             case SQLITE_BUSY:
                 try { Thread.sleep(5); } catch (Exception e) {}
                 return next(); // FIXME: bad idea? use statement timeout?
@@ -86,18 +108,21 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     }
 
     public int getType() throws SQLException { return TYPE_FORWARD_ONLY; }
-    public int getFetchDirection() throws SQLException {
-        return stmt.getFetchDirection(); }
-    public void setFetchDirection(int d) throws SQLException {
-        stmt.setFetchDirection(d);
-    }
 
     public int getFetchSize() throws SQLException { return limitRows; }
     public void setFetchSize(int rows) throws SQLException {
-        if (0 > rows || (stmt.maxRows != 0 && rows > stmt.maxRows))
+        if (0 > rows || (maxRows != 0 && rows > maxRows))
             throw new SQLException("fetch size " + rows
-                                   + " out of bounds " + stmt.maxRows);
+                                   + " out of bounds " + maxRows);
         limitRows = rows; 
+    }
+
+    public int getFetchDirection() throws SQLException {
+        checkOpen(); return ResultSet.FETCH_FORWARD; }
+    public void setFetchDirection(int d) throws SQLException {
+        checkOpen();
+        if (d != ResultSet.FETCH_FORWARD)
+            throw new SQLException("only FETCH_FORWARD direction supported");
     }
 
     public boolean isAfterLast() throws SQLException { return isAfterLast; }
@@ -106,27 +131,21 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public boolean isLast() throws SQLException { // FIXME
         throw new SQLException("function not yet implemented for SQLite"); }
 
+    /** Resets the RS in a way safe for both Stmt and PrepStmt.
+     *  Full reset happens in Stmt.close(). */
     void clear() throws SQLException {
-        stmt.rs = null;
-        stmt = null;
         cols = null;
-        meta = null;
         isAfterLast = true;
-    }
-
-    public void close() throws SQLException {
-        if (stmt == null) return;
-
-        // close all references, reset statement
-        db.reset(stmt.pointer);
-        clear();
+        limitRows = 0;
+        row = 1;
+        lastCol = -1;
     }
 
     public String getCursorName() throws SQLException { return null; }
 
+    public Statement getStatement() throws SQLException { return (Stmt)this; }
     public ResultSetMetaData getMetaData() throws SQLException { return this; }
     public int getRow() throws SQLException { return row; }
-    public Statement getStatement() throws SQLException { return stmt; }
 
     public SQLWarning getWarnings() throws SQLException {
         checkOpen(); return null; }
@@ -134,7 +153,7 @@ class RS implements ResultSet, ResultSetMetaData, Codes
 
     public boolean wasNull() throws SQLException {
         checkCol(lastCol);
-        return db.column_text(stmt.pointer, lastCol) == null; }
+        return db.column_text(pointer, lastCol) == null; }
 
 
     // DATA ACCESS FUNCTIONS ////////////////////////////////////////
@@ -172,7 +191,7 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public byte getByte(String col) throws SQLException {
         return getByte(findColumn(col)); }
     public byte[] getBytes(int col) throws SQLException {
-        markCol(col); return db.column_blob(stmt.pointer, col - 1); }
+        markCol(col); return db.column_blob(pointer, col - 1); }
     public byte[] getBytes(String col) throws SQLException {
         return getBytes(findColumn(col)); }
     public Reader getCharacterStream(int col) throws SQLException {
@@ -192,20 +211,20 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public Date getDate(String col, Calendar cal) throws SQLException {
         return getDate(findColumn(col), cal); }
     public double getDouble(int col) throws SQLException {
-        markCol(col); return db.column_double(stmt.pointer, col - 1); }
+        markCol(col); return db.column_double(pointer, col - 1); }
     public double getDouble(String col) throws SQLException {
         return getDouble(findColumn(col)); }
     public float getFloat(int col) throws SQLException {
         markCol(col);
-        return Float.parseFloat(db.column_text(stmt.pointer, col - 1)); }
+        return Float.parseFloat(db.column_text(pointer, col - 1)); }
     public float getFloat(String col) throws SQLException {
         return getFloat(findColumn(col)); }
     public int getInt(int col) throws SQLException {
-        markCol(col); return db.column_int(stmt.pointer, col - 1); }
+        markCol(col); return db.column_int(pointer, col - 1); }
     public int getInt(String col) throws SQLException {
         return getInt(findColumn(col)); }
     public long getLong(int col) throws SQLException {
-        markCol(col); return db.column_long(stmt.pointer, col - 1); }
+        markCol(col); return db.column_long(pointer, col - 1); }
     public long getLong(String col) throws SQLException {
         return getLong(findColumn(col)); }
     public Object getObject(int col) throws SQLException {
@@ -226,7 +245,7 @@ class RS implements ResultSet, ResultSetMetaData, Codes
         return getShort(findColumn(col)); }
 
     public String getString(int col) throws SQLException {
-        markCol(col); return db.column_text(stmt.pointer, col - 1); }
+        markCol(col); return db.column_text(pointer, col - 1); }
     public String getString(String col) throws SQLException {
         return getString(findColumn(col)); }
     public Time getTime(int col) throws SQLException {
@@ -258,7 +277,7 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     // ResultSetMetaData Functions //////////////////////////////////
 
     public String getCatalogName(int col) throws SQLException {
-        checkCol(col); return db.column_table_name(stmt.pointer, col - 1); }
+        checkCol(col); return db.column_table_name(pointer, col - 1); }
     public String getColumnClassName(int col) throws SQLException {
         checkCol(col); throw new SQLException("NYI"); }
     public int getColumnCount() throws SQLException {
@@ -268,10 +287,10 @@ class RS implements ResultSet, ResultSetMetaData, Codes
     public String getColumnLabel(int col) throws SQLException {
         return getColumnName(col); }
     public String getColumnName(int col) throws SQLException {
-        checkCol(col); return db.column_name(stmt.pointer, col - 1); }
+        checkCol(col); return db.column_name(pointer, col - 1); }
     public int getColumnType(int col) throws SQLException {
         checkCol(col);
-        switch (db.column_type(stmt.pointer, col - 1)) {
+        switch (db.column_type(pointer, col - 1)) {
             case SQLITE_INTEGER: return Types.INTEGER;
             case SQLITE_FLOAT:   return Types.FLOAT;
             case SQLITE_BLOB:    return Types.BLOB;
@@ -282,14 +301,14 @@ class RS implements ResultSet, ResultSetMetaData, Codes
         }
     }
     public String getColumnTypeName(int col) throws SQLException {
-        checkOpen(); return db.column_decltype(stmt.pointer, col - 1);
+        checkOpen(); return db.column_decltype(pointer, col - 1);
     }
     public int getPrecision(int col) throws SQLException { return 0; } // FIXME
     public int getScale(int col) throws SQLException { return 0; }
     public String getSchemaName(int col) throws SQLException {
         throw new SQLException("NYI"); } 
     public String getTableName(int col) throws SQLException {
-        checkOpen(); return db.column_table_name(stmt.pointer, col - 1); }
+        checkOpen(); return db.column_table_name(pointer, col - 1); }
     public int isNullable(int col) throws SQLException {
         checkMeta(); return meta[col - 1][1] ? columnNoNulls: columnNullable;
     }

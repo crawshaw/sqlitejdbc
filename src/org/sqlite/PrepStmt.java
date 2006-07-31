@@ -7,27 +7,29 @@ import java.sql.*;
 import java.math.BigDecimal;
 import java.util.Calendar;
 
-class PrepStmt extends Stmt implements PreparedStatement, Codes
+/** See comment in RS.java to explain the strange inheritance hierarchy. */
+final class PrepStmt extends Stmt implements PreparedStatement, Codes
 {
-    /** Used as implementation of ResultSetMetaData. */
-    private RS rsMetaData;
-
     PrepStmt(Conn conn, DB db, String sql) throws SQLException {
         super(conn, db);
 
         pointer = db.prepare(sql);
-        rsMetaData = new RS(this);
+        colsMeta = db.column_names(pointer);
     }
 
-    protected RS createResultSet() throws SQLException {
-        return new RS(this, rsMetaData.cols, rsMetaData.meta);
+    /** Weaker close to support object overriding. */
+    public void close() throws SQLException {
+        if (pointer == 0) return;
+        clearParameters();
     }
 
     public void clearParameters() throws SQLException {
+        checkOpen();
         db.clear_bindings(pointer); // TODO: use return result?
-        if (rs != null) rs.close();
+        clear();
         db.reset(pointer);
     }
+
     public boolean execute() throws SQLException { return exec(); }
     public ResultSet executeQuery() throws SQLException {
         if (!execute()) throw new SQLException("query does not return results");
@@ -38,7 +40,7 @@ class PrepStmt extends Stmt implements PreparedStatement, Codes
     }
 
     public ResultSetMetaData getMetaData() throws SQLException {
-        checkOpen(); return rsMetaData; }
+        checkOpen(); return (ResultSetMetaData)this; }
 
 
     // TODO
