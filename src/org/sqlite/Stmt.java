@@ -56,6 +56,7 @@ class Stmt extends RS implements Statement, Codes
         pointer = 0;
         if (resp != SQLITE_OK && resp != SQLITE_MISUSE) throw db.ex();
     }
+    protected void finalize() throws SQLException { close(); }
 
     /** SQLite does not support multiple results from execute(). */
     public boolean getMoreResults() throws SQLException {
@@ -77,7 +78,6 @@ class Stmt extends RS implements Statement, Codes
     public int getResultSetType() throws SQLException {
         checkOpen(); return ResultSet.TYPE_FORWARD_ONLY; }
 
-    // FIXME: use sqlite3_progress_handler
     public void cancel() throws SQLException { checkExec(); db.interrupt(); }
     public int getQueryTimeout() throws SQLException {
         checkOpen(); return conn.getTimeout(); }

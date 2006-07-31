@@ -30,8 +30,8 @@ import java.util.Map;
 abstract class RS implements ResultSet, ResultSetMetaData, Codes
 {
     protected DB db;
-    protected long pointer = 0;
 
+    long pointer = 0;
     boolean isAfterLast = false;
     int maxRows;              // max. number of rows as set by a Statement
     String[] cols = null;     // if null, the RS is closed()
@@ -140,6 +140,7 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
         row = 1;
         lastCol = -1;
     }
+    protected void finalize() throws SQLException { clear(); }
 
     public String getCursorName() throws SQLException { return null; }
 

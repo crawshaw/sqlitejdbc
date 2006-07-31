@@ -6,6 +6,7 @@ import java.util.*;
 class Conn implements Connection
 {
     private DB db = new DB();
+    private List stmts = new ArrayList();
     private boolean autoCommit = true;
     private int timeout = 0;
 
@@ -34,7 +35,14 @@ class Conn implements Connection
     }
 
     public void close() throws SQLException {
-        if (db != null) { db.close(); db = null; }
+        if (db == null) return;
+        while (!stmts.isEmpty()) {
+            Stmt s = (Stmt)stmts.remove(0);
+            s.close();
+            if (s.pointer != 0) db.finalize(s.pointer);
+        }
+        db.close();
+        db = null;
     }
     public boolean isClosed() throws SQLException { return db == null; }
 
@@ -100,7 +108,9 @@ class Conn implements Connection
     public Statement createStatement(int rst, int rsc, int rsh)
         throws SQLException {
         checkCursor(rst, rsc, rsh);
-        return new Stmt(this, db);
+        Stmt s = new Stmt(this, db);
+        stmts.add(s);
+        return s;
     }
 
     public CallableStatement prepareCall(String sql) throws SQLException {
@@ -114,7 +124,7 @@ class Conn implements Connection
     }
     public CallableStatement prepareCall(String sql, int rst, int rsc, int rsh)
                                 throws SQLException {
-        throw new SQLException("NYI");
+        throw new SQLException("SQLite does not support Stored Procedures");
     }
 
     public PreparedStatement prepareStatement(String sql) throws SQLException {
