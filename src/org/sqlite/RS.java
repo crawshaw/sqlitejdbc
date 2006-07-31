@@ -93,15 +93,15 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
         // do the real work
         switch (db.step(pointer)) {
             case SQLITE_BUSY:
-                try { Thread.sleep(5); } catch (Exception e) {}
-                return next(); // FIXME: bad idea? use statement timeout?
+                throw new SQLException("database locked");
             case SQLITE_DONE:
                 isAfterLast = true;
                 close();      // agressive closing to avoid writer starvation
                 return false;
             case SQLITE_ROW: row++; return true;
-            case SQLITE_ERROR:
             case SQLITE_MISUSE:
+                 throw new SQLException("JDBC internal consistency error");
+            case SQLITE_ERROR:
             default:
                 throw db.ex();
         }

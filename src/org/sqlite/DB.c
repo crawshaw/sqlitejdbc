@@ -102,6 +102,12 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_interrupt(JNIEnv *env, jobject this)
     sqlite3_interrupt(gethandle(env, this));
 }
 
+JNIEXPORT void JNICALL Java_org_sqlite_DB_busy_1timeout(
+    JNIEnv *env, jobject this, jint ms)
+{
+    sqlite3_busy_timeout(gethandle(env, this), ms);
+}
+
 JNIEXPORT void JNICALL Java_org_sqlite_DB_exec(
         JNIEnv *env, jobject this, jstring sql)
 {
@@ -305,9 +311,9 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_executeUpdate(
         case SQLITE_ROW:
             throwexmsg(env, this, "query returns results"); break;
         case SQLITE_BUSY:
-            throwexmsg(env, this, "db locked"); break; // FIXME
+            throwexmsg(env, this, "database locked"); break;
         case SQLITE_MISUSE:
-            throwexmsg(env, this, "cannot execute, misuse"); break;
+            throwexmsg(env, this, "JDBC internal consistency error"); break;
         case SQLITE_ERROR:
         default:
             throwex(env, this); return 0;

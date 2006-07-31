@@ -7,9 +7,17 @@ class Conn implements Connection
 {
     private DB db = new DB();
     private boolean autoCommit = true;
+    private int timeout = 0;
 
     public Conn(String filename) throws SQLException {
         db.open(filename);
+        setTimeout(3000);
+    }
+
+    int getTimeout() { return timeout; }
+    void setTimeout(int ms) {
+        timeout = ms;
+        db.busy_timeout(ms);
     }
 
     private void checkOpen() throws SQLException {

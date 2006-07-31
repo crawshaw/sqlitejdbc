@@ -12,8 +12,6 @@ class Stmt extends RS implements Statement, Codes
 
     protected boolean resultsWaiting = false;
 
-    int  timeout = 0;
-
     Stmt(Conn conn, DB db) {
         super(db);
         this.conn = conn;
@@ -29,8 +27,9 @@ class Stmt extends RS implements Statement, Codes
         switch (db.step(pointer)) {
             case SQLITE_DONE:   break;
             case SQLITE_ROW:    resultsWaiting = true; break;
-            case SQLITE_BUSY:   throw new SQLException("db locked");//FIXME
-            case SQLITE_MISUSE: throw new SQLException("internal misuse");
+            case SQLITE_BUSY:   throw new SQLException("database locked");
+            case SQLITE_MISUSE:
+                 throw new SQLException("JDBC internal consistency error");
             case SQLITE_ERROR:
             default:
                 throw db.ex();
@@ -81,11 +80,11 @@ class Stmt extends RS implements Statement, Codes
     // FIXME: use sqlite3_progress_handler
     public void cancel() throws SQLException { checkExec(); db.interrupt(); }
     public int getQueryTimeout() throws SQLException {
-        checkOpen(); return timeout; }
+        checkOpen(); return conn.getTimeout(); }
     public void setQueryTimeout(int seconds) throws SQLException {
         checkOpen();
         if (seconds < 0) throw new SQLException("query timeout must be >= 0");
-        timeout = seconds;
+        conn.setTimeout(1000 * seconds);
     }
 
 
