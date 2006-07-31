@@ -56,7 +56,7 @@ static jsize jstrlen(const jchar *str)
     for (s = str; *s; s++)
         if (*s > 0xD800) suppChars++;
 
-    return s - str - suppChars;
+    return (int)(s - str) - suppChars;
 }
 
 
@@ -74,13 +74,15 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_open(
 {
     int ret;
     sqlite3 *db = gethandle(env, this);
+    const char *str;
+
     if (db) {
         throwexmsg(env, this, "DB already open");
         sqlite3_close(db);
         return;
     }
 
-    const char *str = (*env)->GetStringUTFChars(env, file, 0); 
+    str = (*env)->GetStringUTFChars(env, file, 0); 
     if (sqlite3_open(str, &db)) {
         throwex(env, this);
         sqlite3_close(db);
@@ -185,8 +187,10 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1text(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jstring value)
 {
     const jchar *str =(*env)->GetStringCritical(env, value, 0);
+    jint ret;
+
     if (str == NULL) exit(1);
-    jint ret = sqlite3_bind_text16(toref(stmt), pos, str, -1, SQLITE_TRANSIENT);
+    ret = sqlite3_bind_text16(toref(stmt), pos, str, -1, SQLITE_TRANSIENT);
     (*env)->ReleaseStringCritical(env, value, str);
     return ret;
 }
@@ -195,11 +199,13 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1blob(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jbyteArray value)
 {
     if (value == NULL) return sqlite3_bind_null(toref(stmt), pos);
+    jint length, ret;
+    jbyte *a;
 
-    jint length = (*env)->GetArrayLength(env, value); 
-    jbyte *a = (*env)->GetPrimitiveArrayCritical(env, value, 0);
+    length = (*env)->GetArrayLength(env, value); 
+    a = (*env)->GetPrimitiveArrayCritical(env, value, 0);
     if (a == NULL) exit(1);
-    jint ret = sqlite3_bind_blob(toref(stmt), pos, a, length, SQLITE_TRANSIENT);
+    ret = sqlite3_bind_blob(toref(stmt), pos, a, length, SQLITE_TRANSIENT);
     (*env)->ReleasePrimitiveArrayCritical(env, value, a, JNI_ABORT);
     return ret;
 }
@@ -265,13 +271,16 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1text(
 JNIEXPORT jbyteArray JNICALL Java_org_sqlite_DB_column_1blob(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
+    jsize length;
+    jbyteArray jBlob;
+    jbyte *a;
     const void *blob = sqlite3_column_blob(toref(stmt), col);
     if (!blob) return NULL;
 
-    jsize length = sqlite3_column_bytes(toref(stmt), col);
-    jbyteArray jBlob = (*env)->NewByteArray(env, length);
+    length = sqlite3_column_bytes(toref(stmt), col);
+    jBlob = (*env)->NewByteArray(env, length);
     if (jBlob == NULL) exit(1);
-    jbyte *a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
+    a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
     memcpy(a, blob, length);
     (*env)->ReleasePrimitiveArrayCritical(env, jBlob, a, 0);
 
@@ -326,9 +335,10 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_executeUpdate(
 JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1names(
         JNIEnv *env, jobject this, jlong stmt)
 {
+    int i;
+    const void *str;
     sqlite3_stmt *dbstmt = toref(stmt);
     int col_count = sqlite3_column_count(dbstmt);
-    int i;
 
     jobjectArray names = (*env)->NewObjectArray(
             env,
@@ -337,7 +347,6 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1names(
             (*env)->NewStringUTF(env, "")
     );
 
-    const void *str;
     for (i=0; i < col_count; i++) {
         str = sqlite3_column_name16(dbstmt, i);
         (*env)->SetObjectArrayElement(
@@ -351,11 +360,6 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1names(
 JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1metadata(
         JNIEnv *env, jobject this, jlong stmt, jobjectArray colNames)
 {
-    int i;
-    int length = (*env)->GetArrayLength(env, colNames);
-    jobjectArray array = (*env)->NewObjectArray(
-        env, length, (*env)->FindClass(env, "[Z"), NULL) ;
-
     const char *zDbName = 0; // FIXME ?
     const char *zTableName;
     const char *zColumnName;
@@ -366,9 +370,15 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1metadata(
     int pPrimaryKey;          /* OUTPUT: True if column part of PK */
     int pAutoinc;             /* OUTPUT: True if colums is auto-increment */
 
+    int i;
+    int length = (*env)->GetArrayLength(env, colNames);
+    jobjectArray array = (*env)->NewObjectArray(
+        env, length, (*env)->FindClass(env, "[Z"), NULL) ;
+
     jboolean* colDataRaw = (jboolean*)malloc(3 * sizeof(jboolean));
     jstring colName;
     jbooleanArray colData;
+
     for (i = 0; i < length; i++) {
         // load passed column name and table name
         colName     = (jstring) (*env)->GetObjectArrayElement(env, colNames, i);
