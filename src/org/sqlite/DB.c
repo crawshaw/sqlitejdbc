@@ -56,7 +56,17 @@ static jsize jstrlen(const jchar *str)
     for (s = str; *s; s++)
         if (*s > 0xD800) suppChars++;
 
-    return (int)(s - str) - suppChars;
+    return (jsize)(s - str) - suppChars;
+}
+
+/* given number of characters in a UTF-16
+ * string, calculates the number of bytes. */
+static jsize jstrbytelen(const jchar *str, jsize length)
+{
+    const jchar *s;
+    for (s = str; length > 0; s++ && length--)
+        if (*s > 0xD800) length++;
+    return 2 * (jsize)(s - str);
 }
 
 
@@ -186,12 +196,19 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1null(
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1text(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jstring value)
 {
-    const jchar *str =(*env)->GetStringCritical(env, value, 0);
+    const jchar *str;
     jint ret;
+    jsize length, size;
 
-    if (str == NULL) exit(1);
-    ret = sqlite3_bind_text16(toref(stmt), pos, str, -1, SQLITE_TRANSIENT);
+    length = (*env)->GetStringLength(env, value);
+
+    // be careful with the *Critical functions, they turn off the GC
+    str = (*env)->GetStringCritical(env, value, 0);
+    if (str == NULL) exit(1); // out-of-memory
+    size = jstrbytelen(str, length);
+    ret = sqlite3_bind_text16(toref(stmt), pos, str, size, SQLITE_TRANSIENT);
     (*env)->ReleaseStringCritical(env, value, str);
+
     return ret;
 }
 
