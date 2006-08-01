@@ -32,6 +32,34 @@ It is so easy, you will wonder why someone didn't try to sell you
 some steak knives.
 
 
+-- NOT YET IMPLEMENTED ----------------------------------------------
+Most aspects of JDBC that are unsupported are done so because SQLite
+doesn't lend itself that way, or I haven't got around to it yet.
+
+- user-defined functions: JDBC has no support for adding these,
+  though an external interface is planned.
+- getBlob() / setBlob(): these functions require constantly creating
+  instances of java.sql.Blob, which I do not like. The features of
+  these functions, such as Stream access cannot be implemented
+  efficiently on SQLite anyhow. The only thing that is important is
+  retrieving the length of a blob without reading the contents into
+  memory. I hope to provide non-JDBC access to this through the API
+  mentioned for user-defined functions.
+- getDate() / setDate(): coming soon, just trying to find the time.
+- getObject() / setObject(): nasty functions that would make the
+  JDBC driver make some choices about types, which at the moment it
+  does not do. Partial implementations may come later.
+- ResultSet.isLast(): the only truly evil function in the JDBC spec.
+  Even the JavaDoc's accept this:
+     Calling the method isLast may be expensive because the JDBC
+     driver might need to fetch ahead one row in order to determine
+     whether the current row is the last row in the result set.
+
+  Supporting this function would bring all the pain of determining
+  types, terribly bloat the code and mean a performance hit. It
+  will probably always throw an SQLException. Use next() instead.
+
+
 -- COMPILING --------------------------------------------------------
 Ask yourself, do I really have to do this? Cross-compiling for
 different operating systems sucks. C ain't Java. Continue at risk to
@@ -48,8 +76,7 @@ library.
 
 I develop on a PowerPC Mac and compile everything on Linux. Your best
 bet is a Linux machine, though it should be possible under Mac OS or
-Cygwin. If you want to use MSVC, contact me, I'd be interested in
-helping.
+Cygwin.
 
 Before compiling, install your JNI headers in src/jni/$(os)/. I
 don't distribute these with the project as I worry about copyright
@@ -75,6 +102,25 @@ Often a compile on a new machine will fail just because the Maekfile
 gives the wrong name for gcc. E.g. it looks for
 $(arch)-apple-darwin-gcc when your installation uses
 $(arch)-apple-darwin8-gcc.
+
+
+-- COMPILING WITH MSVC ----------------------------------------------
+
+(Thanks to Brannon King.) Grab from this project:
+    src/org/sqlite/DB.c
+    build/DB.h
+You can otherwise generate DB.h with javah (see the Makefile).
+
+Compile the sqlite3.dll from http://www.sqlite.org with:
+    #define SQLITE_ENABLE_COLUMN_METADATA
+and reference the .dll and sqlite3.h in the project containing DB.c
+and DB.h. This will produce the JNI dll.
+
+Then compile the .java sources the normal way with javac and put them
+in a jar file. Include the jar file, the JNI dll and sqlite3.dll in
+your Java project.
+
+It is unknown whether this produces a faster driver.
 
 
 -- COMPILING FOR ALL ------------------------------------------------
