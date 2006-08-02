@@ -7,7 +7,8 @@ public class Test
     private static final Case[] tests = new Case[] {
         new Test01(), new Test02(), new Test03(), new Test04(), new Test05(),
         new Test06(), new Test07(), new Test08(), new Test09(), new Test10(),
-        new Test11(), new Test12(), new Test13(), new Test14(), new Test15()
+        new Test11(), new Test12(), new Test13(), new Test14(), new Test15(),
+        new Test16()
     };
 
     public static void main(String[] args) {
