@@ -5,6 +5,8 @@ import java.util.*;
 
 public class JDBC implements Driver
 {
+    public static final String PREFIX = "jdbc:sqlite:";
+
     static {
         try {
             DriverManager.registerDriver(new JDBC());
@@ -15,18 +17,24 @@ public class JDBC implements Driver
 
     public int getMajorVersion() { return 1; }
     public int getMinorVersion() { return 1; }
+
     public boolean jdbcCompliant() { return false; }
+
     public boolean acceptsURL(String url) {
-        return url.startsWith("jdbc:sqlite:");
+        return url != null && url.startsWith(PREFIX);
     }
+
     public DriverPropertyInfo[] getPropertyInfo(String url, Properties info)
-        throws SQLException {
+            throws SQLException {
         return new DriverPropertyInfo[] {};
     }
 
     public Connection connect(String url, Properties info) throws SQLException {
         if (!acceptsURL(url)) return null;
-        return new Conn(url.substring(12));
+        url = url.trim();
+
+        // if no file name is given use a memory database
+        return new Conn(PREFIX.equals(url) ?
+            ":memory:" : url.substring(PREFIX.length()));
     }
 }
-
