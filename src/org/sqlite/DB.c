@@ -44,29 +44,12 @@ static void sethandle(JNIEnv *env, jobject this, sqlite3 * ref)
     (*env)->SetLongField(env, this, JNI_DB_pointer, fromref(ref));
 }
 
+/* Returns number of 16-bit blocks in UTF-16 string, not including null. */
 static jsize jstrlen(const jchar *str)
 {
     const jchar *s;
-    int suppChars = 0;
-
-    // any UTF-16 character that is greater than \xD800 is the first
-    // of a supplementary character, represented by a pair of 16-bit
-    // blocks. So we ignore one of the two (the second must always
-    // be less than \xD800 according to the standard).
-    for (s = str; *s; s++)
-        if (*s > 0xD800) suppChars++;
-
-    return (jsize)(s - str) - suppChars;
-}
-
-/* given number of characters in a UTF-16
- * string, calculates the number of bytes. */
-static jsize jstrbytelen(const jchar *str, jsize length)
-{
-    const jchar *s;
-    for (s = str; length > 0; s++ && length--)
-        if (*s > 0xD800) length++;
-    return 2 * (jsize)(s - str);
+    for (s = str; *s; s++);
+    return (jsize)(s - str);
 }
 
 
@@ -198,14 +181,14 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1text(
 {
     const jchar *str;
     jint ret;
-    jsize length, size;
+    jsize size;
 
-    length = (*env)->GetStringLength(env, value);
+    if (str == NULL) return sqlite3_bind_null(toref(stmt), pos);
+    size = (*env)->GetStringLength(env, value) * 2; // in bytes
 
     // be careful with the *Critical functions, they turn off the GC
     str = (*env)->GetStringCritical(env, value, 0);
     if (str == NULL) exit(1); // out-of-memory
-    size = jstrbytelen(str, length);
     ret = sqlite3_bind_text16(toref(stmt), pos, str, size, SQLITE_TRANSIENT);
     (*env)->ReleaseStringCritical(env, value, str);
 
@@ -215,14 +198,17 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1text(
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1blob(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jbyteArray value)
 {
-    if (value == NULL) return sqlite3_bind_null(toref(stmt), pos);
-    jint length, ret;
     jbyte *a;
+    jint ret;
+    jsize size;
 
-    length = (*env)->GetArrayLength(env, value); 
+    if (value == NULL) return sqlite3_bind_null(toref(stmt), pos);
+    size = (*env)->GetArrayLength(env, value);
+
+    // be careful with *Critical
     a = (*env)->GetPrimitiveArrayCritical(env, value, 0);
-    if (a == NULL) exit(1);
-    ret = sqlite3_bind_blob(toref(stmt), pos, a, length, SQLITE_TRANSIENT);
+    if (a == NULL) exit(1); // out-of-memory
+    ret = sqlite3_bind_blob(toref(stmt), pos, a, size, SQLITE_TRANSIENT);
     (*env)->ReleasePrimitiveArrayCritical(env, value, a, JNI_ABORT);
     return ret;
 }
@@ -281,8 +267,9 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1name(
 JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1text(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
+    jint length = sqlite3_column_bytes16(toref(stmt), col) / 2; // in jchars
     const void *str = sqlite3_column_text16(toref(stmt), col);
-    return str ? (*env)->NewString(env, str, jstrlen(str)) : NULL;
+    return str ? (*env)->NewString(env, str, length) : NULL;
 }
 
 JNIEXPORT jbyteArray JNICALL Java_org_sqlite_DB_column_1blob(
@@ -296,7 +283,8 @@ JNIEXPORT jbyteArray JNICALL Java_org_sqlite_DB_column_1blob(
 
     length = sqlite3_column_bytes(toref(stmt), col);
     jBlob = (*env)->NewByteArray(env, length);
-    if (jBlob == NULL) exit(1);
+    if (jBlob == NULL) exit(1); // out-of-memory
+
     a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
     memcpy(a, blob, length);
     (*env)->ReleasePrimitiveArrayCritical(env, jBlob, a, 0);
