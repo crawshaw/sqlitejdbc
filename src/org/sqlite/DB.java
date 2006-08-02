@@ -5,7 +5,6 @@ import java.sql.SQLException;
 /** This class provides a thin JNI layer over the SQLite3 C API.  */
 class DB implements Codes
 {
-
     /** database pointer */
     long pointer = 0;
 
@@ -19,52 +18,52 @@ class DB implements Codes
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
-    native void open(String filename) throws SQLException;
-    native void close() throws SQLException;
-    native void interrupt();
-    native void busy_timeout(int ms);
-    native void exec(String sql) throws SQLException;
-    native long prepare(String sql) throws SQLException;
-    native String errmsg();
+    native synchronized void open(String filename) throws SQLException;
+    native synchronized void close() throws SQLException;
+    native synchronized void interrupt();
+    native synchronized void busy_timeout(int ms);
+    native synchronized void exec(String sql) throws SQLException;
+    native synchronized long prepare(String sql) throws SQLException;
+    native synchronized String errmsg();
 
-    native int changes(long stmt);
-    native int finalize(long stmt);
-    native int step(long stmt);
-    native int reset(long stmt);
-    native int clear_bindings(long stmt);
+    native synchronized int changes(long stmt);
+    native synchronized int finalize(long stmt);
+    native synchronized int step(long stmt);
+    native synchronized int reset(long stmt);
+    native synchronized int clear_bindings(long stmt);
 
-    native int bind_null  (long stmt, int pos);
-    native int bind_text  (long stmt, int pos, String value);
-    native int bind_blob  (long stmt, int pos, byte[] value);
-    native int bind_double(long stmt, int pos, double value);
-    native int bind_long  (long stmt, int pos, long   value);
-    native int bind_int   (long stmt, int pos, int    value);
+    native synchronized int bind_null  (long stmt, int pos);
+    native synchronized int bind_text  (long stmt, int pos, String value);
+    native synchronized int bind_blob  (long stmt, int pos, byte[] value);
+    native synchronized int bind_double(long stmt, int pos, double value);
+    native synchronized int bind_long  (long stmt, int pos, long   value);
+    native synchronized int bind_int   (long stmt, int pos, int    value);
 
-    native int    column_count      (long stmt);
-    native int    column_type       (long stmt, int col);
-    native String column_decltype   (long stmt, int col);
-    native String column_table_name (long stmt, int col);
-    native String column_name       (long stmt, int col);
-    native String column_text       (long stmt, int col);
-    native byte[] column_blob       (long stmt, int col);
-    native double column_double     (long stmt, int col);
-    native long   column_long       (long stmt, int col);
-    native int    column_int        (long stmt, int col);
+    native synchronized int    column_count      (long stmt);
+    native synchronized int    column_type       (long stmt, int col);
+    native synchronized String column_decltype   (long stmt, int col);
+    native synchronized String column_table_name (long stmt, int col);
+    native synchronized String column_name       (long stmt, int col);
+    native synchronized String column_text       (long stmt, int col);
+    native synchronized byte[] column_blob       (long stmt, int col);
+    native synchronized double column_double     (long stmt, int col);
+    native synchronized long   column_long       (long stmt, int col);
+    native synchronized int    column_int        (long stmt, int col);
 
 
     // COMPOUND FUNCTIONS (for optimisation) /////////////////////////
 
-    native int executeUpdate(long stmt) throws SQLException;
+    native synchronized int executeUpdate(long stmt) throws SQLException;
 
-    native String[]    column_names    (long stmt);
+    native synchronized String[] column_names(long stmt);
 
     /** Provides metadata for the columns of a statement. Returns:
      *   res[col][0] = true if column constrained NOT NULL
      *   res[col][1] = true if column is part of the primary key
      *   res[col][2] = true if column is auto-increment
      */
-    native boolean[][] column_metadata(long stmt, String[] colNames);
-    boolean[][] column_metadata(long stmt) {
+    native synchronized boolean[][] column_metadata(long stmt, String[] names);
+    synchronized boolean[][] column_metadata(long stmt) {
         return column_metadata(stmt, column_names(stmt));
     }
 
