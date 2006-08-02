@@ -1,3 +1,4 @@
+/* Copyright 2006 David Crawshaw, see LICENSE file for licensing [BSD]. */
 #include <stdlib.h>
 #include <string.h>
 #include "DB.h"

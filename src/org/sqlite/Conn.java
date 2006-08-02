@@ -1,3 +1,4 @@
+/* Copyright 2006 David Crawshaw, see LICENSE file for licensing [BSD]. */
 package org.sqlite;
 
 import java.sql.*;
