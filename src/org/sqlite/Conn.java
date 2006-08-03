@@ -3,11 +3,12 @@ package org.sqlite;
 
 import java.sql.*;
 import java.util.*;
+import java.lang.ref.WeakReference;
 
 class Conn implements Connection
 {
     private DB db = new DB();
-    private List stmts = new ArrayList();
+    private List stmts = new ArrayList();  // holds WeakReferences to Stmts
     private boolean autoCommit = true;
     private int timeout = 0;
 
@@ -39,7 +40,8 @@ class Conn implements Connection
     public void close() throws SQLException {
         if (db == null) return;
         while (!stmts.isEmpty()) {
-            Stmt s = (Stmt)stmts.remove(0);
+            Stmt s = (Stmt)(((WeakReference)stmts.remove(0)).get());
+            if (s == null) continue;
             s.close();
             if (s.pointer != 0) {
                 db.finalize(s.pointer);
@@ -114,7 +116,7 @@ class Conn implements Connection
         throws SQLException {
         checkCursor(rst, rsc, rsh);
         Stmt s = new Stmt(this, db);
-        stmts.add(s);
+        stmts.add(new WeakReference(s));
         return s;
     }
 
@@ -152,7 +154,7 @@ class Conn implements Connection
                                 int rsh) throws SQLException {
         checkCursor(rst, rsc, rsh);
         PrepStmt prep = new PrepStmt(this, db, sql);
-        stmts.add(prep);
+        stmts.add(new WeakReference(prep));
         return prep;
     }
 
