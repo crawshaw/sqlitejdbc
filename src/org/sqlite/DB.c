@@ -89,7 +89,8 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_open(
 
 JNIEXPORT void JNICALL Java_org_sqlite_DB_close(JNIEnv *env, jobject this)
 {
-    sqlite3_close(gethandle(env, this)); // TODO: error checking
+    if (sqlite3_close(gethandle(env, this)) != SQLITE_OK)
+        throwex(env, this);
     sethandle(env, this, 0);
 }
 

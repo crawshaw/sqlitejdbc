@@ -35,12 +35,16 @@ class Conn implements Connection
             "SQLite only supports closing cursors at commit");
     }
 
+    public void finalize() throws SQLException { close(); }
     public void close() throws SQLException {
         if (db == null) return;
         while (!stmts.isEmpty()) {
             Stmt s = (Stmt)stmts.remove(0);
             s.close();
-            if (s.pointer != 0) db.finalize(s.pointer);
+            if (s.pointer != 0) {
+                db.finalize(s.pointer);
+                s.pointer = 0;
+            }
         }
         db.close();
         db = null;
@@ -147,7 +151,9 @@ class Conn implements Connection
     public PreparedStatement prepareStatement(String sql, int rst, int rsc,
                                 int rsh) throws SQLException {
         checkCursor(rst, rsc, rsh);
-        return new PrepStmt(this, db, sql);
+        PrepStmt prep = new PrepStmt(this, db, sql);
+        stmts.add(prep);
+        return prep;
     }
 
 

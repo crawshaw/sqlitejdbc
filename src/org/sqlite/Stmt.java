@@ -135,7 +135,7 @@ class Stmt extends RS implements Statement, Codes
         checkOpen(); close();
         pointer = db.prepare(sql);
         int changes = 0;
-        try { changes = db.executeUpdate(pointer); } finally { pointer = 0; }
+        try { changes = db.executeUpdate(pointer); } finally { close(); }
         return changes;
     }
 
@@ -149,18 +149,20 @@ class Stmt extends RS implements Statement, Codes
         checkOpen(); if (batch != null) batch.clear(); }
 
     public int[] executeBatch() throws SQLException {
-        // FIXME: optimise
+        // TODO: optimise
         checkOpen(); close();
         if (batch == null) return new int[] {};
-        int[] changes = new int[batch.size()];
+
+        ArrayList run = batch;
+        int[] changes = new int[run.size()];
         for (int i=0; i < changes.length; i++) {
-            pointer = db.prepare((String)batch.get(i));
+            pointer = db.prepare((String)run.get(i));
             try {
                 changes[i] = db.executeUpdate(pointer);
             } catch (SQLException e) {
                 throw new BatchUpdateException(
                     "batch entry " + i + ": " + e.getMessage(), changes);
-            } finally { pointer = 0; }
+            } finally { close(); }
         }
 
         return changes;
