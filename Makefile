@@ -99,7 +99,7 @@ all:
 	tar cfz dist/sqlitejdbc-v$(VERSION)-Mac.tgz README \
 	    -C build sqlitejdbc.jar -C Darwin-lipo libsqlitejdbc.jnilib
 	tar cfz dist/sqlitejdbc-v$(VERSION)-src.tgz \
-		Makefile README LICENSE VERSION src/org
+		Makefile README LICENSE VERSION src/org src/test
 	jar cfm dist/sqlitejdbc-test.jar src/test/manifest \
 	    -C build org -C build test
 
