@@ -12,7 +12,7 @@
 #
 
 ifeq ($(os),)
-os := $(shell uname)
+os := Default
 endif
 
 ifeq ($(arch),)
@@ -25,6 +25,12 @@ endif
 
 
 # OS Specific Variables #############################################
+
+Default_CC        := gcc
+Default_STRIP     := strip
+Default_CCFLAGS   := -I$(JAVA_HOME)/include -O
+Default_LINKFLAGS := -shared
+Default_LIBNAME   := libsqlitejdbc.so
 
 Linux_CC         := gcc
 Linux_STRIP      := strip
