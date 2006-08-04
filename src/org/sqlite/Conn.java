@@ -8,7 +8,7 @@ import java.lang.ref.WeakReference;
 class Conn implements Connection
 {
     private DB db = new DB();
-    private List stmts = new ArrayList();  // holds WeakReferences to Stmts
+    private Set stmts = Collections.synchronizedSet(new HashSet());
     private boolean autoCommit = true;
     private int timeout = 0;
 
@@ -36,21 +36,31 @@ class Conn implements Connection
             "SQLite only supports closing cursors at commit");
     }
 
+    void remove(Stmt stmt) { stmts.remove(stmt); }
+
     public void finalize() throws SQLException { close(); }
     public void close() throws SQLException {
         if (db == null) return;
-        while (!stmts.isEmpty()) {
-            Stmt s = (Stmt)(((WeakReference)stmts.remove(0)).get());
-            if (s == null) continue;
-            s.close();
-            if (s.pointer != 0) {
-                db.finalize(s.pointer);
-                s.pointer = 0;
+
+        // must be  synchronized against both db and stmts to ensure
+        // no database access occurs or a new statement is created
+        // while the Connection is being closed
+        synchronized (db) { synchronized (stmts) {
+            for (Iterator i = stmts.iterator(); i.hasNext(); i.remove()) {
+                Stmt s = (Stmt)(((WeakReference)i.next()).get());
+                if (s == null) continue;
+                s.close();
+                if (s.pointer != 0) {
+                    db.finalize(s.pointer);
+                    s.pointer = 0;
+                }
+                s.db = null;
             }
-        }
-        db.close();
-        db = null;
+            db.close();
+            db = null;
+        } }
     }
+
     public boolean isClosed() throws SQLException { return db == null; }
 
     public String getCatalog() throws SQLException { checkOpen(); return null; }
@@ -150,8 +160,8 @@ class Conn implements Connection
                                 ResultSet.CLOSE_CURSORS_AT_COMMIT);
     }
 
-    public PreparedStatement prepareStatement(String sql, int rst, int rsc,
-                                int rsh) throws SQLException {
+    public PreparedStatement prepareStatement(
+            String sql, int rst, int rsc, int rsh) throws SQLException {
         checkCursor(rst, rsc, rsh);
         PrepStmt prep = new PrepStmt(this, db, sql);
         stmts.add(new WeakReference(prep));

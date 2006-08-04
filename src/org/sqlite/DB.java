@@ -3,7 +3,11 @@ package org.sqlite;
 
 import java.sql.SQLException;
 
-/** This class provides a thin JNI layer over the SQLite3 C API.  */
+/** This class provides a thin JNI layer over the SQLite3 C API.
+ *
+ *  All SQLite access is synchronized against the instance of this class,
+ *  so a synchronized (db) { ... } block guarantees no-one else can talk
+ *  to the database. */
 class DB implements Codes
 {
     /** database pointer */

@@ -24,7 +24,6 @@ final class PrepStmt extends Stmt
         if (pointer == 0) return;
         clearParameters();
     }
-    protected void finalize() throws SQLException { super.close(); }
 
     public void clearParameters() throws SQLException {
         checkOpen();

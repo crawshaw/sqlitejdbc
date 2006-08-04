@@ -30,7 +30,7 @@ import java.util.Map;
  */
 abstract class RS implements ResultSet, ResultSetMetaData, Codes
 {
-    protected DB db;
+    DB db;
 
     long pointer = 0;
     boolean isAfterLast = false;

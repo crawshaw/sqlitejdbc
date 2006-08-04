@@ -7,11 +7,9 @@ import java.util.ArrayList;
 /** See comment in RS.java to explain the strange inheritance hierarchy. */
 class Stmt extends RS implements Statement, Codes
 {
-    protected Conn conn;
-
-    private ArrayList batch = null;
-
+    Conn conn;
     protected boolean resultsWaiting = false;
+    private ArrayList batch = null;
 
     Stmt(Conn conn, DB db) {
         super(db);
@@ -57,7 +55,10 @@ class Stmt extends RS implements Statement, Codes
         pointer = 0;
         if (resp != SQLITE_OK && resp != SQLITE_MISUSE) throw db.ex();
     }
-    protected void finalize() throws SQLException { close(); }
+    protected void finalize() throws SQLException {
+        close();
+        if (conn != null) conn.remove(this);;
+    }
 
     /** SQLite does not support multiple results from execute(). */
     public boolean getMoreResults() throws SQLException {
@@ -98,7 +99,7 @@ class Stmt extends RS implements Statement, Codes
     }
 
     public ResultSet getResultSet() throws SQLException {
-        checkOpen();
+        checkExec();
         if (isRS()) throw new SQLException("ResultSet already requested");
         if (db.column_count(pointer) == 0) throw new SQLException(
             "no ResultSet available");
@@ -118,7 +119,8 @@ class Stmt extends RS implements Statement, Codes
 
     public boolean execute(String sql) throws SQLException {
         checkOpen(); close();
-        pointer = db.prepare(sql); return exec();
+        pointer = db.prepare(sql);
+        return exec();
     }
 
     public ResultSet executeQuery(String sql) throws SQLException {
