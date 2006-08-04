@@ -23,14 +23,21 @@ ifeq ($(arch),Power Macintosh) # OS X gives funny result for 'uname -m'
 arch := powerpc
 endif
 
-
-# OS Specific Variables #############################################
+# Generic Variables, used if no $(os) is given ######################
 
 Default_CC        := gcc
 Default_STRIP     := strip
 Default_CCFLAGS   := -I$(JAVA_HOME)/include -O
 Default_LINKFLAGS := -shared
 Default_LIBNAME   := libsqlitejdbc.so
+
+ifeq ($(shell uname),Darwin)
+	Default_STRIP     := strip -x
+	Default_LINKFLAGS := -dynamiclib
+	Default_LIBNAME   := libsqlitejdbc.jnilib
+endif
+
+# OS Specific Variables #############################################
 
 Linux_CC         := gcc
 Linux_STRIP      := strip
