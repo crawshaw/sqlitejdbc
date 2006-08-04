@@ -18,12 +18,6 @@ public class Test16 implements Test.Case
         String utf07 = "\uD840\uDC41 testing \uD880\uDC99";
         String utf08 = "\uD840\uDC40\uD840\uDC44 testing";
 
-        /* This test checks for a bug where a substring is read by the
-         * driver as the full original string. Spotted by Oliver Randschau. */
-        StringTokenizer st = new StringTokenizer("one two three");
-        st.nextToken();
-        String substr = st.nextToken();
-
         Class.forName("org.sqlite.JDBC");
         Connection conn = DriverManager.getConnection("jdbc:sqlite::memory:");
         Statement stat = conn.createStatement();
