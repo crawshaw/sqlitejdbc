@@ -172,6 +172,12 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_clear_1bindings(
     return rc;
 }
 
+JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1parameter_1count(
+        JNIEnv *env, jobject this, jlong stmt)
+{
+    return sqlite3_bind_parameter_count(toref(stmt));
+}
+
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1null(
         JNIEnv *env, jobject this, jlong stmt, jint pos)
 {

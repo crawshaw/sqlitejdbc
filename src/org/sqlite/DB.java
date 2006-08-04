@@ -33,6 +33,7 @@ class DB implements Codes
     native synchronized int reset(long stmt);
     native synchronized int clear_bindings(long stmt);
 
+    native synchronized int bind_parameter_count(long stmt);
     native synchronized int bind_null  (long stmt, int pos);
     native synchronized int bind_text  (long stmt, int pos, String value);
     native synchronized int bind_blob  (long stmt, int pos, byte[] value);

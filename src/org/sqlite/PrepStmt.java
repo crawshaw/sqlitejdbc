@@ -9,7 +9,8 @@ import java.math.BigDecimal;
 import java.util.Calendar;
 
 /** See comment in RS.java to explain the strange inheritance hierarchy. */
-final class PrepStmt extends Stmt implements PreparedStatement, Codes
+final class PrepStmt extends Stmt
+        implements PreparedStatement, ParameterMetaData, Codes
 {
     PrepStmt(Conn conn, DB db, String sql) throws SQLException {
         super(conn, db);
@@ -45,10 +46,21 @@ final class PrepStmt extends Stmt implements PreparedStatement, Codes
         checkOpen(); return (ResultSetMetaData)this; }
 
 
-    // TODO
-    public ParameterMetaData getParameterMetaData() throws SQLException {
-        throw new SQLException("NYI"); }
+    // ParameterMetaData FUNCTIONS //////////////////////////////////
 
+    public ParameterMetaData getParameterMetaData() { return this; }
+
+    public int getParameterCount() throws SQLException {
+        checkOpen(); return db.bind_parameter_count(pointer); }
+    public String getParameterClassName(int param) throws SQLException {
+        checkOpen(); return "java.lang.String"; }
+    public String getParameterTypeName(int pos) { return "VARCHAR"; }
+    public int getParameterType(int pos) { return Types.VARCHAR; }
+    public int getParameterMode(int pos) { return parameterModeIn; }
+    public int getPrecision(int pos) { return 0; }
+    public int getScale(int pos) { return 0; }
+    public int isNullable(int pos) { return parameterNullable; }
+    public boolean isSigned(int pos) { return true; }
 
 
     // PARAMETER FUNCTIONS //////////////////////////////////////////
