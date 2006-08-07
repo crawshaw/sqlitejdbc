@@ -75,6 +75,7 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
 
 
     public int findColumn(String col) throws SQLException {
+        checkRS();
         for (int i=0; i < cols.length; i++)
             if (col.equalsIgnoreCase(cols[i])) return i+1;
         throw new SQLException("no such column: '"+col+"'");
@@ -283,7 +284,11 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
     public String getColumnClassName(int col) throws SQLException {
         checkCol(col); throw new SQLException("NYI"); }
     public int getColumnCount() throws SQLException {
-        checkOpen(); return cols.length; }
+        checkOpen();
+        if (colsMeta == null) throw new IllegalStateException(
+            "SQLite JDBC: inconsistent internal state");
+        return colsMeta.length;
+    }
     public int getColumnDisplaySize(int col) throws SQLException {
         return Integer.MAX_VALUE; }
     public String getColumnLabel(int col) throws SQLException {
