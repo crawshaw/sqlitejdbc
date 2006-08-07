@@ -23,11 +23,16 @@ ifeq ($(arch),Power Macintosh) # OS X gives funny result for 'uname -m'
 arch := powerpc
 endif
 
+jni_md := $(shell find $(JAVA_HOME) -name jni_md.h)
+ifneq ($(jni_md),)
+jni_include := $(shell dirname $(jni_md))
+endif
+
 # Generic Variables, used if no $(os) is given ######################
 
 Default_CC        := gcc
 Default_STRIP     := strip
-Default_CCFLAGS   := -I$(JAVA_HOME)/include -O
+Default_CCFLAGS   := -I$(JAVA_HOME)/include -I$(jni_include) -O
 Default_LINKFLAGS := -shared
 Default_LIBNAME   := libsqlitejdbc.so
 
