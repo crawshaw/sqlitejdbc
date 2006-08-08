@@ -1,6 +1,7 @@
 /* Copyright 2006 David Crawshaw, see LICENSE file for licensing [BSD]. */
 package org.sqlite;
 
+import java.net.URL;
 import java.sql.SQLException;
 
 /** This class provides a thin JNI layer over the SQLite3 C API.
@@ -14,7 +15,14 @@ class DB implements Codes
     long pointer = 0;
 
     static {
-        System.loadLibrary("sqlitejdbc");
+        URL url = ClassLoader.getSystemResource(
+            System.mapLibraryName("sqlitejdbc"));
+
+        if (url == null || "".equals(url.getFile()))
+            System.loadLibrary("sqlitejdbc");  // load from java.library.path
+        else
+            System.load(url.getFile());        // load from classpath
+
         init();
     }
 
