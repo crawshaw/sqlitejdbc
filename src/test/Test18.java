@@ -20,8 +20,19 @@ public class Test18 implements Test.Case
             "select c1, c2, c3 from test18;");
 
         if (prep.getMetaData().getColumnCount() != 3) {
-            error = "bad prep column count"; return false;
-        }
+            error = "bad prep column count"; return false; }
+        if (!"c1".equals(prep.getMetaData().getColumnName(1))) {
+            error = "bad prep column 1 name"; return false; }
+        if (!"c2".equals(prep.getMetaData().getColumnName(2))) {
+            error = "bad prep column 2 name"; return false; }
+        if (!"c3".equals(prep.getMetaData().getColumnName(3))) {
+            error = "bad prep column 3 name"; return false; }
+        if (prep.getMetaData().getColumnType(1) != Types.VARCHAR) {
+            error = "bad prep column 1 type"; return false; }
+        if (prep.getMetaData().getColumnType(2) != Types.VARCHAR) {
+            error = "bad prep column 2 type"; return false; }
+        if (prep.getMetaData().getColumnType(3) != Types.VARCHAR) {
+            error = "bad prep column 3 type"; return false; }
 
         ResultSet rs = prep.executeQuery();
         if (rs.getMetaData().getColumnCount() != 3) {
