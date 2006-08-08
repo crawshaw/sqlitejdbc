@@ -60,20 +60,30 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
     /** Returns true if this Statement is an currently an active ResultSet. */
     protected final boolean isRS() { return cols != null; }
 
-    private void checkCol(int col) throws SQLException {
-        checkRS();
-        if (col < 1 || col > cols.length) throw new SQLException(
-            "column " + col + " out of bounds [1," + cols.length + "]");
+    // takes col in [1,x] form, returns in [0,x-1] form
+    private int checkCol(int col) throws SQLException {
+        checkOpen();
+        if (colsMeta == null) throw new IllegalStateException(
+            "SQLite JDBC: inconsistent internal state");
+        if (col < 1 || col > colsMeta.length) throw new SQLException(
+            "column " + col + " out of bounds [1," + colsMeta.length + "]");
+        return --col;
     }
+
+    // takes col in [1,x] form, marks it as last accessed and returns [0,x-1]
+    private int markCol(int col) throws SQLException {
+        checkRS(); checkCol(col); lastCol = col; return --col;
+    }
+
     private void checkMeta() throws SQLException {
-        checkRS();
+        checkCol(1);
         if (meta == null) meta = db.column_metadata(pointer, cols);
     }
-    private void markCol(int col) throws SQLException {
-        checkCol(col); lastCol = col;
-    }
 
 
+    // ResultSet Functions //////////////////////////////////////////
+
+    // returns col in [1,x] form
     public int findColumn(String col) throws SQLException {
         checkRS();
         for (int i=0; i < cols.length; i++)
@@ -155,8 +165,9 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
     public void clearWarnings() throws SQLException {}
 
     public boolean wasNull() throws SQLException {
-        checkCol(lastCol);
-        return db.column_text(pointer, lastCol) == null; }
+        // TODO: optimise
+        return db.column_text(pointer, markCol(lastCol)) == null;
+    }
 
 
     // DATA ACCESS FUNCTIONS ////////////////////////////////////////
@@ -194,7 +205,7 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
     public byte getByte(String col) throws SQLException {
         return getByte(findColumn(col)); }
     public byte[] getBytes(int col) throws SQLException {
-        markCol(col); return db.column_blob(pointer, col - 1); }
+        return db.column_blob(pointer, markCol(col)); }
     public byte[] getBytes(String col) throws SQLException {
         return getBytes(findColumn(col)); }
     public Reader getCharacterStream(int col) throws SQLException {
@@ -214,20 +225,19 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
     public Date getDate(String col, Calendar cal) throws SQLException {
         return getDate(findColumn(col), cal); }
     public double getDouble(int col) throws SQLException {
-        markCol(col); return db.column_double(pointer, col - 1); }
+        return db.column_double(pointer, markCol(col)); }
     public double getDouble(String col) throws SQLException {
         return getDouble(findColumn(col)); }
     public float getFloat(int col) throws SQLException {
-        markCol(col);
-        return Float.parseFloat(db.column_text(pointer, col - 1)); }
+        return Float.parseFloat(db.column_text(pointer, markCol(col))); }
     public float getFloat(String col) throws SQLException {
         return getFloat(findColumn(col)); }
     public int getInt(int col) throws SQLException {
-        markCol(col); return db.column_int(pointer, col - 1); }
+        return db.column_int(pointer, markCol(col)); }
     public int getInt(String col) throws SQLException {
         return getInt(findColumn(col)); }
     public long getLong(int col) throws SQLException {
-        markCol(col); return db.column_long(pointer, col - 1); }
+        return db.column_long(pointer, markCol(col)); }
     public long getLong(String col) throws SQLException {
         return getLong(findColumn(col)); }
     public Object getObject(int col) throws SQLException {
@@ -248,7 +258,7 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
         return getShort(findColumn(col)); }
 
     public String getString(int col) throws SQLException {
-        markCol(col); return db.column_text(pointer, col - 1); }
+        return db.column_text(pointer, markCol(col)); }
     public String getString(String col) throws SQLException {
         return getString(findColumn(col)); }
     public Time getTime(int col) throws SQLException {
@@ -279,25 +289,24 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
 
     // ResultSetMetaData Functions //////////////////////////////////
 
+    // we do not need to check the RS is open, only that colsMeta
+    // is not null, done with checkCol(int).
+
     public String getCatalogName(int col) throws SQLException {
-        checkCol(col); return db.column_table_name(pointer, col - 1); }
+        return db.column_table_name(pointer, checkCol(col)); }
     public String getColumnClassName(int col) throws SQLException {
         checkCol(col); throw new SQLException("NYI"); }
     public int getColumnCount() throws SQLException {
-        checkOpen();
-        if (colsMeta == null) throw new IllegalStateException(
-            "SQLite JDBC: inconsistent internal state");
-        return colsMeta.length;
+        checkCol(1); return colsMeta.length;
     }
     public int getColumnDisplaySize(int col) throws SQLException {
         return Integer.MAX_VALUE; }
     public String getColumnLabel(int col) throws SQLException {
         return getColumnName(col); }
     public String getColumnName(int col) throws SQLException {
-        checkCol(col); return db.column_name(pointer, col - 1); }
+        return db.column_name(pointer, checkCol(col)); }
     public int getColumnType(int col) throws SQLException {
-        checkCol(col);
-        switch (db.column_type(pointer, col - 1)) {
+        switch (db.column_type(pointer, checkCol(col))) {
             case SQLITE_INTEGER: return Types.INTEGER;
             case SQLITE_FLOAT:   return Types.FLOAT;
             case SQLITE_BLOB:    return Types.BLOB;
@@ -308,19 +317,20 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
         }
     }
     public String getColumnTypeName(int col) throws SQLException {
-        checkOpen(); return db.column_decltype(pointer, col - 1);
+        return db.column_decltype(pointer, checkCol(col));
     }
     public int getPrecision(int col) throws SQLException { return 0; } // FIXME
     public int getScale(int col) throws SQLException { return 0; }
     public String getSchemaName(int col) throws SQLException {
         throw new SQLException("NYI"); } 
     public String getTableName(int col) throws SQLException {
-        checkOpen(); return db.column_table_name(pointer, col - 1); }
+        return db.column_table_name(pointer, checkCol(col)); }
     public int isNullable(int col) throws SQLException {
-        checkMeta(); return meta[col - 1][1] ? columnNoNulls: columnNullable;
+        checkMeta();
+        return meta[checkCol(col)][1] ? columnNoNulls: columnNullable;
     }
     public boolean isAutoIncrement(int col) throws SQLException {
-        checkMeta(); return meta[col - 1][2]; }
+        checkMeta(); return meta[checkCol(col)][2]; }
     public boolean isCaseSensitive(int col) throws SQLException { return true; }
     public boolean isCurrency(int col) throws SQLException { return false; }
     public boolean isDefinitelyWritable(int col) throws SQLException {
