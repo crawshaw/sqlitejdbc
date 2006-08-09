@@ -16,10 +16,11 @@ class DB implements Codes
 
     static {
         String libpath = System.getProperty("org.sqlite.lib.path");
+        String libname = System.getProperty("org.sqlite.lib.name");
+        if (libname == null) libname = System.mapLibraryName("sqlitejdbc");
 
         if (libpath != null) {
             try {
-                String libname = System.mapLibraryName("sqlitejdbc");
                 System.load(new File(libpath, libname).getAbsolutePath());
             } catch (UnsatisfiedLinkError e) {
                 throw new RuntimeException(
