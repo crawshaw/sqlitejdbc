@@ -24,9 +24,13 @@ Reference the driver in your code:
 
 And call your program with the driver's JAR file in the classpath
 and the C library in the librarypath. E.g.
-    java -cp lib/yourprog.jar lib/sqlitejdbc.jar \
+    java -cp lib/sqlitejdbc.jar \
         -Djava.library.path=lib \
         yourprog.Main
+
+Alternatively, if you wish to load the native library at runtime,
+set the system property "org.sqlite.lib.path" to the directory
+containing the library.
 
 For a memory database, use a URL without a file name:
     Connection conn = DriverManager.getConnection("jdbc:sqlite:");
@@ -61,7 +65,7 @@ doesn't lend itself that way, or I haven't got around to it yet.
 
 
 -- COMPILING --------------------------------------------------------
-In short, make sure you set $JAVA_HOME and have gcc installed, then:
+Install gcc, gnu make, set your $JAVA_HOME and type:
     $ make
 
 On a Unix system, this should compile the driver for your
