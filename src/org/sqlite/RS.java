@@ -23,12 +23,12 @@ import java.util.Map;
  *
  * As a result of this odd arrangement, Stmt and PrepStmt must
  * extend RS:
- *     Object -- RS -- Stmt -- PrepStmt
+ *     Object -- Unused -- RS -- Stmt -- PrepStmt
  *
  * Such inheritance requires careful checking of the object state,
  * for which the check...() functions and isRS() function handle.
  */
-abstract class RS implements ResultSet, ResultSetMetaData, Codes
+abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
 {
     DB db;
 
@@ -172,30 +172,6 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
 
     // DATA ACCESS FUNCTIONS ////////////////////////////////////////
 
-    public Array getArray(int i) throws SQLException {
-        throw new SQLException("NYI"); }
-    public Array getArray(String col) throws SQLException {
-        return getArray(findColumn(col)); }
-    public InputStream getAsciiStream(int col) throws SQLException {
-        throw new SQLException("NYI"); }
-    public InputStream getAsciiStream(String col) throws SQLException {
-        return getAsciiStream(findColumn(col)); }
-    public BigDecimal getBigDecimal(int col) throws SQLException {
-        return getBigDecimal(col, 10); } // FIXME scale?
-    public BigDecimal getBigDecimal(int col, int scale) throws SQLException {
-        throw new SQLException("NYI"); }
-    public BigDecimal getBigDecimal(String col) throws SQLException {
-        return getBigDecimal(findColumn(col), 10); }
-    public BigDecimal getBigDecimal(String col, int scale) throws SQLException {
-        return getBigDecimal(findColumn(col), 10); }
-    public InputStream getBinaryStream(int col) throws SQLException {
-        throw new SQLException("NYI"); }
-    public InputStream getBinaryStream(String col) throws SQLException {
-        return getBinaryStream(findColumn(col)); }
-    public Blob getBlob(int col) throws SQLException {
-        throw new SQLException("NYI"); }
-    public Blob getBlob(String col) throws SQLException {
-        return getBlob(findColumn(col)); }
     public boolean getBoolean(int col) throws SQLException {
         return getInt(col) == 0 ? false : true; }
     public boolean getBoolean(String col) throws SQLException {
@@ -208,18 +184,10 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
         return db.column_blob(pointer, markCol(col)); }
     public byte[] getBytes(String col) throws SQLException {
         return getBytes(findColumn(col)); }
-    public Reader getCharacterStream(int col) throws SQLException {
-        throw new SQLException("NYI"); }
-    public Reader getCharacterStream(String col) throws SQLException {
-        return getCharacterStream(findColumn(col)); }
-    public Clob getClob(int col) throws SQLException {
-        throw new SQLException("NYI"); }
-    public Clob getClob(String col) throws SQLException {
-        return getClob(findColumn(col)); }
     public Date getDate(int col) throws SQLException {
         return getDate(col, Calendar.getInstance()); }
     public Date getDate(int col, Calendar cal) throws SQLException {
-        throw new SQLException("NYI"); }
+        throw new SQLException("NYI"); } // TODO
     public Date getDate(String col) throws SQLException {
         return getDate(findColumn(col), Calendar.getInstance()); }
     public Date getDate(String col, Calendar cal) throws SQLException {
@@ -240,18 +208,6 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
         return db.column_long(pointer, markCol(col)); }
     public long getLong(String col) throws SQLException {
         return getLong(findColumn(col)); }
-    public Object getObject(int col) throws SQLException {
-        return getObject(col, null); }
-    public Object getObject(int col, Map map) throws SQLException {
-        throw new SQLException("NYI"); }
-    public Object getObject(String col) throws SQLException {
-        return getObject(findColumn(col)); }
-    public Object getObject(String col, Map map) throws SQLException {
-        return getObject(findColumn(col), map); }
-    public Ref getRef(int i) throws SQLException {
-        throw new SQLException("NYI"); }
-    public Ref getRef(String col) throws SQLException {
-        return getRef(findColumn(col)); }
     public short getShort(int col) throws SQLException {
         return (short)getInt(col); }
     public short getShort(String col) throws SQLException {
@@ -261,10 +217,11 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
         return db.column_text(pointer, markCol(col)); }
     public String getString(String col) throws SQLException {
         return getString(findColumn(col)); }
+
     public Time getTime(int col) throws SQLException {
         return getTime(col, Calendar.getInstance()); }
     public Time getTime(int col, Calendar cal) throws SQLException {
-        throw new SQLException("NYI"); }
+        throw new SQLException("NYI"); } // TODO
     public Time getTime(String col) throws SQLException {
         return getTime(findColumn(col)); }
     public Time getTime(String col, Calendar cal) throws SQLException {
@@ -272,19 +229,11 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
     public Timestamp getTimestamp(int col) throws SQLException {
         return getTimestamp(col, Calendar.getInstance()); }
     public Timestamp getTimestamp(int col, Calendar cal) throws SQLException {
-        throw new SQLException("NYI"); }
+        throw new SQLException("NYI"); } // TODO
     public Timestamp getTimestamp(String col) throws SQLException {
         return getTimestamp(findColumn(col), Calendar.getInstance()); }
-    public Timestamp getTimestamp(String col, Calendar cal) throws SQLException {
-        return getTimestamp(findColumn(col), cal); }
-    public InputStream getUnicodeStream(int col) throws SQLException {
-        throw new SQLException("NYI"); }
-    public InputStream getUnicodeStream(String col) throws SQLException {
-        return getUnicodeStream(findColumn(col)); }
-    public URL getURL(int col) throws SQLException {
-        throw new SQLException("NYI"); }
-    public URL getURL(String col) throws SQLException {
-        return getURL(findColumn(col)); }
+    public Timestamp getTimestamp(String c, Calendar ca) throws SQLException {
+        return getTimestamp(findColumn(c), ca); }
 
 
     // ResultSetMetaData Functions //////////////////////////////////
@@ -343,138 +292,7 @@ abstract class RS implements ResultSet, ResultSetMetaData, Codes
     public int getConcurrency() throws SQLException { return CONCUR_READ_ONLY; }
 
 
-    // UNUSED FUNCTIONS /////////////////////////////////////////////
-
     public boolean rowDeleted()  throws SQLException { return false; }
     public boolean rowInserted() throws SQLException { return false; }
     public boolean rowUpdated()  throws SQLException { return false; }
-
-    public void insertRow() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public void moveToCurrentRow() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public void moveToInsertRow() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public boolean last() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public boolean previous() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public boolean relative(int rows) throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public boolean absolute(int row) throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public void afterLast() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public void beforeFirst() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-    public void cancelRowUpdates() throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void deleteRow() throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public boolean first() throws SQLException {
-        throw new SQLException("ResultSet is TYPE_FORWARD_ONLY"); }
-
-    public void updateArray(int col, Array x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateArray(String col, Array x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateAsciiStream(int col, InputStream x, int l)
-            throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateAsciiStream(String col, InputStream x, int l)
-            throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBigDecimal(int col, BigDecimal x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBigDecimal(String col, BigDecimal x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBinaryStream(int c, InputStream x, int l)
-            throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBinaryStream(String c, InputStream x, int l)
-            throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBlob(int col, Blob x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBlob(String col, Blob x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBoolean(int col, boolean x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBoolean(String col, boolean x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateByte(int col, byte x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateByte(String col, byte x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBytes(int col, byte[] x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateBytes(String col, byte[] x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateCharacterStream(int c, Reader x, int l)
-            throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateCharacterStream(String c, Reader r, int l)
-            throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateClob(int col, Clob x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateClob(String col, Clob x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateDate(int col, Date x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateDate(String col, Date x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateDouble(int col, double x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateDouble(String col, double x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateFloat(int col, float x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateFloat(String col, float x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateInt(int col, int x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateInt(String col, int x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateLong(int col, long x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateLong(String col, long x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateNull(int col) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateNull(String col) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateObject(int c, Object x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateObject(int c, Object x, int scale) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateObject(String col, Object x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateObject(String c, Object x, int s) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateRef(int col, Ref x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateRef(String c, Ref x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateRow() throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateShort(int c, short x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateShort(String c, short x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateString(int c, String x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateString(String c, String x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateTime(int c, Time x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateTime(String c, Time x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateTimestamp(int c, Timestamp x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-    public void updateTimestamp(String c, Timestamp x) throws SQLException {
-        throw new SQLException("unsupported by SQLite: updating a ResultSet"); }
-
-    public void refreshRow() throws SQLException {
-        throw new SQLException("unsupported by SQLite: refreshing rows"); }
 }

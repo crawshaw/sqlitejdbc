@@ -171,42 +171,21 @@ class Stmt extends RS implements Statement, Codes
     }
 
 
-    // TODO /////////////////////////////////////////////////////////
+    // Silly Functions //////////////////////////////////////////////
 
-    public int getMaxFieldSize() throws SQLException {
-        throw new SQLException("NYI"); }
-    public void setMaxFieldSize(int max) throws SQLException {
-        throw new SQLException("NYI"); }
+    public SQLWarning getWarnings() { return null; }
+    public void clearWarnings() {}
+    public void setCursorName(String name) {}
 
-    public int getFetchSize() throws SQLException {
-        throw new SQLException("NYI"); }
+    public int getFetchSize() throws SQLException { return 1; }
     public void setFetchSize(int rows) throws SQLException {
-        throw new SQLException("NYI"); }
-
-    public ResultSet getGeneratedKeys() throws SQLException {
-        throw new SQLException("NYI");} // FIXME: stupid, return empty RS
-
-    public boolean execute(String sql, int[] colinds) throws SQLException {
-        throw new SQLException("NYI: auto-generated keys"); }
-    public boolean execute(String sql, String[] colnames) throws SQLException {
-        throw new SQLException("NYI: auto-generated keys"); }
-    public int executeUpdate(String sql, int autoKeys) throws SQLException {
-        throw new SQLException("NYI: auto-generated keys"); }
-    public int executeUpdate(String sql, int[] colinds) throws SQLException {
-        throw new SQLException("NYI: auto-generated keys"); }
-    public int executeUpdate(String sql, String[] cols) throws SQLException {
-        throw new SQLException("NYI: auto-generated keys"); }
-    public boolean execute(String sql, int autokeys)throws SQLException {
-        if (autokeys != Statement.NO_GENERATED_KEYS) throw new SQLException(
-            "not yet implemented: returning auto-generated keys"); // FIXME
-        return execute(sql);
+        if (0 >= rows || rows > getMaxRows()) throw new SQLException(
+            "fetch size "+rows+" out of range [0,"+getMaxRows());
     }
 
-
-    // UNUSED FUNCTIONS /////////////////////////////////////////////
-
-    public SQLWarning getWarnings() throws SQLException { return null; }
-    public void clearWarnings() throws SQLException { }
-    public void setCursorName(String name) throws SQLException {}
-    public void setEscapeProcessing(boolean enable) throws SQLException { }
+    public int getMaxFieldSize() throws SQLException { return 0; }
+    public void setMaxFieldSize(int max) throws SQLException {
+        if (max < 0) throw new SQLException(
+            "max field size "+max+" cannot be negative");
+    }
 }

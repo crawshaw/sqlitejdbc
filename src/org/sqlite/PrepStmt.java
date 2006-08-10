@@ -64,11 +64,6 @@ final class PrepStmt extends Stmt
 
     // PARAMETER FUNCTIONS //////////////////////////////////////////
 
-    public void setArray(int i, Array x) throws SQLException { throw new SQLException("NYI"); }
-    public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException { throw new SQLException("NYI"); }
-    public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException { throw new SQLException("NYI"); }
-    public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException { throw new SQLException("NYI"); }
-    public void setBlob(int i, Blob x) throws SQLException { throw new SQLException("NYI"); }
     public void setBoolean(int pos, boolean value) throws SQLException {
         setInt(pos, value ? 1 : 0); }
     public void setByte(int pos, byte value) throws SQLException {
@@ -76,10 +71,6 @@ final class PrepStmt extends Stmt
     public void setBytes(int pos, byte[] value) throws SQLException {
         checkOpen();
         if (db.bind_blob(pointer, pos, value) != SQLITE_OK) throw db.ex(); }
-    public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException { throw new SQLException("NYI"); }
-    public void setClob(int i, Clob x) throws SQLException { throw new SQLException("NYI"); }
-    public void setDate(int parameterIndex, Date x) throws SQLException { throw new SQLException("NYI"); }
-    public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException { throw new SQLException("NYI"); }
     public void setDouble(int pos, double value) throws SQLException {
         checkOpen();
         if (db.bind_double(pointer, pos, value) != SQLITE_OK) throw db.ex();
@@ -110,26 +101,32 @@ final class PrepStmt extends Stmt
         if (db.bind_text(pointer, pos, value.toString()) != SQLITE_OK)
             throw db.ex();
     }
-    public void setObject(int pos, Object value, int type) throws SQLException {
-        setObject(pos, value);
-    }
-    public void setObject(int pos, Object v, int t, int s) throws SQLException {
-        setObject(pos, v);
-    }
-    public void setRef(int i, Ref x) throws SQLException { throw new SQLException("NYI"); }
+    public void setObject(int p, Object v, int t) throws SQLException {
+        setObject(p, v); }
+    public void setObject(int p, Object v, int t, int s) throws SQLException {
+        setObject(p, v); }
     public void setShort(int pos, short value) throws SQLException {
         setInt(pos, (int)value); }
     public void setString(int pos, String value) throws SQLException {
         checkOpen();
         if (db.bind_text(pointer, pos, value) != SQLITE_OK) throw db.ex();
     }
-    public void setTime(int parameterIndex, Time x) throws SQLException { throw new SQLException("NYI"); }
-    public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException { throw new SQLException("NYI"); }
-    public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException { throw new SQLException("NYI"); }
-    public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException { throw new SQLException("NYI"); }
-    public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException { throw new SQLException("NYI"); }
-    public void setURL(int parameterIndex, URL x) throws SQLException { throw new SQLException("NYI"); }
 
+
+    // TODO
+
+    public void setDate(int pos, Date x)
+        throws SQLException { throw new SQLException("NYI"); }
+    public void setDate(int pos, Date x, Calendar cal)
+        throws SQLException { throw new SQLException("NYI"); }
+    public void setTime(int pos, Time x)
+        throws SQLException { throw new SQLException("NYI"); }
+    public void setTime(int pos, Time x, Calendar cal)
+        throws SQLException { throw new SQLException("NYI"); }
+    public void setTimestamp(int pos, Timestamp x)
+        throws SQLException { throw new SQLException("NYI"); }
+    public void setTimestamp(int pos, Timestamp x, Calendar cal)
+        throws SQLException { throw new SQLException("NYI"); }
 
     public void addBatch() throws SQLException {
         throw new SQLException("NYI"); }
@@ -137,28 +134,4 @@ final class PrepStmt extends Stmt
         throw new SQLException("NYI"); }
     public int[] executeBatch() throws SQLException {
         throw new SQLException("NYI"); }
-
-
-    // UNUSED FUNCTIONS /////////////////////////////////////////////
-
-    public void addBatch(String sql) throws SQLException {
-        throw new SQLException("cannot exec batch on PreparedStatement"); }
-    public boolean execute(String sql) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public boolean execute(String sql, int autoKeys)throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public boolean execute(String sql, int[] colinds) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public boolean execute(String sql, String[] colnames) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public ResultSet executeQuery(String sql) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public int executeUpdate(String sql) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public int executeUpdate(String sql, int autoKeys) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public int executeUpdate(String sql, int[] colinds) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
-    public int executeUpdate(String sql, String[] cols) throws SQLException {
-        throw new SQLException("cannot exec with params on PreparedStatement"); }
 }
