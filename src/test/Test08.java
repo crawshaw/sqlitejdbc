@@ -10,9 +10,14 @@ public class Test08 implements Test.Case
     public boolean run() throws Exception {
         int res;
         Class.forName("org.sqlite.JDBC");
-        Connection conn = DriverManager.getConnection(
-            "jdbc:sqlite:build/test/test.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:");
         Statement stat = conn.createStatement();
+        stat.executeUpdate(
+            "create table People (pid integer primary key autoincrement, "
+            + " firstname string, surname string, dob date);");
+        stat.executeUpdate(
+            "insert into people values (null, 'Mohandas', 'Gandhi', "
+            + " '1869-10-02');");
 
         ResultSet rs;
         String msg;
@@ -77,6 +82,26 @@ public class Test08 implements Test.Case
         }
         if (meta.isNullable(3) != meta.columnNullable) {
             error = "expected col 3 to take nulls"; return false;
+        }
+
+        rs.close();
+
+        rs = stat.executeQuery("select * from people;");
+        meta = rs.getMetaData();
+        if (meta.getColumnCount() != 4) {
+            error = "expected 4 cols in people *"; return false;
+        }
+        if (!"pid".equals(meta.getColumnName(1))) {
+            error = "bad * 1 name: " + meta.getColumnName(1); return false;
+        }
+        if (!"firstname".equals(meta.getColumnName(2))) {
+            error = "bad * 2 name: " + meta.getColumnName(2); return false;
+        }
+        if (!"surname".equals(meta.getColumnName(3))) {
+            error = "bad * 3 name: " + meta.getColumnName(3); return false;
+        }
+        if (!"dob".equals(meta.getColumnName(4))) {
+            error = "bad * 3 name: " + meta.getColumnName(4); return false;
         }
 
         rs.close();
