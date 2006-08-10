@@ -28,11 +28,7 @@ class DB implements Codes
                     + " a path containing the SQLiteJDBC native library", e);
             }
         } else System.loadLibrary("sqlitejdbc");
-
-        init();
     }
-
-    private static native void init();
 
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////

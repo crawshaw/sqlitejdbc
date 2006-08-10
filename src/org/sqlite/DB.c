@@ -4,7 +4,6 @@
 #include "DB.h"
 #include "sqlite3.h"
 
-static jclass    CLS_DB           = 0;
 static jfieldID  JNI_DB_pointer   = 0;
 static jmethodID MTH_throwex      = 0;
 static jmethodID MTH_throwexmsg   = 0;
@@ -54,13 +53,27 @@ static jsize jstrlen(const jchar *str)
 }
 
 
-JNIEXPORT void JNICALL Java_org_sqlite_DB_init(JNIEnv *env, jclass cls)
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 {
-    CLS_DB = (*env)->FindClass(env, "org/sqlite/DB");
-    JNI_DB_pointer = (*env)->GetFieldID( env, CLS_DB, "pointer", "J");
-    MTH_throwex    = (*env)->GetMethodID(env, CLS_DB, "throwex", "()V");
-    MTH_throwexmsg = (*env)->GetMethodID(env, CLS_DB, "throwex",
+    JNIEnv* env = 0;
+    jclass dbclass = 0;
+
+    if (JNI_OK != (*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_2))
+        return JNI_ERR;
+
+    dbclass = (*env)->FindClass(env, "org/sqlite/DB");
+    if (!dbclass) return JNI_ERR;
+
+    JNI_DB_pointer = (*env)->GetFieldID( env, dbclass, "pointer", "J");
+    MTH_throwex    = (*env)->GetMethodID(env, dbclass, "throwex", "()V");
+    MTH_throwexmsg = (*env)->GetMethodID(env, dbclass, "throwex",
         "(Ljava/lang/String;)V");
+
+    if (!JNI_DB_pointer || !MTH_throwex || !MTH_throwexmsg) return JNI_ERR;
+
+    (*env)->DeleteLocalRef(env, dbclass);
+
+    return JNI_VERSION_1_2;
 }
 
 JNIEXPORT void JNICALL Java_org_sqlite_DB_open(
