@@ -30,7 +30,9 @@ and the C library in the librarypath. E.g.
 
 Alternatively, if you wish to load the native library at runtime,
 set the system property "org.sqlite.lib.path" to the directory
-containing the library.
+containing the library. For bundling several binaries, the property
+"org.sqlite.lib.name" can be used if the path property is set. This
+is used as the name of the native library to load.
 
 For a memory database, use a URL without a file name:
     Connection conn = DriverManager.getConnection("jdbc:sqlite:");
