@@ -134,6 +134,12 @@ build/test/test.db:
 test: compile build/test/test.db
 	java -Djava.library.path=build/$(target) -cp build test.Test
 
+speed: compile build/test/test.db
+	java -Djava.library.path=build/$(target) -cp build test.Speed
+
+speedfull: compile build/test/test.db
+	java -Djava.library.path=build/$(target) -cp build test.Speed full
+
 clean:
 	rm -rf build
 	rm -rf dist
