@@ -386,35 +386,44 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1names(
 JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1metadata(
         JNIEnv *env, jobject this, jlong stmt, jobjectArray colNames)
 {
-    const char *zDbName = 0; // FIXME ?
     const char *zTableName;
     const char *zColumnName;
+    int pNotNull, pPrimaryKey, pAutoinc;
 
-    char const *pzDataType;   /* OUTPUT: Declared data type */
-    char const *pzCollSeq;    /* OUTPUT: Collation sequence name */
-    int pNotNull;             /* OUTPUT: True if NOT NULL constraint exists */
-    int pPrimaryKey;          /* OUTPUT: True if column part of PK */
-    int pAutoinc;             /* OUTPUT: True if colums is auto-increment */
+    int i, length;
+    jobjectArray array;
 
-    int i;
-    int length = (*env)->GetArrayLength(env, colNames);
-    jobjectArray array = (*env)->NewObjectArray(
-        env, length, (*env)->FindClass(env, "[Z"), NULL) ;
-
-    jboolean* colDataRaw = (jboolean*)malloc(3 * sizeof(jboolean));
     jstring colName;
     jbooleanArray colData;
+    jboolean* colDataRaw;
+
+    sqlite3 *db;
+    sqlite3_stmt *dbstmt;
+
+
+    db = gethandle(env, this);
+    dbstmt = toref(stmt);
+
+    length = (*env)->GetArrayLength(env, colNames);
+
+    array = (*env)->NewObjectArray(
+        env, length, (*env)->FindClass(env, "[Z"), NULL) ;
+    if (array == NULL) exit(1); // out-of-memory
+
+    colDataRaw = (jboolean*)malloc(3 * sizeof(jboolean));
+    if (colDataRaw == NULL) exit(1); // out-of-memory
+
 
     for (i = 0; i < length; i++) {
         // load passed column name and table name
-        colName     = (jstring) (*env)->GetObjectArrayElement(env, colNames, i);
+        colName     = (jstring)(*env)->GetObjectArrayElement(env, colNames, i);
         zColumnName = (*env)->GetStringUTFChars(env, colName, 0);
-        zTableName  = sqlite3_column_table_name(toref(stmt), i);
+        zTableName  = sqlite3_column_table_name(dbstmt, i);
 
         // request metadata for column and load into output variables
         sqlite3_table_column_metadata(
-            gethandle(env, this), zDbName, zTableName, zColumnName,
-            &pzDataType, &pzCollSeq, &pNotNull, &pPrimaryKey, &pAutoinc
+            db, 0, zTableName, zColumnName,
+            0, 0, &pNotNull, &pPrimaryKey, &pAutoinc
         );
 
         (*env)->ReleaseStringUTFChars(env, colName, zColumnName);
@@ -425,6 +434,8 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1metadata(
         colDataRaw[2] = pAutoinc;
 
         colData = (*env)->NewBooleanArray(env, 3);
+        if (colData == NULL) exit(1); // out-of-memory
+
         (*env)->SetBooleanArrayRegion(env, colData, 0, 3, colDataRaw);
         (*env)->SetObjectArrayElement(env, array, i, colData);
     }
