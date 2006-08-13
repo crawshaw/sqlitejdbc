@@ -176,14 +176,17 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getInt(col) == 0 ? false : true; }
     public boolean getBoolean(String col) throws SQLException {
         return getBoolean(findColumn(col)); }
+
     public byte getByte(int col) throws SQLException {
         return (byte)getInt(col); }
     public byte getByte(String col) throws SQLException {
         return getByte(findColumn(col)); }
+
     public byte[] getBytes(int col) throws SQLException {
         return db.column_blob(pointer, markCol(col)); }
     public byte[] getBytes(String col) throws SQLException {
         return getBytes(findColumn(col)); }
+
     public Date getDate(int col) throws SQLException {
         return getDate(col, Calendar.getInstance()); }
     public Date getDate(int col, Calendar cal) throws SQLException {
@@ -192,22 +195,27 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getDate(findColumn(col), Calendar.getInstance()); }
     public Date getDate(String col, Calendar cal) throws SQLException {
         return getDate(findColumn(col), cal); }
+
     public double getDouble(int col) throws SQLException {
         return db.column_double(pointer, markCol(col)); }
     public double getDouble(String col) throws SQLException {
         return getDouble(findColumn(col)); }
+
     public float getFloat(int col) throws SQLException {
-        return Float.parseFloat(db.column_text(pointer, markCol(col))); }
+        return (float)db.column_double(pointer, markCol(col)); }
     public float getFloat(String col) throws SQLException {
         return getFloat(findColumn(col)); }
+
     public int getInt(int col) throws SQLException {
         return db.column_int(pointer, markCol(col)); }
     public int getInt(String col) throws SQLException {
         return getInt(findColumn(col)); }
+
     public long getLong(int col) throws SQLException {
         return db.column_long(pointer, markCol(col)); }
     public long getLong(String col) throws SQLException {
         return getLong(findColumn(col)); }
+
     public short getShort(int col) throws SQLException {
         return (short)getInt(col); }
     public short getShort(String col) throws SQLException {
@@ -226,6 +234,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getTime(findColumn(col)); }
     public Time getTime(String col, Calendar cal) throws SQLException {
         return getTime(findColumn(col), cal); }
+
     public Timestamp getTimestamp(int col) throws SQLException {
         return getTimestamp(col, Calendar.getInstance()); }
     public Timestamp getTimestamp(int col, Calendar cal) throws SQLException {

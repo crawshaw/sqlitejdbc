@@ -76,9 +76,7 @@ final class PrepStmt extends Stmt
         if (db.bind_double(pointer, pos, value) != SQLITE_OK) throw db.ex();
     }
     public void setFloat(int pos, float value) throws SQLException {
-        checkOpen();
-        if (db.bind_text(pointer, pos, Float.toString(value)) != SQLITE_OK)
-            throw db.ex();
+        setDouble(pos, value);
     }
     public void setInt(int pos, int value) throws SQLException {
         checkOpen();
