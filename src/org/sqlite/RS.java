@@ -244,6 +244,19 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public Timestamp getTimestamp(String c, Calendar ca) throws SQLException {
         return getTimestamp(findColumn(c), ca); }
 
+    public Object getObject(int col) throws SQLException {
+        switch (db.column_type(pointer, checkCol(col))) {
+            case SQLITE_INTEGER: return new Integer(getInt(col));
+            case SQLITE_FLOAT:   return new Double(getDouble(col));
+            case SQLITE_BLOB:    return getBytes(col);
+            case SQLITE_NULL:    return null;
+            case SQLITE_TEXT:
+            default:
+                return getString(col);
+        }
+    }
+    public Object getObject(String col) throws SQLException {
+        return getObject(findColumn(col)); }
 
     // ResultSetMetaData Functions //////////////////////////////////
 

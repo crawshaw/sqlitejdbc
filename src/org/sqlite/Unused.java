@@ -93,11 +93,7 @@ abstract class Unused
         throws SQLException { throw unused(); }
     public Clob getClob(String col)
         throws SQLException { throw unused(); }
-    public Object getObject(int col)
-        throws SQLException { throw unused(); }
     public Object getObject(int col, Map map)
-        throws SQLException { throw unused(); }
-    public Object getObject(String col)
         throws SQLException { throw unused(); }
     public Object getObject(String col, Map map)
         throws SQLException { throw unused(); }
