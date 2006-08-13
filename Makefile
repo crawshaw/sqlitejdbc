@@ -70,6 +70,7 @@ java_classes := $(java_sources:src/%.java=build/%.class)
 
 target    := $(os)-$(arch)
 VERSION   := $(shell cat VERSION)
+PNAME     := sqlitejdbc-v$(VERSION)
 LIPO      := powerpc-apple-darwin-lipo
 CC        := $($(os)_CC)
 STRIP     := $($(os)_STRIP)
@@ -95,10 +96,10 @@ compile: work/sqlite/$(target)/main.o $(java_classes)
 
 dist: compile
 	@mkdir -p dist
-	tar cfz dist/sqlitejdbc-v$(VERSION)-$(target).tgz README \
+	tar cfz dist/$(PNAME)-$(target).tgz README \
 	    -C build sqlitejdbc.jar -C $(target) $(LIBNAME)
 
-all:
+all: src-tgz
 	@make os=Linux arch=i386 dist
 	@make os=Win arch=i586 dist
 	@make os=Darwin arch=powerpc compile
@@ -108,12 +109,21 @@ all:
 	    build/Darwin-powerpc/libsqlitejdbc.jnilib \
 	    build/Darwin-i386/libsqlitejdbc.jnilib \
 	    -output build/Darwin-lipo/libsqlitejdbc.jnilib
-	tar cfz dist/sqlitejdbc-v$(VERSION)-Mac.tgz README \
+	tar cfz dist/-Mac.tgz README \
 	    -C build sqlitejdbc.jar -C Darwin-lipo libsqlitejdbc.jnilib
-	tar cfz dist/sqlitejdbc-v$(VERSION)-src.tgz \
-		Makefile README LICENSE VERSION src/org src/test
 	jar cfm dist/sqlitejdbc-test.jar src/test/manifest \
 	    -C build org -C build test
+
+src-tgz:
+	@mkdir -p dist
+	@mkdir -p work/$(PNAME)/src
+	cp Makefile work/$(PNAME)/.
+	cp README work/$(PNAME)/.
+	cp LICENSE work/$(PNAME)/.
+	cp VERSION work/$(PNAME)/.
+	cp -R src/org work/$(PNAME)/src/.
+	cp -R src/test work/$(PNAME)/src/.
+	cd work && tar cfz ../dist/$(PNAME)-src.tgz $(PNAME)
 
 work/sqlite-src.zip:
 	@mkdir -p work
