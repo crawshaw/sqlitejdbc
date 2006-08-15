@@ -127,7 +127,7 @@ src-tgz:
 
 work/sqlite-src.zip:
 	@mkdir -p work
-	wget -O work/sqlite-src.zip http://www.sqlite.org/sqlite-source-3_3_6.zip
+	wget -O work/sqlite-src.zip http://www.sqlite.org/sqlite-source-3_3_7.zip
 
 work/sqlite/%/main.o: work/sqlite-src.zip
 	mkdir -p work/sqlite/$*
@@ -135,7 +135,8 @@ work/sqlite/%/main.o: work/sqlite-src.zip
 	          unzip -qo ../../sqlite-src.zip; \
 	          mv shell.c shell.c.old; \
 	          mv tclsqlite.c tclsqlite.c.not; \
-	          $(CC) -c -O -DSQLITE_ENABLE_COLUMN_METADATA *.c)
+	          $(CC) -c -O -DSQLITE_ENABLE_COLUMN_METADATA \
+	                      -DSQLITE_OMIT_LOAD_EXTENSION *.c)
 
 build/test/test.db:
 	mkdir -p build/test

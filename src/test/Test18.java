@@ -27,11 +27,11 @@ public class Test18 implements Test.Case
             error = "bad prep column 2 name"; return false; }
         if (!"c3".equals(prep.getMetaData().getColumnName(3))) {
             error = "bad prep column 3 name"; return false; }
-        if (prep.getMetaData().getColumnType(1) != Types.VARCHAR) {
+        if (prep.getMetaData().getColumnType(1) != Types.INTEGER) {
             error = "bad prep column 1 type"; return false; }
-        if (prep.getMetaData().getColumnType(2) != Types.VARCHAR) {
+        if (prep.getMetaData().getColumnType(2) != Types.INTEGER) {
             error = "bad prep column 2 type"; return false; }
-        if (prep.getMetaData().getColumnType(3) != Types.VARCHAR) {
+        if (prep.getMetaData().getColumnType(3) != Types.INTEGER) {
             error = "bad prep column 3 type"; return false; }
 
         ResultSet rs = prep.executeQuery();
