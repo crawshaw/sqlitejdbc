@@ -109,7 +109,7 @@ all: src-tgz
 	    build/Darwin-powerpc/libsqlitejdbc.jnilib \
 	    build/Darwin-i386/libsqlitejdbc.jnilib \
 	    -output build/Darwin-lipo/libsqlitejdbc.jnilib
-	tar cfz dist/-Mac.tgz README \
+	tar cfz dist/$(PNAME)-Mac.tgz README \
 	    -C build sqlitejdbc.jar -C Darwin-lipo libsqlitejdbc.jnilib
 	jar cfm dist/sqlitejdbc-test.jar src/test/manifest \
 	    -C build org -C build test
