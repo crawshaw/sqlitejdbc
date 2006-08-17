@@ -149,6 +149,12 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_DB_errmsg(JNIEnv *env, jobject this)
     return (*env)->NewStringUTF(env, sqlite3_errmsg(gethandle(env, this)));
 }
 
+JNIEXPORT jstring JNICALL Java_org_sqlite_DB_libversion(
+        JNIEnv *env, jobject this)
+{
+    return (*env)->NewStringUTF(env, sqlite3_libversion());
+}
+
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_changes(
         JNIEnv *env, jobject this, jlong stmt)
 {

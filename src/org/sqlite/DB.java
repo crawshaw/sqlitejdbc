@@ -40,6 +40,7 @@ class DB implements Codes
     native synchronized void exec(String sql) throws SQLException;
     native synchronized long prepare(String sql) throws SQLException;
     native synchronized String errmsg();
+    native synchronized String libversion();
 
     native synchronized int changes(long stmt);
     native synchronized int finalize(long stmt);

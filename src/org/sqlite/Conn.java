@@ -9,6 +9,7 @@ class Conn implements Connection
 {
     private DB db = new DB();
     private Set stmts = Collections.synchronizedSet(new HashSet());
+    private MetaData meta = null;
     private boolean autoCommit = true;
     private int timeout = 0;
 
@@ -22,6 +23,7 @@ class Conn implements Connection
         timeout = ms;
         db.busy_timeout(ms);
     }
+    String libversion() { return db.libversion(); }
 
     private void checkOpen() throws SQLException {
         if (db == null)  throw new SQLException("database connection closed");
@@ -74,17 +76,27 @@ class Conn implements Connection
             "SQLite only supports CLOSE_CURSORS_AT_COMMIT");
     }
 
-    public int getTransactionIsolation() throws SQLException { throw new SQLException("NYI");}
-    public void setTransactionIsolation(int level) throws SQLException { throw new SQLException("NYI");}
+    public int getTransactionIsolation() { return TRANSACTION_SERIALIZABLE; }
+    public void setTransactionIsolation(int level) throws SQLException {
+        if (level != TRANSACTION_SERIALIZABLE) throw new SQLException(
+            "SQLite supports only TRANSACTION_SERIALIZABLE");
+    }
 
-    public Map getTypeMap() throws SQLException { throw new SQLException("NYI");}
-    public void setTypeMap(Map map) throws SQLException { throw new SQLException("NYI");}
+    public Map getTypeMap() throws SQLException
+        { throw new SQLException("not yet implemented");}
+    public void setTypeMap(Map map) throws SQLException
+        { throw new SQLException("not yet implemented");}
 
     public boolean isReadOnly() throws SQLException { return false; } // FIXME
-    public void setReadOnly(boolean ro) throws SQLException { throw new SQLException("NYI"); }
+    public void setReadOnly(boolean ro) throws SQLException
+        { throw new SQLException("not yet implemented"); }
 
-    public DatabaseMetaData getMetaData() throws SQLException { throw new SQLException("NYI");}
-    public String nativeSQL(String sql) throws SQLException { return sql; }
+    public DatabaseMetaData getMetaData() {
+        if (meta == null) meta = new MetaData(this);
+        return meta;
+    }
+
+    public String nativeSQL(String sql) { return sql; }
 
     public void clearWarnings() throws SQLException { }
     public SQLWarning getWarnings() throws SQLException { return null; }
