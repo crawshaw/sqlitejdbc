@@ -19,8 +19,10 @@ public class Test19 implements Test.Case
         DatabaseMetaData meta = conn.getMetaData();
         if (meta == null) { error = "expected meta data"; return false; }
 
+        ResultSet rs;
+
         // check getTables
-        ResultSet rs = meta.getTables(null, null, null, null);
+        rs = meta.getTables(null, null, null, null);
         if (rs == null) { error = "expected getTables RS"; return false; }
         if (!rs.next()) { error = "expected table"; return false; }
         if (!"test19".equals(rs.getString("TABLE_NAME"))) {
@@ -38,6 +40,14 @@ public class Test19 implements Test.Case
         if (!"VIEW".equals(rs.getString("TABLE_TYPE"))) {
             error = "bad view type"; return false; }
 
+        rs = meta.getTables(null, null, "bob", null);
+        if (rs.next()) { error = "unexpected results"; return false; }
+
+        rs = meta.getTables(null, null, "test19", null);
+        if (!rs.next()) { error = "results missing"; return false; }
+        if (rs.next()) { error = "unexpected second results"; return false; }
+
+
         // check getTableTypes
         rs = meta.getTableTypes();
         if (!rs.next()) { error = "expected type table"; return false; }
@@ -46,6 +56,16 @@ public class Test19 implements Test.Case
         if (!rs.next()) { error = "expected type view"; return false; }
         if (!"VIEW".equals(rs.getString("TABLE_TYPE"))) {
             error =" bad table type for 'view'"; return false; }
+
+        // check getTypeInfo
+        rs = meta.getTypeInfo();
+        String[] types = new String[] {
+            "BLOB", "INTEGER", "NULL", "REAL", "TEXT" };
+        for (int i=0; i < types.length; i++) {
+            if (!rs.next()) { error = "expected type " + i; return false; }
+            if (!types[i].equals(rs.getString("TYPE_NAME"))) {
+                error = "type " + i + " mismatch"; return false; }
+        }
 
         conn.close();
 
