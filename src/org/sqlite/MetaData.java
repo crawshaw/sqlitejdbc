@@ -7,6 +7,7 @@ class MetaData implements DatabaseMetaData
     private Conn conn;
     private PreparedStatement getTables = null;
     private PreparedStatement getTableTypes = null;
+    private PreparedStatement getTypeInfo = null;
 
     MetaData(Conn conn) { this.conn = conn; }
 
@@ -19,9 +20,11 @@ class MetaData implements DatabaseMetaData
         try {
             if (getTables != null) getTables.close();
             if (getTableTypes != null) getTableTypes.close();
+            if (getTypeInfo != null) getTypeInfo.close();
 
             getTables = null;
             getTableTypes = null;
+            getTypeInfo = null;
         } finally {
             conn = null;
         }
@@ -259,8 +262,41 @@ class MetaData implements DatabaseMetaData
         return getTableTypes.executeQuery();
     }
 
-    public ResultSet getTypeInfo()
-        throws SQLException { throw new SQLException("not yet implemented"); }
+    public ResultSet getTypeInfo() throws SQLException {
+        if (getTypeInfo == null) {
+            getTypeInfo = conn.prepareStatement(
+                  "select "
+                + "tn as TYPE_NAME, "
+                + "dt as DATA_TYPE, "
+                + "0 as PRECISION, "
+                + "null as LITERAL_PREFIX, "
+                + "null as LITERAL_SUFFIX, "
+                + "null as CREATE_PARAMS, "
+                + typeNullable + " as NULLABLE, "
+                + "1 as CASE_SENSITIVE, "
+                + typeSearchable + " as SEARCHABLE, "
+                + "0 as UNSIGNED_ATTRIBUTE, "
+                + "0 as FIXED_PREC_SCALE, "
+                + "0 as AUTO_INCREMENT, "
+                + "null as LOCAL_TYPE_NAME, "
+                + "0 as MINIMUM_SCALE, "
+                + "0 as MAXIMUM_SCALE, "
+                + "0 as SQL_DATA_TYPE, "
+                + "0 as SQL_DATETIME_SUB, "
+                + "10 as NUM_PREC_RADIX from ("
+                + "    select 'BLOB' as tn, " + Types.BLOB + " as dt union"
+                + "    select 'NULL' as tn, " + Types.NULL + " as dt union"
+                + "    select 'REAL' as tn, " + Types.REAL+ " as dt union"
+                + "    select 'TEXT' as tn, " + Types.VARCHAR + " as dt union"
+                + "    select 'INTEGER' as tn, "+ Types.INTEGER +" as dt"
+                + ") order by TYPE_NAME;"
+            );
+        }
+
+        getTypeInfo.clearParameters();
+        return getTypeInfo.executeQuery();
+    }
+
     public ResultSet getUDTs(String c, String s, String t, int[] types)
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getVersionColumns(String c, String s, String t)
