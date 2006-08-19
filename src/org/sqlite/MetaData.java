@@ -5,9 +5,14 @@ import java.sql.*;
 class MetaData implements DatabaseMetaData
 {
     private Conn conn;
-    private PreparedStatement getTables = null;
-    private PreparedStatement getTableTypes = null;
-    private PreparedStatement getTypeInfo = null;
+    private PreparedStatement
+        getTables = null,
+        getTableTypes = null,
+        getTypeInfo = null,
+        getCrossReference = null,
+        getCatalogs = null,
+        getSchemas = null,
+        getUDTs = null;
 
     MetaData(Conn conn) { this.conn = conn; }
 
@@ -21,10 +26,18 @@ class MetaData implements DatabaseMetaData
             if (getTables != null) getTables.close();
             if (getTableTypes != null) getTableTypes.close();
             if (getTypeInfo != null) getTypeInfo.close();
+            if (getCrossReference != null) getCrossReference.close();
+            if (getCatalogs != null) getCatalogs.close();
+            if (getSchemas != null) getSchemas.close();
+            if (getUDTs != null) getUDTs.close();
 
             getTables = null;
             getTableTypes = null;
             getTypeInfo = null;
+            getCrossReference = null;
+            getCatalogs = null;
+            getSchemas = null;
+            getUDTs = null;
         } finally {
             conn = null;
         }
@@ -192,18 +205,52 @@ class MetaData implements DatabaseMetaData
     public ResultSet getBestRowIdentifier(String c, String s, String t,
                                           int scope, boolean n)
         throws SQLException { throw new SQLException("not yet implemented"); }
-    public ResultSet getCatalogs()
-        throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getColumnPrivileges(String c, String s, String t,
                                          String colPat)
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getColumns(String c, String s, String t, String colPat)
         throws SQLException { throw new SQLException("not yet implemented"); }
+
     public ResultSet getCrossReference(String pc, String ps, String pt,
                                        String fc, String fs, String ft)
-        throws SQLException { throw new SQLException("not yet implemented"); }
-    public ResultSet getSchemas()
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getCrossReference == null)
+            getCrossReference = conn.prepareStatement("select "
+                + "null as PKTABLE_CAT, "
+                + "null as PKTABLE_SCHEM, "
+                + "null as PKTABLE_NAME, "
+                + "null as PKCOLUMN_NAME, "
+                + "null as FKTABLE_CAT, "
+                + "null as FKTABLE_SCHEM, "
+                + "null as FKTABLE_NAME, "
+                + "null as FKCOLUMN_NAME, "
+                + "null as KEY_SEQ, "
+                + "null as UPDATE_RULE, "
+                + "null as DELETE_RULE, "
+                + "null as FK_NAME, "
+                + "null as PK_NAME, "
+                + "null as DEFERRABILITY "
+                + "limit 0;");
+        getCrossReference.clearParameters();
+        return getCrossReference.executeQuery();
+    }
+
+    public ResultSet getSchemas() throws SQLException {
+        if (getSchemas == null) getSchemas = conn.prepareStatement("select "
+                + "null as TABLE_SCHEM, "
+                + "null as TABLE_CATALOG "
+                + "limit 0;");
+        getSchemas.clearParameters();
+        return getSchemas.executeQuery();
+    }
+
+    public ResultSet getCatalogs() throws SQLException {
+        if (getCatalogs == null) getCatalogs = conn.prepareStatement(
+                "select null as TABLE_CAT limit 0;");
+        getCatalogs.clearParameters();
+        return getCatalogs.executeQuery();
+    }
+
     public ResultSet getPrimaryKeys(String c, String s, String t)
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getExportedKeys(String c, String s, String t)
@@ -298,7 +345,20 @@ class MetaData implements DatabaseMetaData
     }
 
     public ResultSet getUDTs(String c, String s, String t, int[] types)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getUDTs == null) getUDTs = conn.prepareStatement("select "
+                + "null as TYPE_CAT, "
+                + "null as TYPE_SCHEM, "
+                + "null as TYPE_NAME, "
+                + "null as CLASS_NAME, "
+                + "null as DATA_TYPE, "
+                + "null as REMARKS, "
+                + "null as BASE_TYPE "
+                + "limit 0;");
+
+        getUDTs.clearParameters();
+        return getUDTs.executeQuery();
+    }
     public ResultSet getVersionColumns(String c, String s, String t)
         throws SQLException { throw new SQLException("not yet implemented"); }
 }
