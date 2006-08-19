@@ -4,12 +4,24 @@ import java.sql.*;
 
 class MetaData implements DatabaseMetaData
 {
-    private final Conn conn;
+    private Conn conn;
+    private PreparedStatement getTables = null;
 
     MetaData(Conn conn) { this.conn = conn; }
 
-    public Connection getConnection() { return conn; }
+    void checkOpen() throws SQLException {
+        if (conn == null) throw new SQLException("connection closed"); }
+    synchronized void close() throws SQLException {
+        if (conn == null) return;
 
+        try {
+            if (getTables != null) { getTables.close(); getTables = null; }
+        } finally {
+            conn = null;
+        }
+    }
+
+    public Connection getConnection() { return conn; }
     public int getDatabaseMajorVersion() { return 3; }
     public int getDatabaseMinorVersion() { return 0; }
     public int getDriverMajorVersion() { return 1; }
@@ -203,8 +215,35 @@ class MetaData implements DatabaseMetaData
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getTablePrivileges(String c, String s, String t)
         throws SQLException { throw new SQLException("not yet implemented"); }
-    public ResultSet getTables(String c, String s, String t, String[] types)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+
+    public synchronized ResultSet getTables(String c, String s,
+            String t, String[] types) throws SQLException {
+        checkOpen();
+
+        if (getTables == null) {
+            // TODO: perhaps return "GLOBAL TEMPORARY" for temp tables
+            getTables = conn.prepareStatement(
+                "select"
+                + " null as TABLE_CAT,"
+                + " null as TABLE_SCHEM,"
+                + " name as TABLE_NAME,"
+                + " upper(type) as TABLE_TYPE,"
+                + " null as REMARKS,"
+                + " null as TYPE_CAT,"
+                + " null as TYPE_NAME,"
+                + " null as SELF_REFERENCING_COL_NAME,"
+                + " null as REF_GENERATION"
+                + " from (select name, type from sqlite_master union all"
+                + "       select name, type from sqlite_temp_master)"
+                + " where name like ?;"
+            );
+        }
+
+        getTables.clearParameters();
+        getTables.setString(1, t == null || "".equals(t) ? "%" : t);
+        return getTables.executeQuery();
+    }
+
     public ResultSet getTableTypes()
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getTypeInfo()

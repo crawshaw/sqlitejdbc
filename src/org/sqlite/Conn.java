@@ -43,6 +43,7 @@ class Conn implements Connection
     public void finalize() throws SQLException { close(); }
     public void close() throws SQLException {
         if (db == null) return;
+        if (meta != null) meta.close();
 
         // must be  synchronized against both db and stmts to ensure
         // no database access occurs or a new statement is created
