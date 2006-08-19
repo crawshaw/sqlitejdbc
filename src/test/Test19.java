@@ -67,6 +67,19 @@ public class Test19 implements Test.Case
                 error = "type " + i + " mismatch"; return false; }
         }
 
+        if (meta.getCrossReference(null, null, null, null, null, null).next()) {
+            error = "non-empty cross reference"; return false; }
+
+        if (meta.getCatalogs().next()) {
+            error = "non-empty catalogs"; return false; }
+
+        if (meta.getSchemas().next()) {
+            error = "non-empty schemas"; return false; }
+
+        if (meta.getUDTs(null, null, null, null).next()) {
+            error = "non-empty UDTs"; return false; }
+
+
         conn.close();
 
         return true;
