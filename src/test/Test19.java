@@ -38,6 +38,15 @@ public class Test19 implements Test.Case
         if (!"VIEW".equals(rs.getString("TABLE_TYPE"))) {
             error = "bad view type"; return false; }
 
+        // check getTableTypes
+        rs = meta.getTableTypes();
+        if (!rs.next()) { error = "expected type table"; return false; }
+        if (!"TABLE".equals(rs.getString("TABLE_TYPE"))) {
+            error =" bad table type for 'table'"; return false; }
+        if (!rs.next()) { error = "expected type view"; return false; }
+        if (!"VIEW".equals(rs.getString("TABLE_TYPE"))) {
+            error =" bad table type for 'view'"; return false; }
+
         conn.close();
 
         return true;
