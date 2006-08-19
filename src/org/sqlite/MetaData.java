@@ -6,16 +6,22 @@ class MetaData implements DatabaseMetaData
 {
     private Conn conn;
     private PreparedStatement getTables = null;
+    private PreparedStatement getTableTypes = null;
 
     MetaData(Conn conn) { this.conn = conn; }
 
     void checkOpen() throws SQLException {
         if (conn == null) throw new SQLException("connection closed"); }
+
     synchronized void close() throws SQLException {
         if (conn == null) return;
 
         try {
-            if (getTables != null) { getTables.close(); getTables = null; }
+            if (getTables != null) getTables.close();
+            if (getTableTypes != null) getTableTypes.close();
+
+            getTables = null;
+            getTableTypes = null;
         } finally {
             conn = null;
         }
@@ -244,8 +250,15 @@ class MetaData implements DatabaseMetaData
         return getTables.executeQuery();
     }
 
-    public ResultSet getTableTypes()
-        throws SQLException { throw new SQLException("not yet implemented"); }
+    public ResultSet getTableTypes() throws SQLException {
+        checkOpen();
+        if (getTableTypes == null) getTableTypes = conn.prepareStatement(
+                "select 'TABLE' as TABLE_TYPE"
+                + " union select 'VIEW' as TABLE_TYPE;");
+        getTableTypes.clearParameters();
+        return getTableTypes.executeQuery();
+    }
+
     public ResultSet getTypeInfo()
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getUDTs(String c, String s, String t, int[] types)
