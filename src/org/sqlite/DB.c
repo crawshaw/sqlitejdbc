@@ -206,11 +206,11 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1null(
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1text(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jstring value)
 {
-    const jchar *str;
-    jint ret;
-    jsize size;
+    const jchar *str = 0;
+    jint ret = 0;
+    jsize size = 0;
 
-    if (str == NULL) return sqlite3_bind_null(toref(stmt), pos);
+    if (value == NULL) return sqlite3_bind_null(toref(stmt), pos);
     size = (*env)->GetStringLength(env, value) * 2; // in bytes
 
     // be careful with the *Critical functions, they turn off the GC
