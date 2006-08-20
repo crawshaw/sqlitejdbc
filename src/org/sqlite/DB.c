@@ -4,6 +4,7 @@
 #include "DB.h"
 #include "sqlite3.h"
 
+static jclass    dbclass          = 0;
 static jfieldID  JNI_DB_pointer   = 0;
 static jmethodID MTH_throwex      = 0;
 static jmethodID MTH_throwexmsg   = 0;
@@ -28,10 +29,10 @@ static void throwex(JNIEnv *env, jobject this)
     (*env)->CallVoidMethod(env, this, MTH_throwex);
 }
 
-static void throwexmsg(JNIEnv *env, jobject this, const char *str)
+static void throwexmsg(JNIEnv *env, const char *str)
 {
-    (*env)->CallVoidMethod(env, this, MTH_throwexmsg,
-                           (*env)->NewStringUTF(env, str));
+    (*env)->CallStaticVoidMethod(env, dbclass, MTH_throwexmsg,
+                                (*env)->NewStringUTF(env, str));
 }
 
 static sqlite3 * gethandle(JNIEnv *env, jobject this)
@@ -56,22 +57,21 @@ static jsize jstrlen(const jchar *str)
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 {
     JNIEnv* env = 0;
-    jclass dbclass = 0;
 
     if (JNI_OK != (*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_2))
         return JNI_ERR;
 
-    dbclass = (*env)->FindClass(env, "org/sqlite/DB");
+    dbclass = (*env)->NewGlobalRef(env,
+        (*env)->FindClass(env, "org/sqlite/DB"));
     if (!dbclass) return JNI_ERR;
 
     JNI_DB_pointer = (*env)->GetFieldID( env, dbclass, "pointer", "J");
     MTH_throwex    = (*env)->GetMethodID(env, dbclass, "throwex", "()V");
-    MTH_throwexmsg = (*env)->GetMethodID(env, dbclass, "throwex",
+    MTH_throwexmsg = (*env)->GetStaticMethodID(env, dbclass, "throwex",
         "(Ljava/lang/String;)V");
 
     if (!JNI_DB_pointer || !MTH_throwex || !MTH_throwexmsg) return JNI_ERR;
 
-    (*env)->DeleteLocalRef(env, dbclass);
 
     return JNI_VERSION_1_2;
 }
@@ -84,7 +84,7 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_open(
     const char *str;
 
     if (db) {
-        throwexmsg(env, this, "DB already open");
+        throwexmsg(env, "DB already open");
         sqlite3_close(db);
         return;
     }
@@ -350,11 +350,11 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_executeUpdate(
         case SQLITE_DONE:
             changes = sqlite3_changes(gethandle(env, this)); break;
         case SQLITE_ROW:
-            throwexmsg(env, this, "query returns results"); break;
+            throwexmsg(env, "query returns results"); break;
         case SQLITE_BUSY:
-            throwexmsg(env, this, "database locked"); break;
+            throwexmsg(env, "database locked"); break;
         case SQLITE_MISUSE:
-            throwexmsg(env, this, "JDBC internal consistency error"); break;
+            throwexmsg(env, "JDBC internal consistency error"); break;
         case SQLITE_ERROR:
         default:
             throwex(env, this); return 0;

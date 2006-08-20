@@ -87,7 +87,8 @@ class DB implements Codes
 
     // HELPER FUNCTIONS /////////////////////////////////////////////
 
-    void throwex() throws SQLException { throw ex(); }
-    void throwex(String msg) throws SQLException { throw new SQLException(msg);}
     SQLException ex() { return new SQLException("SQLite error: " + errmsg()); }
+    void throwex() throws SQLException { throw ex(); }
+    static void throwex(String msg) throws SQLException {
+        throw new SQLException(msg); }
 }
