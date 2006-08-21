@@ -31,7 +31,9 @@ class Stmt extends RS implements Statement, Codes
                  throw new SQLException("JDBC internal consistency error");
             case SQLITE_ERROR:
             default:
-                throw db.ex();
+                 int ret = db.finalize(pointer);
+                 pointer = 0;
+                 throw db.ex();
         }
 
         return db.column_count(pointer) != 0;

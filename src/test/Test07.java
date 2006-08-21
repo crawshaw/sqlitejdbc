@@ -20,7 +20,7 @@ public class Test07 implements Test.Case
         msg = null;
         try { rs = stat.executeQuery("SELECT * FROM NotThereTable;"); }
         catch (SQLException e) { msg = e.getMessage(); }
-        if (!"SQLite error: no such table: NotThereTable".equals(msg)) {
+        if (!"no such table: NotThereTable".equals(msg)) {
             error = "incorrect error for missing table";
             return false;
         }
@@ -28,7 +28,7 @@ public class Test07 implements Test.Case
         msg = null;
         try { rs = stat.executeQuery("SELECT NotAColumn FROM People;"); }
         catch (SQLException e) { msg = e.getMessage(); }
-        if (!"SQLite error: no such column: NotAColumn".equals(msg)) {
+        if (!"no such column: NotAColumn".equals(msg)) {
             error = "incorrect error for missing column";
             return false;
         }

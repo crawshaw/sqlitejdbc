@@ -105,7 +105,7 @@ final class DB implements Codes
 
     // HELPER FUNCTIONS /////////////////////////////////////////////
 
-    SQLException ex() { return new SQLException("SQLite error: " + errmsg()); }
+    SQLException ex() { return new SQLException(errmsg()); }
     void throwex() throws SQLException { throw ex(); }
     static void throwex(String msg) throws SQLException {
         throw new SQLException(msg); }
