@@ -4,7 +4,7 @@
 #include "DB.h"
 #include "sqlite3.h"
 
-static jclass    dbclass          = 0;
+static jclass dbclass = 0;
 
 static void * toref(jlong value)
 {
@@ -103,6 +103,38 @@ static sqlite3_value * tovalue(JNIEnv *env, jobject function, jint arg)
     return ((sqlite3_value**)toref(value_pntr))[arg];
 }
 
+/* called if an exception occured processing xFunc */
+static void xFunc_error(sqlite3_context *context, JNIEnv *env)
+{
+    const char *strmsg = 0;
+    jstring msg = 0;
+    jint msgsize = 0;
+
+    jclass exclass = 0;
+    static jmethodID exp_msg = 0;
+    jthrowable ex = (*env)->ExceptionOccurred(env);
+
+    (*env)->ExceptionClear(env);
+
+    if (!exp_msg) {
+        exclass = (*env)->FindClass(env, "java/lang/Throwable");
+        exp_msg = (*env)->GetMethodID(
+                env, exclass, "toString", "()Ljava/lang/String;");
+    }
+
+    msg = (jstring)(*env)->CallObjectMethod(env, ex, exp_msg);
+    if (!msg) { sqlite3_result_error(context, "unknown error", 13); return; }
+
+    msgsize = (*env)->GetStringUTFLength(env, msg);
+    strmsg = (*env)->GetStringUTFChars(env, msg, 0);
+    if (!strmsg) exit(1); // out-of-memory
+
+    sqlite3_result_error(context, strmsg, msgsize);
+
+    (*env)->ReleaseStringUTFChars(env, msg, strmsg);
+}
+
+
 void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
 {
     jclass fclass = 0;
@@ -112,6 +144,7 @@ void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
                      fld_args = 0;
     JNIEnv *env;
     UDFData *udf = (UDFData*)sqlite3_user_data(context);
+
     env = udf->env;
 
     if (!fld_context || !fld_value || !fld_args) {
@@ -131,6 +164,9 @@ void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
     (*env)->SetLongField(env, udf->func, fld_context, 0);
     (*env)->SetLongField(env, udf->func, fld_value, 0);
     (*env)->SetLongField(env, udf->func, fld_args, 0);
+
+    // check if xFunc threw an Exception
+    if ((*env)->ExceptionCheck(env)) xFunc_error(context, env);
 }
 
 void xStep(sqlite3_context *context, int args, sqlite3_value** value)
@@ -385,8 +421,9 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1name(
 JNIEXPORT jstring JNICALL Java_org_sqlite_DB_column_1text(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    jint length = sqlite3_column_bytes16(toref(stmt), col) / 2; // in jchars
+    jint length;
     const void *str = sqlite3_column_text16(toref(stmt), col);
+    length = sqlite3_column_bytes16(toref(stmt), col) / 2; // in jchars
     return str ? (*env)->NewString(env, str, length) : NULL;
 }
 
@@ -484,6 +521,52 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1int(
     sqlite3_result_int(toref(context), value);
 }
 
+
+
+
+JNIEXPORT jstring JNICALL Java_org_sqlite_DB_value_1text(
+        JNIEnv *env, jobject this, jobject f, jint arg)
+{
+    jint length = 0;
+    const void *str = 0;
+    sqlite3_value *value = tovalue(env, f, arg);
+    if (!value) return NULL;
+
+    length = sqlite3_value_bytes16(value) / 2; // in jchars
+    str = sqlite3_value_text16(value);
+    return str ? (*env)->NewString(env, str, length) : NULL;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_org_sqlite_DB_value_1blob(
+        JNIEnv *env, jobject this, jobject f, jint arg)
+{
+    jsize length;
+    jbyteArray jBlob;
+    jbyte *a;
+    const void *blob;
+    sqlite3_value *value = tovalue(env, f, arg);
+    if (!value) return NULL;
+
+    blob = sqlite3_value_blob(value);
+    if (!blob) return NULL;
+
+    length = sqlite3_value_bytes(value);
+    jBlob = (*env)->NewByteArray(env, length);
+    if (jBlob == NULL) exit(1); // out-of-memory
+
+    a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
+    memcpy(a, blob, length);
+    (*env)->ReleasePrimitiveArrayCritical(env, jBlob, a, 0);
+
+    return jBlob;
+}
+
+JNIEXPORT jdouble JNICALL Java_org_sqlite_DB_value_1double(
+        JNIEnv *env, jobject this, jobject f, jint arg)
+{
+    sqlite3_value *value = tovalue(env, f, arg);
+    return value ? sqlite3_value_double(value) : 0;
+}
 
 JNIEXPORT jlong JNICALL Java_org_sqlite_DB_value_1long(
         JNIEnv *env, jobject this, jobject f, jint arg)
