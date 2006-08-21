@@ -5,10 +5,6 @@
 #include "sqlite3.h"
 
 static jclass    dbclass          = 0;
-static jfieldID  JNI_DB_pointer   = 0;
-static jmethodID MTH_throwex      = 0;
-static jmethodID MTH_throwexmsg   = 0;
-
 
 static void * toref(jlong value)
 {
@@ -26,23 +22,39 @@ static jlong fromref(void * value)
 
 static void throwex(JNIEnv *env, jobject this)
 {
-    (*env)->CallVoidMethod(env, this, MTH_throwex);
+    static jmethodID mth_throwex = 0;
+
+    if (!mth_throwex)
+        mth_throwex = (*env)->GetMethodID(env, dbclass, "throwex", "()V");
+
+    (*env)->CallVoidMethod(env, this, mth_throwex);
 }
 
 static void throwexmsg(JNIEnv *env, const char *str)
 {
-    (*env)->CallStaticVoidMethod(env, dbclass, MTH_throwexmsg,
+    static jmethodID mth_throwexmsg = 0;
+
+    if (!mth_throwexmsg) mth_throwexmsg = (*env)->GetStaticMethodID(
+            env, dbclass, "throwex", "(Ljava/lang/String;)V");
+
+    (*env)->CallStaticVoidMethod(env, dbclass, mth_throwexmsg,
                                 (*env)->NewStringUTF(env, str));
 }
 
 static sqlite3 * gethandle(JNIEnv *env, jobject this)
 {
-    return (sqlite3 *)toref((*env)->GetLongField(env, this, JNI_DB_pointer));
+    static jfieldID pointer = 0;
+    if (!pointer) pointer = (*env)->GetFieldID(env, dbclass, "pointer", "J");
+
+    return (sqlite3 *)toref((*env)->GetLongField(env, this, pointer));
 }
 
 static void sethandle(JNIEnv *env, jobject this, sqlite3 * ref)
 {
-    (*env)->SetLongField(env, this, JNI_DB_pointer, fromref(ref));
+    static jfieldID pointer = 0;
+    if (!pointer) pointer = (*env)->GetFieldID(env, dbclass, "pointer", "J");
+
+    (*env)->SetLongField(env, this, pointer, fromref(ref));
 }
 
 /* Returns number of 16-bit blocks in UTF-16 string, not including null. */
@@ -54,6 +66,90 @@ static jsize jstrlen(const jchar *str)
 }
 
 
+// User Defined Function SUPPORT ////////////////////////////////////
+
+struct UDFData {
+    JNIEnv *env;
+    jobject func;
+};
+typedef struct UDFData UDFData;
+
+/* Returns the sqlite3_value for the given arg of the given function.
+ * If 0 is returned, an exception has been thrown to report the reason. */
+static sqlite3_value * tovalue(JNIEnv *env, jobject function, jint arg)
+{
+    jlong value_pntr = 0;
+    jint numArgs = 0;
+    jclass fclass = 0;
+    static jfieldID func_value = 0,
+                    func_args = 0;
+
+    if (!func_value || !func_args) {
+        fclass     = (*env)->FindClass(env, "org/sqlite/Function");
+        func_value = (*env)->GetFieldID(env, fclass, "value", "J");
+        func_args  = (*env)->GetFieldID(env, fclass, "args", "I");
+    }
+
+    // check we have any business being here
+    if (arg  < 0) { throwexmsg(env, "negative arg out of range"); return 0; }
+    if (!function) { throwexmsg(env, "inconstent function"); return 0; }
+
+    value_pntr = (*env)->GetLongField(env, function, func_value);
+    numArgs = (*env)->GetIntField(env, function, func_args);
+
+    if (value_pntr == 0) { throwexmsg(env, "no current value"); return 0; }
+    if (arg >= numArgs) { throwexmsg(env, "arg out of range"); return 0; }
+
+    return ((sqlite3_value**)toref(value_pntr))[arg];
+}
+
+void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
+{
+    jclass fclass = 0;
+    static jmethodID mth_xFunc = 0;
+    static jfieldID  fld_context = 0,
+                     fld_value = 0,
+                     fld_args = 0;
+    JNIEnv *env;
+    UDFData *udf = (UDFData*)sqlite3_user_data(context);
+    env = udf->env;
+
+    if (!fld_context || !fld_value || !fld_args) {
+        fclass      = (*env)->FindClass(env, "org/sqlite/Function");
+        fld_context = (*env)->GetFieldID(env, fclass, "context", "J");
+        fld_value   = (*env)->GetFieldID(env, fclass, "value", "J");
+        fld_args    = (*env)->GetFieldID(env, fclass, "args", "I");
+        mth_xFunc   = (*env)->GetMethodID(env, fclass, "xFunc", "()V");
+    }
+
+    (*env)->SetLongField(env, udf->func, fld_context, fromref(context));
+    (*env)->SetLongField(env, udf->func, fld_value, fromref(value));
+    (*env)->SetLongField(env, udf->func, fld_args, args);
+
+    (*env)->CallVoidMethod(env, udf->func, mth_xFunc);
+
+    (*env)->SetLongField(env, udf->func, fld_context, 0);
+    (*env)->SetLongField(env, udf->func, fld_value, 0);
+    (*env)->SetLongField(env, udf->func, fld_args, 0);
+}
+
+void xStep(sqlite3_context *context, int args, sqlite3_value** value)
+{
+    // TODO
+    UDFData *udf = (UDFData *)sqlite3_user_data(context);
+    (*udf->env)->CallVoidMethod(udf->env, udf->func, 0, (jint)args);
+}
+
+void xFinal(sqlite3_context *context)
+{
+    // TODO
+    UDFData *udf = (UDFData *)sqlite3_user_data(context);
+    (*udf->env)->CallVoidMethod(udf->env, udf->func, 0);
+}
+
+
+// INITIALISATION ///////////////////////////////////////////////////
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 {
     JNIEnv* env = 0;
@@ -61,20 +157,15 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
     if (JNI_OK != (*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_2))
         return JNI_ERR;
 
-    dbclass = (*env)->NewGlobalRef(env,
-        (*env)->FindClass(env, "org/sqlite/DB"));
+    dbclass = (*env)->FindClass(env, "org/sqlite/DB");
+    dbclass = (*env)->NewGlobalRef(env, dbclass);
     if (!dbclass) return JNI_ERR;
-
-    JNI_DB_pointer = (*env)->GetFieldID( env, dbclass, "pointer", "J");
-    MTH_throwex    = (*env)->GetMethodID(env, dbclass, "throwex", "()V");
-    MTH_throwexmsg = (*env)->GetStaticMethodID(env, dbclass, "throwex",
-        "(Ljava/lang/String;)V");
-
-    if (!JNI_DB_pointer || !MTH_throwex || !MTH_throwexmsg) return JNI_ERR;
-
 
     return JNI_VERSION_1_2;
 }
+
+
+// WRAPPERS for sqlite_* functions //////////////////////////////////
 
 JNIEXPORT void JNICALL Java_org_sqlite_DB_open(
         JNIEnv *env, jobject this, jstring file)
@@ -336,6 +427,121 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_column_1int(
 {
     return sqlite3_column_int(toref(stmt), col);
 }
+
+
+JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1null(
+        JNIEnv *env, jobject this, jlong context)
+{
+    sqlite3_result_null(toref(context));
+}
+
+JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1text(
+        JNIEnv *env, jobject this, jlong context, jstring value)
+{
+    const jchar *str;
+    jsize size;
+
+    if (value == NULL) { sqlite3_result_null(toref(context)); return; }
+    size = (*env)->GetStringLength(env, value) * 2;
+
+    str = (*env)->GetStringCritical(env, value, 0);
+    if (str == NULL) exit(1); // out-of-memory
+    sqlite3_result_text16(toref(context), str, size, SQLITE_TRANSIENT);
+    (*env)->ReleaseStringCritical(env, value, str);
+}
+
+JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1blob(
+        JNIEnv *env, jobject this, jlong context, jobject value)
+{
+    jbyte *bytes;
+    jsize size;
+
+    if (value == NULL) { sqlite3_result_null(toref(context)); return; }
+    size = (*env)->GetArrayLength(env, value);
+
+    // be careful with *Critical
+    bytes = (*env)->GetPrimitiveArrayCritical(env, value, 0);
+    if (bytes == NULL) exit(1); // out-of-memory
+    sqlite3_result_blob(toref(context), bytes, size, SQLITE_TRANSIENT);
+    (*env)->ReleasePrimitiveArrayCritical(env, value, bytes, JNI_ABORT);
+}
+
+JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1double(
+        JNIEnv *env, jobject this, jlong context, jdouble value)
+{
+    sqlite3_result_double(toref(context), value);
+}
+
+JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1long(
+        JNIEnv *env, jobject this, jlong context, jlong value)
+{
+    sqlite3_result_int64(toref(context), value);
+}
+
+JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1int(
+        JNIEnv *env, jobject this, jlong context, jint value)
+{
+    sqlite3_result_int(toref(context), value);
+}
+
+
+JNIEXPORT jlong JNICALL Java_org_sqlite_DB_value_1long(
+        JNIEnv *env, jobject this, jobject f, jint arg)
+{
+    sqlite3_value *value = tovalue(env, f, arg);
+    return value ? sqlite3_value_int64(value) : 0;
+}
+
+JNIEXPORT jint JNICALL Java_org_sqlite_DB_value_1int(
+        JNIEnv *env, jobject this, jobject f, jint arg)
+{
+    sqlite3_value *value = tovalue(env, f, arg);
+    return value ? sqlite3_value_int(value) : 0;
+}
+
+JNIEXPORT jint JNICALL Java_org_sqlite_DB_value_1type(
+        JNIEnv *env, jobject this, jobject func, jint arg)
+{
+    return sqlite3_value_type(tovalue(env, func, arg));
+}
+
+
+JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
+        JNIEnv *env, jobject this, jstring name, jobject func)
+{
+    jint ret = 0;;
+    const char *strname = 0;
+
+    UDFData *udf = malloc(sizeof(struct UDFData));
+    if (!udf) exit(1); // out-of-memory
+
+    udf->env = env;
+    udf->func = (*env)->NewGlobalRef(env, func);
+
+    strname = (*env)->GetStringUTFChars(env, name, 0);
+    if (!strname) exit(1); // out-of-memory
+
+    ret = sqlite3_create_function(
+            gethandle(env, this),
+            strname,       // function name
+            -1,            // number of args
+            SQLITE_UTF16,  // preferred chars
+            udf,
+            &xFunc,
+            0,0
+    );
+
+    (*env)->ReleaseStringUTFChars(env, name, strname);
+
+    return ret;
+}
+
+JNIEXPORT jint JNICALL Java_org_sqlite_DB_destroy_1function(
+        JNIEnv *env, jobject this, jstring name)
+{
+    // TODO
+}
+
 
 
 // COMPOUND FUNCTIONS ///////////////////////////////////////////////

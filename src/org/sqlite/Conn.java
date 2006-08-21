@@ -24,6 +24,7 @@ class Conn implements Connection
         db.busy_timeout(ms);
     }
     String libversion() { return db.libversion(); }
+    DB db() { return db; }
 
     private void checkOpen() throws SQLException {
         if (db == null)  throw new SQLException("database connection closed");

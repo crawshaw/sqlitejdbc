@@ -9,7 +9,7 @@ import java.sql.SQLException;
  *  All SQLite access is synchronized against the instance of this class,
  *  so a synchronized (db) { ... } block guarantees no-one else can talk
  *  to the database. */
-class DB implements Codes
+final class DB implements Codes
 {
     /** database pointer */
     long pointer = 0;
@@ -67,6 +67,24 @@ class DB implements Codes
     native synchronized long   column_long       (long stmt, int col);
     native synchronized int    column_int        (long stmt, int col);
 
+    native synchronized void result_null  (long context);
+    native synchronized void result_text  (long context, String val);
+    native synchronized void result_blob  (long context, byte[] val);
+    native synchronized void result_double(long context, double val);
+    native synchronized void result_long  (long context, long   val);
+    native synchronized void result_int   (long context, int    val);
+    native synchronized void result_error (long context, String err);
+
+    native synchronized int    value_bytes (Function f, int arg);
+    native synchronized String value_text  (Function f, int arg);
+    native synchronized byte[] value_blob  (Function f, int arg);
+    native synchronized double value_double(Function f, int arg);
+    native synchronized long   value_long  (Function f, int arg);
+    native synchronized int    value_int   (Function f, int arg);
+    native synchronized int    value_type  (Function f, int arg);
+
+    native synchronized int create_function(String name, Function func);
+    native synchronized int destroy_function(String name);
 
     // COMPOUND FUNCTIONS (for optimisation) /////////////////////////
 
