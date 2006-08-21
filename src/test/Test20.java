@@ -26,7 +26,7 @@ public class Test20 implements Test.Case
 
         // test calling
         Function.create(conn, "f1", new Function() {
-           public void xFunc() { val = 4; }
+           public void xFunc() throws SQLException { val = 4; }
         });
         stat.executeQuery("select f1();").close();
         if (val != 4) { error = "f1 not called"; return false; }
@@ -99,8 +99,73 @@ public class Test20 implements Test.Case
         if (!rs.next() || !same(b1, rs.getBytes(1))) {
             error = "f8 bad"; return false; }
 
-
         // TODO test different argument types
+        Function.create(conn, "farg_int", new Function() {
+            public void xFunc() throws SQLException { result(value_int(0)); }
+        });
+        PreparedStatement prep;
+
+        prep = conn.prepareStatement("select farg_int(?);");
+        prep.setInt(1, Integer.MAX_VALUE);
+        rs = prep.executeQuery();
+        if (!rs.next() || Integer.MAX_VALUE != rs.getInt(1)) {
+            error = "bad int arg"; return false; }
+        prep.close();
+
+        Function.create(conn, "farg_long", new Function() {
+            public void xFunc() throws SQLException { result(value_long(0)); }
+        });
+        prep = conn.prepareStatement("select farg_long(?);");
+        prep.setLong(1, Long.MAX_VALUE);
+        rs = prep.executeQuery();
+        if (!rs.next() || Long.MAX_VALUE != rs.getLong(1)) {
+            error = "bad long arg"; return false; }
+        prep.close();
+
+        Function.create(conn, "farg_double", new Function() {
+            public void xFunc() throws SQLException { result(value_double(0));}
+        });
+        prep = conn.prepareStatement("select farg_double(?);");
+        prep.setDouble(1, Double.MAX_VALUE);
+        rs = prep.executeQuery();
+        if (!rs.next() || Double.MAX_VALUE != rs.getDouble(1)) {
+            error = "bad double arg"; return false; }
+        prep.close();
+
+        Function.create(conn, "farg_blob", new Function() {
+            public void xFunc() throws SQLException { result(value_blob(0));}
+        });
+        prep = conn.prepareStatement("select farg_blob(?);");
+        prep.setBytes(1, b1);
+        rs = prep.executeQuery();
+        if (!rs.next() || !same(b1, rs.getBytes(1))) {
+            error = "bad bytes arg"; return false; }
+        prep.close();
+
+        Function.create(conn, "farg_string", new Function() {
+            public void xFunc() throws SQLException { result(value_text(0));}
+        });
+        prep = conn.prepareStatement("select farg_string(?);");
+        prep.setString(1, "Hello World");
+        rs = prep.executeQuery();
+        if (!rs.next() || "Hello World".equals(rs.getInt(1))) {
+            error = "bad string arg"; return false; }
+        prep.close();
+
+
+        // test errors
+        rs.close();
+        Function.create(conn, "f9", new Function() {
+            public void xFunc() throws SQLException {
+                throw new SQLException("myErr"); }
+        });
+        String msg = null;
+        try { stat.executeQuery("select f9();"); }
+        catch (SQLException e) { msg = e.getMessage(); }
+        if (!"java.sql.SQLException: myErr".equals(msg)) {
+            System.out.println(msg);
+            error = "bad error"; return false;
+        }
 
         conn.close();
         return true;
