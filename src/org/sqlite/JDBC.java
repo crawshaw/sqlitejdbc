@@ -6,7 +6,7 @@ import java.util.*;
 
 public class JDBC implements Driver
 {
-    public static final String PREFIX = "jdbc:sqlite:";
+    private static final String PREFIX = "jdbc:sqlite:";
 
     static {
         try {
