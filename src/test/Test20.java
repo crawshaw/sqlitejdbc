@@ -7,6 +7,7 @@ public class Test20 implements Test.Case
 {
     private static int val = 0;
     private static byte[] b1 = new byte[] { 2, 5, -4, 8, -1, 3, -5 };
+    private static int gotTrigger = 0;
 
     private String error;
     private Exception ex;
@@ -166,6 +167,20 @@ public class Test20 implements Test.Case
             System.out.println(msg);
             error = "bad error"; return false;
         }
+
+
+        // test triggers
+        Function.create(conn, "inform", new Function() {
+            protected void xFunc() throws SQLException {
+                gotTrigger = value_int(0); }
+        });
+        stat.executeUpdate("create table trigtest (c1);");
+        stat.executeUpdate(
+            "create trigger trigt after insert on trigtest"
+            + " begin select inform(new.c1); end;"
+        );
+        stat.executeUpdate("insert into trigtest values (5);");
+        if (gotTrigger != 5) { error = "bad trigger"; return false; }
 
         conn.close();
         return true;
