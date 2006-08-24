@@ -83,7 +83,7 @@ default: test
 
 build/%.class: src/%.java
 	@mkdir -p build
-	javac -sourcepath src -d build $<
+	javac -source 1.2 -target 1.2 -sourcepath src -d build $<
 
 compile: work/sqlite/$(target)/main.o $(java_classes)
 	@mkdir -p build/$(target)
