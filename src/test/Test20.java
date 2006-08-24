@@ -182,6 +182,28 @@ public class Test20 implements Test.Case
         stat.executeUpdate("insert into trigtest values (5);");
         if (gotTrigger != 5) { error = "bad trigger"; return false; }
 
+
+        // test aggregate functions
+        Function.create(conn, "mySum", new Function.Aggregate() {
+            private int val = 0;
+            protected void xStep() throws SQLException {
+                for (int i=0; i < args(); i++) val += value_int(i);
+            }
+            protected void xFinal() throws SQLException {
+                result(val);
+            }
+        });
+        stat.executeUpdate("create table tobesummed (c1);");
+        stat.executeUpdate("insert into tobesummed values (5);");
+        stat.executeUpdate("insert into tobesummed values (3);");
+        stat.executeUpdate("insert into tobesummed values (8);");
+        stat.executeUpdate("insert into tobesummed values (2);");
+        stat.executeUpdate("insert into tobesummed values (7);");
+        rs = stat.executeQuery("select mySum(c1), sum(c1) from tobesummed;");
+        if (!rs.next() || rs.getInt(1) != rs.getInt(2)) {
+            error = "bad aggregate"; return false; }
+
+
         conn.close();
         return true;
     }
