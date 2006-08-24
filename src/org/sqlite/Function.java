@@ -34,7 +34,7 @@ import java.sql.*;
  *  <p>Aggregate functions are not yet supported, but coming soon.</p>
  *
  */
-public abstract class Function implements Codes
+public abstract class Function
 {
     private Conn conn;
     private DB db;
@@ -58,7 +58,7 @@ public abstract class Function implements Codes
         if (name == null || name.length() > 255)
             throw new SQLException("invalid function name: '"+name+"'");
 
-        if (f.db.create_function(name, f) != SQLITE_OK)
+        if (f.db.create_function(name, f) != Codes.SQLITE_OK)
             throw new SQLException("error creating function");
     }
 
