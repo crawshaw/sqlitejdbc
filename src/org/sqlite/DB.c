@@ -5,6 +5,8 @@
 #include "sqlite3.h"
 
 static jclass dbclass = 0;
+static jclass  fclass = 0;
+static jclass  aclass = 0;
 
 static void * toref(jlong value)
 {
@@ -80,12 +82,10 @@ static sqlite3_value * tovalue(JNIEnv *env, jobject function, jint arg)
 {
     jlong value_pntr = 0;
     jint numArgs = 0;
-    jclass fclass = 0;
     static jfieldID func_value = 0,
                     func_args = 0;
 
     if (!func_value || !func_args) {
-        fclass     = (*env)->FindClass(env, "org/sqlite/Function");
         func_value = (*env)->GetFieldID(env, fclass, "value", "J");
         func_args  = (*env)->GetFieldID(env, fclass, "args", "I");
     }
@@ -134,53 +134,97 @@ static void xFunc_error(sqlite3_context *context, JNIEnv *env)
     (*env)->ReleaseStringUTFChars(env, msg, strmsg);
 }
 
-
-void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
+/* used to call xFunc, xStep and xFinal */
+static xCall(
+    sqlite3_context *context,
+    int args,
+    sqlite3_value** value,
+    jobject func,
+    jmethodID method)
 {
-    jclass fclass = 0;
-    static jmethodID mth_xFunc = 0;
-    static jfieldID  fld_context = 0,
+    static jfieldID fld_context = 0,
                      fld_value = 0,
                      fld_args = 0;
-    JNIEnv *env;
-    UDFData *udf = (UDFData*)sqlite3_user_data(context);
+    JNIEnv *env = 0;
+    UDFData *udf = 0;
 
+    udf = (UDFData*)sqlite3_user_data(context);
     env = udf->env;
+    if (!func) func = udf->func;
 
     if (!fld_context || !fld_value || !fld_args) {
-        fclass      = (*env)->FindClass(env, "org/sqlite/Function");
         fld_context = (*env)->GetFieldID(env, fclass, "context", "J");
         fld_value   = (*env)->GetFieldID(env, fclass, "value", "J");
         fld_args    = (*env)->GetFieldID(env, fclass, "args", "I");
-        mth_xFunc   = (*env)->GetMethodID(env, fclass, "xFunc", "()V");
     }
 
-    (*env)->SetLongField(env, udf->func, fld_context, fromref(context));
-    (*env)->SetLongField(env, udf->func, fld_value, fromref(value));
-    (*env)->SetLongField(env, udf->func, fld_args, args);
+    (*env)->SetLongField(env, func, fld_context, fromref(context));
+    (*env)->SetLongField(env, func, fld_value, value ? fromref(value) : 0);
+    (*env)->SetLongField(env, func, fld_args, args);
 
-    (*env)->CallVoidMethod(env, udf->func, mth_xFunc);
+    (*env)->CallVoidMethod(env, func, method);
 
-    (*env)->SetLongField(env, udf->func, fld_context, 0);
-    (*env)->SetLongField(env, udf->func, fld_value, 0);
-    (*env)->SetLongField(env, udf->func, fld_args, 0);
+    (*env)->SetLongField(env, func, fld_context, 0);
+    (*env)->SetLongField(env, func, fld_value, 0);
+    (*env)->SetLongField(env, func, fld_args, 0);
 
     // check if xFunc threw an Exception
     if ((*env)->ExceptionCheck(env)) xFunc_error(context, env);
 }
 
+
+void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
+{
+    static jmethodID mth = 0;
+    if (!mth) {
+        JNIEnv *env = ((UDFData*)sqlite3_user_data(context))->env;
+        mth = (*env)->GetMethodID(env, fclass, "xFunc", "()V");
+    }
+    xCall(context, args, value, 0, mth);
+}
+
 void xStep(sqlite3_context *context, int args, sqlite3_value** value)
 {
-    // TODO
-    UDFData *udf = (UDFData *)sqlite3_user_data(context);
-    (*udf->env)->CallVoidMethod(udf->env, udf->func, 0, (jint)args);
+    jobject *func = 0;
+    static jmethodID mth = 0;
+    static jmethodID clone = 0;
+
+    if (!mth || !clone) {
+        JNIEnv *env = ((UDFData*)sqlite3_user_data(context))->env;
+        mth = (*env)->GetMethodID(env, aclass, "xStep", "()V");
+        clone = (*env)->GetMethodID(env, aclass, "clone",
+            "()Ljava/lang/Object;");
+    }
+
+    // clone the Function.Aggregate instance and store a pointer
+    // in SQLite's aggregate_context (clean up in xFinal)
+    func = sqlite3_aggregate_context(context, sizeof(jobject));
+    if (!*func) {
+        UDFData *udf = (UDFData*)sqlite3_user_data(context);
+        *func = (*udf->env)->CallObjectMethod(udf->env, udf->func, clone);
+        *func = (*udf->env)->NewGlobalRef(udf->env, *func);
+    }
+
+    xCall(context, args, value, *func, mth);
 }
 
 void xFinal(sqlite3_context *context)
 {
-    // TODO
-    UDFData *udf = (UDFData *)sqlite3_user_data(context);
-    (*udf->env)->CallVoidMethod(udf->env, udf->func, 0);
+    JNIEnv *env = 0;
+    jobject *func = 0;
+    static jmethodID mth = 0;
+
+    env = ((UDFData*)sqlite3_user_data(context))->env;
+
+    if (!mth) mth = (*env)->GetMethodID(env, aclass, "xFinal", "()V");
+
+    func = sqlite3_aggregate_context(context, sizeof(jobject));
+    if (!*func) exit(1); // disaster
+
+    xCall(context, 0, 0, *func, mth);
+
+    // clean up Function.Aggregate instance
+    (*env)->DeleteGlobalRef(env, *func);
 }
 
 
@@ -194,8 +238,16 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
         return JNI_ERR;
 
     dbclass = (*env)->FindClass(env, "org/sqlite/DB");
-    dbclass = (*env)->NewGlobalRef(env, dbclass);
     if (!dbclass) return JNI_ERR;
+    dbclass = (*env)->NewGlobalRef(env, dbclass);
+
+    fclass = (*env)->FindClass(env, "org/sqlite/Function");
+    if (!fclass) return JNI_ERR;
+    fclass = (*env)->NewGlobalRef(env, fclass);
+
+    aclass = (*env)->FindClass(env, "org/sqlite/Function$Aggregate");
+    if (!aclass) return JNI_ERR;
+    aclass = (*env)->NewGlobalRef(env, aclass);
 
     return JNI_VERSION_1_2;
 }
@@ -594,9 +646,12 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
 {
     jint ret = 0;;
     const char *strname = 0;
+    int isAgg = 0;
 
     UDFData *udf = malloc(sizeof(struct UDFData));
     if (!udf) exit(1); // out-of-memory
+
+    isAgg = (*env)->IsInstanceOf(env, func, aclass);
 
     udf->env = env;
     udf->func = (*env)->NewGlobalRef(env, func);
@@ -610,8 +665,9 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
             -1,            // number of args
             SQLITE_UTF16,  // preferred chars
             udf,
-            &xFunc,
-            0,0
+            isAgg ? 0 :&xFunc,
+            isAgg ? &xStep : 0,
+            isAgg ? &xFinal : 0
     );
 
     (*env)->ReleaseStringUTFChars(env, name, strname);

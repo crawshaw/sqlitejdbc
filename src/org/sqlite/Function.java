@@ -152,9 +152,16 @@ public abstract class Function implements Codes
     }
 
 
-    /*public static abstract class Aggregate extends Function
+    public static abstract class Aggregate
+            extends Function
+            implements Cloneable
     {
-        protected abstract void xStep();
-        protected abstract void xFinal();
-    }*/
+        protected final void xFunc() {}
+        protected abstract void xStep() throws SQLException;
+        protected abstract void xFinal() throws SQLException;
+
+        public Object clone() throws CloneNotSupportedException {
+            return super.clone();
+        }
+    }
 }
