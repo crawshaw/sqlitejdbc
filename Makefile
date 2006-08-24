@@ -100,6 +100,7 @@ dist: compile
 	    -C build sqlitejdbc.jar -C $(target) $(LIBNAME)
 
 all: src-tgz
+	@mkdir -p src/jni/Linux src/jni/Darwin src/jni/Win
 	@make os=Linux arch=i386 dist
 	@make os=Win arch=i586 dist
 	@make os=Darwin arch=powerpc compile
