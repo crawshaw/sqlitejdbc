@@ -149,7 +149,7 @@ public class Test20 implements Test.Case
         prep = conn.prepareStatement("select farg_string(?);");
         prep.setString(1, "Hello World");
         rs = prep.executeQuery();
-        if (!rs.next() || "Hello World".equals(rs.getInt(1))) {
+        if (!rs.next() || !"Hello World".equals(rs.getString(1))) {
             error = "bad string arg"; return false; }
         prep.close();
 
