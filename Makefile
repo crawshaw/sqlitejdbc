@@ -139,6 +139,10 @@ work/sqlite/%/main.o: work/sqlite-src.zip
 	          $(CC) -c -O -DSQLITE_ENABLE_COLUMN_METADATA \
 	                      -DSQLITE_OMIT_LOAD_EXTENSION *.c)
 
+doc:
+	mkdir -p build/doc
+	javadoc -notree -d build/doc src/org/sqlite/*.java
+
 build/test/test.db:
 	mkdir -p build/test
 	sqlite3 build/test/test.db ".read src/test/create.sql"
