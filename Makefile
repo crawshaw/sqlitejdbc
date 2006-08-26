@@ -32,7 +32,7 @@ endif
 
 Default_CC        := gcc
 Default_STRIP     := strip
-Default_CCFLAGS   := -I$(JAVA_HOME)/include -I$(jni_include) -O
+Default_CCFLAGS   := -I$(JAVA_HOME)/include -I$(jni_include) -O -fPIC
 Default_LINKFLAGS := -shared
 Default_LIBNAME   := libsqlitejdbc.so
 
@@ -46,7 +46,7 @@ endif
 
 Linux_CC         := gcc
 Linux_STRIP      := strip
-Linux_CCFLAGS    := -Isrc/jni/Linux -O
+Linux_CCFLAGS    := -Isrc/jni/Linux -O -fPIC
 Linux_LINKFLAGS  := -shared
 Linux_LIBNAME    := libsqlitejdbc.so
 
@@ -136,8 +136,9 @@ work/sqlite/%/main.o: work/sqlite-src.zip
 	          unzip -qo ../../sqlite-src.zip; \
 	          mv shell.c shell.c.old; \
 	          mv tclsqlite.c tclsqlite.c.not; \
-	          $(CC) -c -O -DSQLITE_ENABLE_COLUMN_METADATA \
-	                      -DSQLITE_OMIT_LOAD_EXTENSION *.c)
+	          $(CC) -c -O -fPIC \
+	              -DSQLITE_ENABLE_COLUMN_METADATA \
+	              -DSQLITE_OMIT_LOAD_EXTENSION *.c)
 
 doc:
 	mkdir -p build/doc
