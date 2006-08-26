@@ -104,7 +104,7 @@ all: src-tgz
 	@make os=Linux arch=i386 dist
 	@make os=Win arch=i586 dist
 	@make os=Darwin arch=powerpc compile
-	@make os=Darwin arch=i386 compile
+	#@make os=Darwin arch=i386 compile
 	@mkdir -p build/Darwin-lipo
 	$(LIPO) -create \
 	    build/Darwin-powerpc/libsqlitejdbc.jnilib \
@@ -136,7 +136,7 @@ work/sqlite/%/main.o: work/sqlite-src.zip
 	          unzip -qo ../../sqlite-src.zip; \
 	          mv shell.c shell.c.old; \
 	          mv tclsqlite.c tclsqlite.c.not; \
-	          $(CC) -c -O -fPIC \
+	          $(CC) -c -O \
 	              -DSQLITE_ENABLE_COLUMN_METADATA \
 	              -DSQLITE_OMIT_LOAD_EXTENSION *.c)
 
