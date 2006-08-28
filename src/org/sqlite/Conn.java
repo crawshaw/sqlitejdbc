@@ -46,6 +46,9 @@ class Conn implements Connection
         if (db == null) return;
         if (meta != null) meta.close();
 
+        // remove memory used by user-defined functions
+        db.free_functions();
+
         // must be  synchronized against both db and stmts to ensure
         // no database access occurs or a new statement is created
         // while the Connection is being closed

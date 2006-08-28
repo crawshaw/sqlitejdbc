@@ -14,6 +14,9 @@ final class DB implements Codes
     /** database pointer */
     long pointer = 0;
 
+    /** linked list of all instanced UDFDatas */
+    private long udfdatalist = 0;
+
     static {
         String libpath = System.getProperty("org.sqlite.lib.path");
         String libname = System.getProperty("org.sqlite.lib.name");
@@ -85,6 +88,7 @@ final class DB implements Codes
 
     native synchronized int create_function(String name, Function func);
     native synchronized int destroy_function(String name);
+    native synchronized void free_functions();
 
     // COMPOUND FUNCTIONS (for optimisation) /////////////////////////
 

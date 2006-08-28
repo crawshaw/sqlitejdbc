@@ -70,11 +70,12 @@ static jsize jstrlen(const jchar *str)
 
 // User Defined Function SUPPORT ////////////////////////////////////
 
+typedef struct UDFData UDFData;
 struct UDFData {
     JNIEnv *env;
     jobject func;
+    UDFData *next;  // linked list of all UDFData instances
 };
-typedef struct UDFData UDFData;
 
 /* Returns the sqlite3_value for the given arg of the given function.
  * If 0 is returned, an exception has been thrown to report the reason. */
@@ -647,6 +648,10 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
     jint ret = 0;;
     const char *strname = 0;
     int isAgg = 0;
+    static jfieldID udfdatalist = 0;
+
+    if (!udfdatalist)
+        udfdatalist = (*env)->GetFieldID(env, dbclass, "udfdatalist", "J");
 
     UDFData *udf = malloc(sizeof(struct UDFData));
     if (!udf) exit(1); // out-of-memory
@@ -655,6 +660,10 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
 
     udf->env = env;
     udf->func = (*env)->NewGlobalRef(env, func);
+
+    // add new function def to linked list
+    udf->next = toref((*env)->GetLongField(env, this, udfdatalist));
+    (*env)->SetLongField(env, this, udfdatalist, fromref(udf));
 
     strname = (*env)->GetStringUTFChars(env, name, 0);
     if (!strname) exit(1); // out-of-memory
@@ -678,9 +687,32 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_destroy_1function(
         JNIEnv *env, jobject this, jstring name)
 {
-    // TODO
+    const char* strname = (*env)->GetStringUTFChars(env, name, 0);
+    sqlite3_create_function(
+        gethandle(env, this), strname, -1, SQLITE_UTF16, 0, 0, 0, 0
+    );
+    (*env)->ReleaseStringUTFChars(env, name, strname);
 }
 
+JNIEXPORT void JNICALL Java_org_sqlite_DB_free_1functions(
+        JNIEnv *env, jobject this)
+{
+    // clean up all the malloc()ed UDFData instances using the
+    // linked list stored in DB.udfdatalist
+    jfieldID udfdatalist;
+    UDFData *udf, *udfpass;
+
+    udfdatalist = (*env)->GetFieldID(env, dbclass, "udfdatalist", "J");
+    udf = toref((*env)->GetLongField(env, this, udfdatalist));
+    (*env)->SetLongField(env, this, udfdatalist, 0);
+
+    while (udf) {
+        udfpass = udf->next;
+        (*env)->DeleteGlobalRef(env, udf->func);
+        free(udf);
+        udf = udfpass;
+    }
+}
 
 
 // COMPOUND FUNCTIONS ///////////////////////////////////////////////
