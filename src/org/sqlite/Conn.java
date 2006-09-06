@@ -39,7 +39,19 @@ class Conn implements Connection
             "SQLite only supports closing cursors at commit");
     }
 
-    void remove(Stmt stmt) { stmts.remove(stmt); }
+    void remove(Stmt stmt) throws SQLException {
+        removePointer(stmt);
+        stmts.remove(stmt);
+    }
+    private void removePointer(Stmt s) throws SQLException {
+        if (s == null) return;
+        s.close();
+        if (s.pointer != 0) {
+            db.finalize(s.pointer);
+            s.pointer = 0;
+        }
+        s.db = null;
+    }
 
     public void finalize() throws SQLException { close(); }
     public void close() throws SQLException {
@@ -55,13 +67,7 @@ class Conn implements Connection
         synchronized (db) { synchronized (stmts) {
             for (Iterator i = stmts.iterator(); i.hasNext(); i.remove()) {
                 Stmt s = (Stmt)(((WeakReference)i.next()).get());
-                if (s == null) continue;
-                s.close();
-                if (s.pointer != 0) {
-                    db.finalize(s.pointer);
-                    s.pointer = 0;
-                }
-                s.db = null;
+                removePointer(s);
             }
             db.close();
             db = null;

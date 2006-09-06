@@ -58,7 +58,7 @@ class Stmt extends RS implements Statement, Codes
         if (resp != SQLITE_OK && resp != SQLITE_MISUSE) throw db.ex();
     }
     protected void finalize() throws SQLException {
-        close();
+        Stmt.this.close();
         if (conn != null) conn.remove(this);;
     }
 
