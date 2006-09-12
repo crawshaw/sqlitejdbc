@@ -10,7 +10,7 @@ public class Test
         new Test06(), new Test07(), new Test08(), new Test09(), new Test10(),
         new Test11(), new Test12(), new Test13(), new Test14(), new Test15(),
         new Test16(), new Test17(), new Test18(), new Test19(), new Test20(),
-        new Test21(), new Test22()
+        new Test21(), new Test22(), new Test23()
     };
 
     public static void main(String[] args) {
