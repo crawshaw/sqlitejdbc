@@ -23,8 +23,13 @@ class Stmt extends RS implements Statement, Codes
         if (isRS()) throw new SQLException(
             "SQLite JDBC internal error: isRS() on exec.");
         resultsWaiting = false;
-        switch (db.step(pointer)) {
-            case SQLITE_DONE:   break;
+
+        // deal with goofy interface
+        int rc = db.step(pointer);
+        if (rc == SQLITE_ERROR) rc = db.reset(pointer);
+
+        switch (rc) {
+            case SQLITE_DONE:   db.reset(pointer); break;
             case SQLITE_ROW:    resultsWaiting = true; break;
             case SQLITE_BUSY:   throw new SQLException("database locked");
             case SQLITE_MISUSE:
