@@ -19,6 +19,12 @@ final class PrepStmt extends Stmt
         colsMeta = db.column_names(pointer);
     }
 
+    /** Used to make sure statement is open but no RS active or pending. */
+    protected final void checkExecCloseRS() throws SQLException {
+        checkExec();
+        if (isRS() || resultsWaiting) close();
+    }
+
     /** Weaker close to support object overriding. */
     public void close() throws SQLException {
         if (pointer == 0) return;
@@ -69,32 +75,32 @@ final class PrepStmt extends Stmt
     public void setByte(int pos, byte value) throws SQLException {
         setInt(pos, (int)value); }
     public void setBytes(int pos, byte[] value) throws SQLException {
-        checkOpen();
+        checkExecCloseRS();
         if (db.bind_blob(pointer, pos, value) != SQLITE_OK) throw db.ex(); }
     public void setDouble(int pos, double value) throws SQLException {
-        checkOpen();
+        checkExecCloseRS();
         if (db.bind_double(pointer, pos, value) != SQLITE_OK) throw db.ex();
     }
     public void setFloat(int pos, float value) throws SQLException {
         setDouble(pos, value);
     }
     public void setInt(int pos, int value) throws SQLException {
-        checkOpen();
+        checkExecCloseRS();
         if (db.bind_int(pointer, pos, value) != SQLITE_OK) throw db.ex();
     }
     public void setLong(int pos, long value) throws SQLException {
-        checkOpen();
+        checkExecCloseRS();
         if (db.bind_long(pointer, pos, value) != SQLITE_OK) throw db.ex();
     }
     public void setNull(int pos, int u1) throws SQLException {
         setNull(pos, u1, null);
     }
     public void setNull(int pos, int u1, String u2) throws SQLException {
-        checkOpen();
+        checkExecCloseRS();
         if (db.bind_null(pointer, pos) != SQLITE_OK) throw db.ex();
     }
     public void setObject(int pos , Object value) throws SQLException {
-        checkOpen();
+        checkExecCloseRS();
         if (value == null) { setNull(pos, 0); return; }
         if (db.bind_text(pointer, pos, value.toString()) != SQLITE_OK)
             throw db.ex();
@@ -106,7 +112,7 @@ final class PrepStmt extends Stmt
     public void setShort(int pos, short value) throws SQLException {
         setInt(pos, (int)value); }
     public void setString(int pos, String value) throws SQLException {
-        checkOpen();
+        checkExecCloseRS();
         if (db.bind_text(pointer, pos, value) != SQLITE_OK) throw db.ex();
     }
 
