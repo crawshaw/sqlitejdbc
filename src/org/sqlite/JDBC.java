@@ -22,7 +22,7 @@ public class JDBC implements Driver
     public boolean jdbcCompliant() { return false; }
 
     public boolean acceptsURL(String url) {
-        return url != null && url.startsWith(PREFIX);
+        return url != null && url.toLowerCase().startsWith(PREFIX);
     }
 
     public DriverPropertyInfo[] getPropertyInfo(String url, Properties info)
@@ -35,7 +35,7 @@ public class JDBC implements Driver
         url = url.trim();
 
         // if no file name is given use a memory database
-        return new Conn(PREFIX.equals(url) ?
+        return new Conn(url, PREFIX.equalsIgnoreCase(url) ?
             ":memory:" : url.substring(PREFIX.length()));
     }
 }

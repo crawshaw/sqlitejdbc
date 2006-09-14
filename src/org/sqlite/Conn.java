@@ -7,13 +7,15 @@ import java.lang.ref.WeakReference;
 
 class Conn implements Connection
 {
+    private final String url;
     private DB db = new DB();
     private Set stmts = Collections.synchronizedSet(new HashSet());
     private MetaData meta = null;
     private boolean autoCommit = true;
     private int timeout = 0;
 
-    public Conn(String filename) throws SQLException {
+    public Conn(String url, String filename) throws SQLException {
+        this.url = url;
         db.open(filename);
         setTimeout(3000);
     }
@@ -23,6 +25,7 @@ class Conn implements Connection
         timeout = ms;
         db.busy_timeout(ms);
     }
+    String url() { return url; }
     String libversion() { return db.libversion(); }
     DB db() { return db; }
 

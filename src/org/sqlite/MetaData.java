@@ -93,7 +93,7 @@ class MetaData implements DatabaseMetaData
     public String getSystemFunctions() { return ""; }
     public String getTimeDateFunctions() { return ""; }
 
-    public String getURL() { return null; } // TODO: save url
+    public String getURL() { return conn.url(); }
     public String getUserName() { return null; }
 
     public boolean allProceduresAreCallable() { return false; }
