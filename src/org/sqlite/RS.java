@@ -110,7 +110,11 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         if (limitRows != 0 && row >= limitRows) return false;
 
         // do the real work
-        switch (db.step(pointer)) {
+        int rc = db.step(pointer);
+        if (rc == SQLITE_ERROR)
+            db.reset(pointer);
+
+        switch (rc) {
             case SQLITE_BUSY:
                 throw new SQLException("database locked");
             case SQLITE_DONE:
@@ -332,8 +336,10 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public SQLWarning getWarnings() throws SQLException { return null; }
     public void clearWarnings() throws SQLException {}
 
-    public Connection getConnection() { return conn; } // TODO: throw exception
-    public ResultSetMetaData getMetaData() throws SQLException { return this; }
+    public Connection getConnection() throws SQLException {
+        checkOpen(); return conn; }
+    public ResultSetMetaData getMetaData() throws SQLException {
+        checkOpen(); return this; }
 
     public void cancel() throws SQLException { checkExec(); db.interrupt(); }
     public int getQueryTimeout() throws SQLException {
@@ -369,5 +375,16 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         isAfterLast = !resultsWaiting;
         if (resultsWaiting) resultsWaiting = false;
         return this;
+    }
+
+    /** SQLite does not support multiple results from execute(). */
+    public boolean getMoreResults() throws SQLException {
+        return getMoreResults(0);
+    }
+    public boolean getMoreResults(int c) throws SQLException {
+        checkOpen();
+        // take this chance to clean up any open ResultSet
+        if (isRS()) close();
+        return false;
     }
 }

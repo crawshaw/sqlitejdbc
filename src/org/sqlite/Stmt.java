@@ -56,22 +56,10 @@ class Stmt extends RS implements Statement, Codes
         pointer = 0;
         if (resp != SQLITE_OK && resp != SQLITE_MISUSE) throw db.ex();
     }
+
     protected void finalize() throws SQLException {
         Stmt.this.close();
         if (conn != null) conn.remove(this);;
-    }
-
-    /** SQLite does not support multiple results from execute(). */
-    public boolean getMoreResults() throws SQLException {
-        checkOpen();
-        return false;
-    }
-    public boolean getMoreResults(int c) throws SQLException {
-        checkOpen();
-        // take this chance to clean up any open ResultSet
-        if (isRS() && (c == CLOSE_CURRENT_RESULT || c == CLOSE_ALL_RESULTS))
-            close();
-        return false;
     }
 
     public int getUpdateCount() throws SQLException {

@@ -32,18 +32,17 @@ final class PrepStmt extends RS
     /** Weaker close to support object overriding (see docs in RS.java). */
     public void close() throws SQLException {
         if (pointer == 0 || db == null) return;
-        clearRS();
-        db.clear_bindings(pointer); // TODO: use return result?
-        db.reset(pointer);
+        clearParameters();
     }
 
     public boolean execute() throws SQLException {
-        // TODO: check ready
+        checkExec();
         clearRS();
         db.reset(pointer);
         resultsWaiting = db.execute(pointer, batch);
         return columnCount != 0;
     }
+
     public ResultSet executeQuery() throws SQLException {
         checkExec();
         if (columnCount == 0)
@@ -53,6 +52,7 @@ final class PrepStmt extends RS
         resultsWaiting = db.execute(pointer, batch);
         return getResultSet();
     }
+
     public int executeUpdate() throws SQLException {
         checkExec();
         if (columnCount != 0)
@@ -62,45 +62,35 @@ final class PrepStmt extends RS
         return db.executeUpdate(pointer, batch);
     }
 
+    public int[] executeBatch() throws SQLException {
+        return db.executeBatch(pointer, batchPos / paramCount, batch);
+    }
+
     public int getUpdateCount() throws SQLException {
         checkOpen();
         if (pointer == 0 || resultsWaiting) return -1;
         return db.changes();
     }
 
-
-    public boolean getMoreResults() throws SQLException {
-        return false; // TODO
-    }
-
-    public boolean getMoreResults(int current) throws SQLException {
-        return false; // TODO
-    }
-
     public void clearParameters() throws SQLException {
         clearRS();
-        // TODO
+        db.clear_bindings(pointer);
+        batchPos = 0;
+        for (int i=0; i < batch.length; i++)
+            batch[i] = null;
     }
 
     public void addBatch() throws SQLException {
-        // TODO: check pointer
         checkExec();
-        if (++batchPos * paramCount > batch.length) {
+        batchPos += paramCount;
+        if (batchPos + paramCount - 1 > batch.length) {
             Object[] nb = new Object[batch.length * 2];
             System.arraycopy(batch, 0, nb, 0, batch.length);
             batch = nb;
         }
     }
 
-    public void clearBatch() throws SQLException {
-        batchPos = 0;
-        for (int i=0; i < batch.length; i++)
-            batch[i] = null;
-    }
-
-    public int[] executeBatch() throws SQLException { // TODO
-        throw new SQLException("NYI"); }
-
+    public void clearBatch() throws SQLException { clearParameters(); }
 
 
     // ParameterMetaData FUNCTIONS //////////////////////////////////
@@ -108,9 +98,9 @@ final class PrepStmt extends RS
     public ParameterMetaData getParameterMetaData() { return this; }
 
     public int getParameterCount() throws SQLException {
-        checkOpen(); return paramCount; }
+        checkExec(); return paramCount; }
     public String getParameterClassName(int param) throws SQLException {
-        checkOpen(); return "java.lang.String"; }
+        checkExec(); return "java.lang.String"; }
     public String getParameterTypeName(int pos) { return "VARCHAR"; }
     public int getParameterType(int pos) { return Types.VARCHAR; }
     public int getParameterMode(int pos) { return parameterModeIn; }
@@ -124,9 +114,11 @@ final class PrepStmt extends RS
     // PARAMETER FUNCTIONS //////////////////////////////////////////
 
     public void setBoolean(int pos, boolean value) throws SQLException {
-        setInt(pos, value ? 1 : 0); }
+        setInt(pos, value ? 1 : 0);
+    }
     public void setByte(int pos, byte value) throws SQLException {
-        setInt(pos, (int)value); }
+        setInt(pos, (int)value);
+    }
     public void setBytes(int pos, byte[] value) throws SQLException {
         batch[batchPos + pos - 1] = value;
     }

@@ -86,14 +86,14 @@ final class DB implements Codes
 
     // COMPOUND FUNCTIONS (for optimisation) /////////////////////////
 
-    native synchronized int[] executeBatch(long stmt, Object[] vals)
+    native synchronized int[] executeBatch(long stmt, int count, Object[] vals)
         throws SQLException;
 
     native synchronized boolean execute(long stmt, Object[] vals)
         throws SQLException;
 
     synchronized int executeUpdate(long stmt, Object[] vals)
-        throws SQLException {
+            throws SQLException {
         int changes = 0;
         if (execute(stmt, vals)) throwex("query returns results");
         reset(stmt);

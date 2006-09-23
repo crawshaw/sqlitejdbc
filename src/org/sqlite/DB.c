@@ -720,17 +720,18 @@ static jint sqlbind(JNIEnv *env, sqlite3_stmt *stmt, jint pos, jobject value)
 }
 
 JNIEXPORT jintArray JNICALL Java_org_sqlite_DB_executeBatch(
-        JNIEnv *env, jobject this, jlong stmt, jobjectArray values)
+        JNIEnv *env, jobject this, jlong stmt,
+        jint batch_count, jobjectArray values)
 {
     jintArray changes;
     jobject val;
-    jint i, j, *c, rc, params_count, batch_count, batch_pos, values_length;
+    jint i, j, *c, rc, params_count, batch_pos;
+
     sqlite3 *db = gethandle(env, this);
     sqlite3_stmt *dbstmt = toref(stmt);
 
     params_count = sqlite3_bind_parameter_count(dbstmt);
-    values_length = (*env)->GetArrayLength(env, values);
-    batch_count = values_length / params_count;
+    assert((*env)->GetArrayLength(env, values) >= params_count * batch_count);
 
     c = calloc(batch_count, sizeof(jint));
     assert(c); // out-of-memory
