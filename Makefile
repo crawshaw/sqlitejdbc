@@ -185,7 +185,6 @@ changes:
 
 ### only useful on the author's web server
 release:
-	make all
 	make changes
 	cp dist/sqlitejdbc-v$(VERSION)-*.tgz \
 		/var/www/zentus.com/www/sqlitejdbc/dist/
