@@ -164,8 +164,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public int getRow() throws SQLException { return row; }
 
     public boolean wasNull() throws SQLException {
-        // TODO: optimise
-        return db.column_text(pointer, markCol(lastCol)) == null;
+        return db.column_type(pointer, markCol(lastCol)) == SQLITE_NULL;
     }
 
 
