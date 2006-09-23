@@ -161,21 +161,21 @@ final class PrepStmt extends RS
         batch[batchPos + pos - 1] = value;
     }
 
-
-    // TODO
-
-    public void setDate(int pos, Date x)
-        throws SQLException { throw new SQLException("NYI"); }
-    public void setDate(int pos, Date x, Calendar cal)
-        throws SQLException { throw new SQLException("NYI"); }
-    public void setTime(int pos, Time x)
-        throws SQLException { throw new SQLException("NYI"); }
-    public void setTime(int pos, Time x, Calendar cal)
-        throws SQLException { throw new SQLException("NYI"); }
-    public void setTimestamp(int pos, Timestamp x)
-        throws SQLException { throw new SQLException("NYI"); }
+    public void setDate(int pos, Date x) throws SQLException {
+        setLong(pos, x.getTime()); }
+    public void setDate(int pos, Date x, Calendar cal) throws SQLException {
+        setLong(pos, x.getTime()); }
+    public void setTime(int pos, Time x) throws SQLException {
+        setLong(pos, x.getTime()); }
+    public void setTime(int pos, Time x, Calendar cal) throws SQLException {
+        setLong(pos, x.getTime()); }
+    public void setTimestamp(int pos, Timestamp x) throws SQLException {
+        setLong(pos, x.getTime()); }
     public void setTimestamp(int pos, Timestamp x, Calendar cal)
-        throws SQLException { throw new SQLException("NYI"); }
+        throws SQLException { setLong(pos, x.getTime()); }
+
+
+    // UNUSED ///////////////////////////////////////////////////////
 
     public boolean execute(String sql)
         throws SQLException { throw unused(); }

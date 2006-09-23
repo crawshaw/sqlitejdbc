@@ -186,7 +186,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getBytes(findColumn(col)); }
 
     public Date getDate(int col) throws SQLException {
-        return getDate(col, Calendar.getInstance()); }
+        return new Date(db.column_long(pointer, markCol(col))); }
     public Date getDate(int col, Calendar cal) throws SQLException {
         throw new SQLException("NYI"); } // TODO
     public Date getDate(String col) throws SQLException {
@@ -225,7 +225,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getString(findColumn(col)); }
 
     public Time getTime(int col) throws SQLException {
-        return getTime(col, Calendar.getInstance()); }
+        return new Time(db.column_long(pointer, markCol(col))); }
     public Time getTime(int col, Calendar cal) throws SQLException {
         throw new SQLException("NYI"); } // TODO
     public Time getTime(String col) throws SQLException {
@@ -234,7 +234,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getTime(findColumn(col), cal); }
 
     public Timestamp getTimestamp(int col) throws SQLException {
-        return getTimestamp(col, Calendar.getInstance()); }
+        return new Timestamp(db.column_long(pointer, markCol(col))); }
     public Timestamp getTimestamp(int col, Calendar cal) throws SQLException {
         throw new SQLException("NYI"); } // TODO
     public Timestamp getTimestamp(String col) throws SQLException {
