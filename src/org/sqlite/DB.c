@@ -129,7 +129,7 @@ static void xFunc_error(sqlite3_context *context, JNIEnv *env)
 
     msgsize = (*env)->GetStringUTFLength(env, msg);
     strmsg = (*env)->GetStringUTFChars(env, msg, 0);
-    if (!strmsg) exit(1); // out-of-memory
+    assert(strmsg); // out-of-memory
 
     sqlite3_result_error(context, strmsg, msgsize);
 
@@ -221,7 +221,7 @@ void xFinal(sqlite3_context *context)
     if (!mth) mth = (*env)->GetMethodID(env, aclass, "xFinal", "()V");
 
     func = sqlite3_aggregate_context(context, sizeof(jobject));
-    if (!*func) exit(1); // disaster
+    assert(*func); // disaster
 
     xCall(context, 0, 0, *func, mth);
 
@@ -431,7 +431,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_sqlite_DB_column_1blob(
 
     length = sqlite3_column_bytes(toref(stmt), col);
     jBlob = (*env)->NewByteArray(env, length);
-    if (jBlob == NULL) exit(1); // out-of-memory
+    assert(jBlob); // out-of-memory
 
     a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
     memcpy(a, blob, length);
@@ -475,7 +475,7 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1text(
     size = (*env)->GetStringLength(env, value) * 2;
 
     str = (*env)->GetStringCritical(env, value, 0);
-    if (str == NULL) exit(1); // out-of-memory
+    assert(str); // out-of-memory
     sqlite3_result_text16(toref(context), str, size, SQLITE_TRANSIENT);
     (*env)->ReleaseStringCritical(env, value, str);
 }
@@ -491,7 +491,7 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_result_1blob(
 
     // be careful with *Critical
     bytes = (*env)->GetPrimitiveArrayCritical(env, value, 0);
-    if (bytes == NULL) exit(1); // out-of-memory
+    assert(bytes); // out-of-memory
     sqlite3_result_blob(toref(context), bytes, size, SQLITE_TRANSIENT);
     (*env)->ReleasePrimitiveArrayCritical(env, value, bytes, JNI_ABORT);
 }
@@ -545,7 +545,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_sqlite_DB_value_1blob(
 
     length = sqlite3_value_bytes(value);
     jBlob = (*env)->NewByteArray(env, length);
-    if (jBlob == NULL) exit(1); // out-of-memory
+    assert(jBlob); // out-of-memory
 
     a = (*env)->GetPrimitiveArrayCritical(env, jBlob, 0);
     memcpy(a, blob, length);
@@ -594,7 +594,7 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
         udfdatalist = (*env)->GetFieldID(env, dbclass, "udfdatalist", "J");
 
     UDFData *udf = malloc(sizeof(struct UDFData));
-    if (!udf) exit(1); // out-of-memory
+    assert(udf); // out-of-memory
 
     isAgg = (*env)->IsInstanceOf(env, func, aclass);
 
@@ -606,7 +606,7 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
     (*env)->SetLongField(env, this, udfdatalist, fromref(udf));
 
     strname = (*env)->GetStringUTFChars(env, name, 0);
-    if (!strname) exit(1); // out-of-memory
+    assert(strname); // out-of-memory
 
     ret = sqlite3_create_function(
             gethandle(env, this),
@@ -863,10 +863,10 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1metadata(
 
     array = (*env)->NewObjectArray(
         env, length, (*env)->FindClass(env, "[Z"), NULL) ;
-    if (array == NULL) exit(1); // out-of-memory
+    assert(array); // out-of-memory
 
     colDataRaw = (jboolean*)malloc(3 * sizeof(jboolean));
-    if (colDataRaw == NULL) exit(1); // out-of-memory
+    assert(colDataRaw); // out-of-memory
 
 
     for (i = 0; i < length; i++) {
@@ -889,7 +889,7 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1metadata(
         colDataRaw[2] = pAutoinc;
 
         colData = (*env)->NewBooleanArray(env, 3);
-        if (colData == NULL) exit(1); // out-of-memory
+        assert(colData); // out-of-memory
 
         (*env)->SetBooleanArrayRegion(env, colData, 0, 3, colDataRaw);
         (*env)->SetObjectArrayElement(env, array, i, colData);
