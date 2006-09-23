@@ -61,6 +61,47 @@ and the C library in the librarypath. E.g.</p>
 
 <p>That's it.</p>
 
+<h3>Dates and Time</h3>
+
+<p>SQLiteJDBC implements <tt>ResultSet.getDate()/getTime()</tt> and
+<tt>PreparedStatement.setDate()/setTime()</tt> in the only efficient
+way the JDBC spec allows for, which is storing the time as a 64-bit
+long of milliseconds since UTC. This is the standard unix timestamp.</p>
+
+<p>This does not conflict with the SQLite
+<a href="http://www.sqlite.org/cvstrac/wiki?p=DateAndTimeFunctions"> standard
+format</a> as long as care is taken to transform the unix timestamp
+into what SQLite functions use, either at the point where the date is
+stored or when using it elsewhere in SQLite. For example:</p>
+
+<pre>
+    prep = conn.prepareStatement("insert into test values (?);");
+    prep.setDate(1, new Date(1000));
+    prep.executeUpdate();
+
+    rs = stat.executeQuery("select * from test;");
+    rs.getString(1) = "1000";
+</pre>
+
+In the above example the date is being stored as a unix timestamp.
+To store the date in the standard SQLite format, transform it with
+the <tt>datetime()</tt> and <tt>strftime()</tt> functions:
+
+<pre>
+    prep = conn.prepareStatement(
+        "insert into test values datetime(?, 'unixepoch');");
+    prep.setDate(1, new Date(987654321));
+    prep.executeUpdate();
+
+    rs = stat.executeQuery("select * from test;");
+    rs.getString(1) = "2001-04-19 04:25:21";
+
+    rs = stat.executeQuery("select strftime('%s', col1) from test;");
+    rs.getDate(1) == new Date(987654321);
+</pre>
+
+
+
 <h2>Compiling</h2>
 
 <p>Download the source tarball, extract, set your <tt>$JAVA_HOME</tt>
