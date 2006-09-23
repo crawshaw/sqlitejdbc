@@ -23,17 +23,21 @@ import java.util.Map;
  *
  * As a result of this odd arrangement, Stmt and PrepStmt must
  * extend RS:
- *     Object -- Unused -- RS -- Stmt -- PrepStmt
+ *     Object -- Unused -- RS -- Stmt
+ *                          | -- PrepStmt
  *
  * Such inheritance requires careful checking of the object state,
  * for which the check...() functions and isRS() function handle.
  */
 abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
 {
+    Conn conn;
     DB db;
 
     long pointer = 0;
     boolean isAfterLast = false;
+    boolean resultsWaiting = false;
+
     int maxRows;              // max. number of rows as set by a Statement
     String[] cols = null;     // if null, the RS is closed()
     String[] colsMeta = null; // same as cols, but used by Meta interface
@@ -43,7 +47,10 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     private int row = 1;   // number of current row, starts at 1
     private int lastCol;   // last column accessed, for wasNull(). -1 if none
 
-    RS(DB db) { this.db = db; }
+    RS(Conn conn) {
+        this.conn = conn;
+        this.db = conn.db();
+    }
 
 
     // INTERNAL FUNCTIONS ///////////////////////////////////////////
@@ -145,24 +152,16 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
 
     /** Resets the RS in a way safe for both Stmt and PrepStmt.
      *  Full reset happens in Stmt.close(). */
-    void clear() throws SQLException {
+    void clearRS() throws SQLException {
         cols = null;
         isAfterLast = true;
         limitRows = 0;
         row = 1;
         lastCol = -1;
     }
-    protected void finalize() throws SQLException { clear(); }
+    protected void finalize() throws SQLException { clearRS(); }
 
-    public String getCursorName() throws SQLException { return null; }
-
-    public Statement getStatement() throws SQLException { return (Stmt)this; }
-    public ResultSetMetaData getMetaData() throws SQLException { return this; }
     public int getRow() throws SQLException { return row; }
-
-    public SQLWarning getWarnings() throws SQLException {
-        checkOpen(); return null; }
-    public void clearWarnings() throws SQLException {}
 
     public boolean wasNull() throws SQLException {
         // TODO: optimise
@@ -258,6 +257,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public Object getObject(String col) throws SQLException {
         return getObject(findColumn(col)); }
 
+
     // ResultSetMetaData Functions //////////////////////////////////
 
     // we do not need to check the RS is open, only that colsMeta
@@ -313,8 +313,62 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
 
     public int getConcurrency() throws SQLException { return CONCUR_READ_ONLY; }
 
-
     public boolean rowDeleted()  throws SQLException { return false; }
     public boolean rowInserted() throws SQLException { return false; }
     public boolean rowUpdated()  throws SQLException { return false; }
+
+    public int getResultSetConcurrency() throws SQLException {
+        checkOpen(); return ResultSet.CONCUR_READ_ONLY; }
+    public int getResultSetHoldability() throws SQLException {
+        checkOpen(); return ResultSet.CLOSE_CURSORS_AT_COMMIT; }
+    public int getResultSetType() throws SQLException {
+        checkOpen(); return ResultSet.TYPE_FORWARD_ONLY; }
+
+
+    // SHARED BY Stmt, PrepStmt /////////////////////////////////////
+
+    public String getCursorName() throws SQLException { return null; }
+    public void setCursorName(String name) {}
+
+    public SQLWarning getWarnings() throws SQLException { return null; }
+    public void clearWarnings() throws SQLException {}
+
+    public Connection getConnection() { return conn; } // TODO: throw exception
+    public ResultSetMetaData getMetaData() throws SQLException { return this; }
+
+    public void cancel() throws SQLException { checkExec(); db.interrupt(); }
+    public int getQueryTimeout() throws SQLException {
+        checkOpen(); return conn.getTimeout(); }
+    public void setQueryTimeout(int seconds) throws SQLException {
+        checkOpen();
+        if (seconds < 0) throw new SQLException("query timeout must be >= 0");
+        conn.setTimeout(1000 * seconds);
+    }
+
+    // TODO: write test
+    public int getMaxRows() throws SQLException { checkOpen(); return maxRows; }
+    public void setMaxRows(int max) throws SQLException {
+        checkOpen();
+        if (max < 0) throw new SQLException("max row count must be >= 0");
+        maxRows = max;
+    }
+
+    public int getMaxFieldSize() throws SQLException { return 0; }
+    public void setMaxFieldSize(int max) throws SQLException {
+        if (max < 0) throw new SQLException(
+            "max field size "+max+" cannot be negative");
+    }
+
+    public ResultSet getResultSet() throws SQLException {
+        checkExec();
+        if (isRS()) throw new SQLException("ResultSet already requested");
+        if (db.column_count(pointer) == 0) throw new SQLException(
+            "no ResultSet available");
+        if (colsMeta == null) colsMeta = db.column_names(pointer);
+        cols = colsMeta;
+
+        isAfterLast = !resultsWaiting;
+        if (resultsWaiting) resultsWaiting = false;
+        return this;
+    }
 }

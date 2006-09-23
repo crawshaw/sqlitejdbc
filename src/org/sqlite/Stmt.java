@@ -7,14 +7,9 @@ import java.util.ArrayList;
 /** See comment in RS.java to explain the strange inheritance hierarchy. */
 class Stmt extends RS implements Statement, Codes
 {
-    Conn conn;
-    protected boolean resultsWaiting = false;
     private ArrayList batch = null;
 
-    Stmt(Conn conn, DB db) {
-        super(db);
-        this.conn = conn;
-    }
+    Stmt(Conn conn) { super(conn); }
 
     /** Calls sqlite3_step() and sets up results. Expects a clean stmt. */
     protected boolean exec() throws SQLException {
@@ -47,14 +42,13 @@ class Stmt extends RS implements Statement, Codes
 
     // PUBLIC INTERFACE /////////////////////////////////////////////
 
-    public Connection getConnection() throws SQLException {
-        checkOpen(); return conn; }
+    public Statement getStatement() { return this; }
 
     /** More lax than JDBC spec, a Statement can be reused after close().
      *  This is to support Stmt and RS sharing a heap object. */
     public void close() throws SQLException {
         if (pointer == 0) return;
-        clear();
+        clearRS();
         colsMeta = null;
         meta = null;
         batch = null;
@@ -80,48 +74,10 @@ class Stmt extends RS implements Statement, Codes
         return false;
     }
 
-    public int getResultSetConcurrency() throws SQLException {
-        checkOpen(); return ResultSet.CONCUR_READ_ONLY; }
-    public int getResultSetHoldability() throws SQLException {
-        checkOpen(); return ResultSet.CLOSE_CURSORS_AT_COMMIT; }
-    public int getResultSetType() throws SQLException {
-        checkOpen(); return ResultSet.TYPE_FORWARD_ONLY; }
-
-    public void cancel() throws SQLException { checkExec(); db.interrupt(); }
-    public int getQueryTimeout() throws SQLException {
-        checkOpen(); return conn.getTimeout(); }
-    public void setQueryTimeout(int seconds) throws SQLException {
-        checkOpen();
-        if (seconds < 0) throw new SQLException("query timeout must be >= 0");
-        conn.setTimeout(1000 * seconds);
-    }
-
-
-    // TODO: write test
-    public int getMaxRows() throws SQLException { checkOpen(); return maxRows; }
-    public void setMaxRows(int max) throws SQLException {
-        checkOpen();
-        if (max < 0) throw new SQLException("max row count must be >= 0");
-        maxRows = max;
-    }
-
-    public ResultSet getResultSet() throws SQLException {
-        checkExec();
-        if (isRS()) throw new SQLException("ResultSet already requested");
-        if (db.column_count(pointer) == 0) throw new SQLException(
-            "no ResultSet available");
-        if (colsMeta == null) colsMeta = db.column_names(pointer);
-        cols = colsMeta;
-
-        isAfterLast = !resultsWaiting;
-        if (resultsWaiting) resultsWaiting = false;
-        return this;
-    }
-
     public int getUpdateCount() throws SQLException {
         checkOpen();
         if (pointer == 0 || resultsWaiting) return -1;
-        return db.changes(pointer);
+        return db.changes();
     }
 
     public boolean execute(String sql) throws SQLException {
@@ -144,7 +100,7 @@ class Stmt extends RS implements Statement, Codes
         checkOpen(); close();
         pointer = db.prepare(sql);
         int changes = 0;
-        try { changes = db.executeUpdate(pointer); } finally { close(); }
+        try { changes = db.executeUpdate(pointer, null); } finally { close(); }
         return changes;
     }
 
@@ -167,7 +123,7 @@ class Stmt extends RS implements Statement, Codes
         for (int i=0; i < changes.length; i++) {
             pointer = db.prepare((String)run.get(i));
             try {
-                changes[i] = db.executeUpdate(pointer);
+                changes[i] = db.executeUpdate(pointer, null);
             } catch (SQLException e) {
                 throw new BatchUpdateException(
                     "batch entry " + i + ": " + e.getMessage(), changes);
@@ -175,24 +131,5 @@ class Stmt extends RS implements Statement, Codes
         }
 
         return changes;
-    }
-
-
-    // Silly Functions //////////////////////////////////////////////
-
-    public SQLWarning getWarnings() { return null; }
-    public void clearWarnings() {}
-    public void setCursorName(String name) {}
-
-    public int getFetchSize() throws SQLException { return 1; }
-    public void setFetchSize(int rows) throws SQLException {
-        if (0 >= rows || rows > getMaxRows()) throw new SQLException(
-            "fetch size "+rows+" out of range [0,"+getMaxRows());
-    }
-
-    public int getMaxFieldSize() throws SQLException { return 0; }
-    public void setMaxFieldSize(int max) throws SQLException {
-        if (max < 0) throw new SQLException(
-            "max field size "+max+" cannot be negative");
     }
 }

@@ -6,49 +6,101 @@ import java.io.InputStream;
 import java.net.URL;
 import java.sql.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Calendar;
 
 /** See comment in RS.java to explain the strange inheritance hierarchy. */
-final class PrepStmt extends Stmt
+final class PrepStmt extends RS
         implements PreparedStatement, ParameterMetaData, Codes
 {
-    PrepStmt(Conn conn, DB db, String sql) throws SQLException {
-        super(conn, db);
+    private int columnCount;
+    private int paramCount;
+    private int batchPos;
+    private Object[] batch;
+
+    PrepStmt(Conn conn, String sql) throws SQLException {
+        super(conn);
 
         pointer = db.prepare(sql);
         colsMeta = db.column_names(pointer);
+        columnCount = db.column_count(pointer);
+        paramCount = db.bind_parameter_count(pointer);
+        batch = new Object[paramCount];
+        batchPos = 0;
     }
 
-    /** Used to make sure statement is open but no RS active or pending. */
-    protected final void checkExecCloseRS() throws SQLException {
-        checkExec();
-        if (isRS() || resultsWaiting) close();
-    }
-
-    /** Weaker close to support object overriding. */
+    /** Weaker close to support object overriding (see docs in RS.java). */
     public void close() throws SQLException {
-        if (pointer == 0) return;
-        clearParameters();
-    }
-
-    public void clearParameters() throws SQLException {
-        checkOpen();
+        if (pointer == 0 || db == null) return;
+        clearRS();
         db.clear_bindings(pointer); // TODO: use return result?
-        clear();
         db.reset(pointer);
     }
 
-    public boolean execute() throws SQLException { return exec(); }
+    public boolean execute() throws SQLException {
+        // TODO: check ready
+        clearRS();
+        db.reset(pointer);
+        resultsWaiting = db.execute(pointer, batch);
+        return columnCount != 0;
+    }
     public ResultSet executeQuery() throws SQLException {
-        if (!execute()) throw new SQLException("query does not return results");
+        checkExec();
+        if (columnCount == 0)
+            throw new SQLException("query does not return results");
+        clearRS();
+        db.reset(pointer);
+        resultsWaiting = db.execute(pointer, batch);
         return getResultSet();
     }
     public int executeUpdate() throws SQLException {
-        return db.executeUpdate(pointer);
+        checkExec();
+        if (columnCount != 0)
+            throw new SQLException("query returns results");
+        clearRS();
+        db.reset(pointer);
+        return db.executeUpdate(pointer, batch);
     }
 
-    public ResultSetMetaData getMetaData() throws SQLException {
-        checkOpen(); return (ResultSetMetaData)this; }
+    public int getUpdateCount() throws SQLException {
+        checkOpen();
+        if (pointer == 0 || resultsWaiting) return -1;
+        return db.changes();
+    }
+
+
+    public boolean getMoreResults() throws SQLException {
+        return false; // TODO
+    }
+
+    public boolean getMoreResults(int current) throws SQLException {
+        return false; // TODO
+    }
+
+    public void clearParameters() throws SQLException {
+        clearRS();
+        // TODO
+    }
+
+    public void addBatch() throws SQLException {
+        // TODO: check pointer
+        checkExec();
+        if (++batchPos * paramCount > batch.length) {
+            Object[] nb = new Object[batch.length * 2];
+            System.arraycopy(batch, 0, nb, 0, batch.length);
+            batch = nb;
+        }
+    }
+
+    public void clearBatch() throws SQLException {
+        batchPos = 0;
+        for (int i=0; i < batch.length; i++)
+            batch[i] = null;
+    }
+
+    public int[] executeBatch() throws SQLException { // TODO
+        throw new SQLException("NYI"); }
+
 
 
     // ParameterMetaData FUNCTIONS //////////////////////////////////
@@ -56,7 +108,7 @@ final class PrepStmt extends Stmt
     public ParameterMetaData getParameterMetaData() { return this; }
 
     public int getParameterCount() throws SQLException {
-        checkOpen(); return db.bind_parameter_count(pointer); }
+        checkOpen(); return paramCount; }
     public String getParameterClassName(int param) throws SQLException {
         checkOpen(); return "java.lang.String"; }
     public String getParameterTypeName(int pos) { return "VARCHAR"; }
@@ -66,6 +118,7 @@ final class PrepStmt extends Stmt
     public int getScale(int pos) { return 0; }
     public int isNullable(int pos) { return parameterNullable; }
     public boolean isSigned(int pos) { return true; }
+    public Statement getStatement() { return this; }
 
 
     // PARAMETER FUNCTIONS //////////////////////////////////////////
@@ -75,35 +128,28 @@ final class PrepStmt extends Stmt
     public void setByte(int pos, byte value) throws SQLException {
         setInt(pos, (int)value); }
     public void setBytes(int pos, byte[] value) throws SQLException {
-        checkExecCloseRS();
-        if (db.bind_blob(pointer, pos, value) != SQLITE_OK) throw db.ex(); }
+        batch[batchPos + pos - 1] = value;
+    }
     public void setDouble(int pos, double value) throws SQLException {
-        checkExecCloseRS();
-        if (db.bind_double(pointer, pos, value) != SQLITE_OK) throw db.ex();
+        batch[batchPos + pos - 1] = new Double(value);
     }
     public void setFloat(int pos, float value) throws SQLException {
         setDouble(pos, value);
     }
     public void setInt(int pos, int value) throws SQLException {
-        checkExecCloseRS();
-        if (db.bind_int(pointer, pos, value) != SQLITE_OK) throw db.ex();
+        batch[batchPos + pos - 1] = new Integer(value);
     }
     public void setLong(int pos, long value) throws SQLException {
-        checkExecCloseRS();
-        if (db.bind_long(pointer, pos, value) != SQLITE_OK) throw db.ex();
+        batch[batchPos + pos - 1] = new Long(value);
     }
     public void setNull(int pos, int u1) throws SQLException {
         setNull(pos, u1, null);
     }
     public void setNull(int pos, int u1, String u2) throws SQLException {
-        checkExecCloseRS();
-        if (db.bind_null(pointer, pos) != SQLITE_OK) throw db.ex();
+        batch[batchPos + pos - 1] = null;
     }
     public void setObject(int pos , Object value) throws SQLException {
-        checkExecCloseRS();
-        if (value == null) { setNull(pos, 0); return; }
-        if (db.bind_text(pointer, pos, value.toString()) != SQLITE_OK)
-            throw db.ex();
+        batch[batchPos + pos - 1] = value == null ? null : value.toString();
     }
     public void setObject(int p, Object v, int t) throws SQLException {
         setObject(p, v); }
@@ -112,8 +158,7 @@ final class PrepStmt extends Stmt
     public void setShort(int pos, short value) throws SQLException {
         setInt(pos, (int)value); }
     public void setString(int pos, String value) throws SQLException {
-        checkExecCloseRS();
-        if (db.bind_text(pointer, pos, value) != SQLITE_OK) throw db.ex();
+        batch[batchPos + pos - 1] = value;
     }
 
 
@@ -132,10 +177,16 @@ final class PrepStmt extends Stmt
     public void setTimestamp(int pos, Timestamp x, Calendar cal)
         throws SQLException { throw new SQLException("NYI"); }
 
-    public void addBatch() throws SQLException {
-        throw new SQLException("NYI"); }
-    public void clearBatch() throws SQLException {
-        throw new SQLException("NYI"); }
-    public int[] executeBatch() throws SQLException {
-        throw new SQLException("NYI"); }
+    public boolean execute(String sql)
+        throws SQLException { throw unused(); }
+    public int executeUpdate(String sql)
+        throws SQLException { throw unused(); }
+    public ResultSet executeQuery(String sql)
+        throws SQLException { throw unused(); }
+    public void addBatch(String sql)
+        throws SQLException { throw unused(); }
+
+    private SQLException unused() {
+        return new SQLException("not supported by PreparedStatment");
+    }
 }

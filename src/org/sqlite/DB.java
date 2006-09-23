@@ -44,20 +44,14 @@ final class DB implements Codes
     native synchronized long prepare(String sql) throws SQLException;
     native synchronized String errmsg();
     native synchronized String libversion();
+    native synchronized int changes();
 
-    native synchronized int changes(long stmt);
     native synchronized int finalize(long stmt);
     native synchronized int step(long stmt);
     native synchronized int reset(long stmt);
     native synchronized int clear_bindings(long stmt);
 
     native synchronized int bind_parameter_count(long stmt);
-    native synchronized int bind_null  (long stmt, int pos);
-    native synchronized int bind_text  (long stmt, int pos, String value);
-    native synchronized int bind_blob  (long stmt, int pos, byte[] value);
-    native synchronized int bind_double(long stmt, int pos, double value);
-    native synchronized int bind_long  (long stmt, int pos, long   value);
-    native synchronized int bind_int   (long stmt, int pos, int    value);
 
     native synchronized int    column_count      (long stmt);
     native synchronized int    column_type       (long stmt, int col);
@@ -92,7 +86,19 @@ final class DB implements Codes
 
     // COMPOUND FUNCTIONS (for optimisation) /////////////////////////
 
-    native synchronized int executeUpdate(long stmt) throws SQLException;
+    native synchronized int[] executeBatch(long stmt, Object[] vals)
+        throws SQLException;
+
+    native synchronized boolean execute(long stmt, Object[] vals)
+        throws SQLException;
+
+    synchronized int executeUpdate(long stmt, Object[] vals)
+        throws SQLException {
+        int changes = 0;
+        if (execute(stmt, vals)) throwex("query returns results");
+        reset(stmt);
+        return changes();
+    }
 
     native synchronized String[] column_names(long stmt);
 

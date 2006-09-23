@@ -1,6 +1,7 @@
 /* Copyright 2006 David Crawshaw, see LICENSE file for licensing [BSD]. */
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "DB.h"
 #include "sqlite3.h"
 
@@ -336,7 +337,7 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_DB_libversion(
 }
 
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_changes(
-        JNIEnv *env, jobject this, jlong stmt)
+        JNIEnv *env, jobject this)
 {
     return sqlite3_changes(gethandle(env, this));
 }
@@ -375,67 +376,6 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1parameter_1count(
         JNIEnv *env, jobject this, jlong stmt)
 {
     return sqlite3_bind_parameter_count(toref(stmt));
-}
-
-JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1null(
-        JNIEnv *env, jobject this, jlong stmt, jint pos)
-{
-    return sqlite3_bind_null(toref(stmt), pos);
-}
-
-JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1text(
-        JNIEnv *env, jobject this, jlong stmt, jint pos, jstring value)
-{
-    const jchar *str = 0;
-    jint ret = 0;
-    jsize size = 0;
-
-    if (value == NULL) return sqlite3_bind_null(toref(stmt), pos);
-    size = (*env)->GetStringLength(env, value) * 2; // in bytes
-
-    // be careful with the *Critical functions, they turn off the GC
-    str = (*env)->GetStringCritical(env, value, 0);
-    if (str == NULL) exit(1); // out-of-memory
-    ret = sqlite3_bind_text16(toref(stmt), pos, str, size, SQLITE_TRANSIENT);
-    (*env)->ReleaseStringCritical(env, value, str);
-
-    return ret;
-}
-
-JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1blob(
-        JNIEnv *env, jobject this, jlong stmt, jint pos, jbyteArray value)
-{
-    jbyte *a;
-    jint ret;
-    jsize size;
-
-    if (value == NULL) return sqlite3_bind_null(toref(stmt), pos);
-    size = (*env)->GetArrayLength(env, value);
-
-    // be careful with *Critical
-    a = (*env)->GetPrimitiveArrayCritical(env, value, 0);
-    if (a == NULL) exit(1); // out-of-memory
-    ret = sqlite3_bind_blob(toref(stmt), pos, a, size, SQLITE_TRANSIENT);
-    (*env)->ReleasePrimitiveArrayCritical(env, value, a, JNI_ABORT);
-    return ret;
-}
-
-JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1double(
-        JNIEnv *env, jobject this, jlong stmt, jint pos, jdouble value)
-{
-    return sqlite3_bind_double(toref(stmt), pos, value);
-}
-
-JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1long(
-        JNIEnv *env, jobject this, jlong stmt, jint pos, jlong value)
-{
-    return sqlite3_bind_int64(toref(stmt), pos, value);
-}
-
-JNIEXPORT jint JNICALL Java_org_sqlite_DB_bind_1int(
-        JNIEnv *env, jobject this, jlong stmt, jint pos, jint value)
-{
-    return sqlite3_bind_int(toref(stmt), pos, value);
 }
 
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_column_1count(
@@ -717,28 +657,160 @@ JNIEXPORT void JNICALL Java_org_sqlite_DB_free_1functions(
 
 // COMPOUND FUNCTIONS ///////////////////////////////////////////////
 
-JNIEXPORT jint JNICALL Java_org_sqlite_DB_executeUpdate(
-        JNIEnv *env, jobject this, jlong stmt)
+static jint sqlbind(JNIEnv *env, sqlite3_stmt *stmt, jint pos, jobject value)
 {
-    sqlite3_stmt *dbstmt = toref(stmt);
-    jint changes = 0;
+    static jclass Integer = 0, Long, Double, String, ByteArray;
+    static jmethodID intValue, longValue, doubleValue;
 
-    switch (sqlite3_step(dbstmt)) {
+    jint rc;
+    jbyte *a;
+    const jchar *str;
+    jsize size;
+
+    if (Integer == NULL) {
+        // static initialization
+        assert(Integer = (*env)->FindClass(env, "java/lang/Integer"));
+        assert(Long = (*env)->FindClass(env, "java/lang/Long"));
+        assert(Double = (*env)->FindClass(env, "java/lang/Double"));
+        assert(String = (*env)->FindClass(env, "java/lang/String"));
+        assert(ByteArray = (*env)->FindClass(env, "[B"));
+
+        Integer = (*env)->NewGlobalRef(env, Integer);
+        Long = (*env)->NewGlobalRef(env, Long);
+        Double = (*env)->NewGlobalRef(env, Double);
+        String = (*env)->NewGlobalRef(env, String);
+        ByteArray = (*env)->NewGlobalRef(env, ByteArray);
+
+        intValue = (*env)->GetMethodID(env, Integer, "intValue", "()I");
+        longValue = (*env)->GetMethodID(env, Long, "longValue", "()J");
+        doubleValue = (*env)->GetMethodID(env, Double, "doubleValue", "()D");
+
+        assert(intValue);
+        assert(longValue);
+        assert(doubleValue);
+    }
+
+    if (value == NULL) {
+        rc = sqlite3_bind_null(stmt, pos);
+    } else if ((*env)->IsInstanceOf(env, value, Integer)) {
+        rc = sqlite3_bind_int(stmt, pos, 
+            (*env)->CallIntMethod(env, value, intValue));
+    } else if ((*env)->IsInstanceOf(env, value, Long)) {
+        rc = sqlite3_bind_int64(stmt, pos, 
+            (*env)->CallLongMethod(env, value, longValue));
+    } else if ((*env)->IsInstanceOf(env, value, Double)) {
+        rc = sqlite3_bind_double(stmt, pos, 
+            (*env)->CallDoubleMethod(env, value, doubleValue));
+    } else if ((*env)->IsInstanceOf(env, value, String)) {
+        size = (*env)->GetStringLength(env, value) * 2; // in bytes
+        assert(str = (*env)->GetStringCritical(env, value, 0));
+        rc = sqlite3_bind_text16(stmt, pos, str, size, SQLITE_TRANSIENT);
+        (*env)->ReleaseStringCritical(env, value, str);
+
+    } else if ((*env)->IsInstanceOf(env, value, ByteArray)) {
+        size = (*env)->GetArrayLength(env, value);
+        assert(a = (*env)->GetPrimitiveArrayCritical(env, value, 0));
+        rc = sqlite3_bind_blob(stmt, pos, a, size, SQLITE_TRANSIENT);
+        (*env)->ReleasePrimitiveArrayCritical(env, value, a, JNI_ABORT);
+
+    } else {
+        assert(0);
+    }
+
+    return rc;
+}
+
+JNIEXPORT jintArray JNICALL Java_org_sqlite_DB_executeBatch(
+        JNIEnv *env, jobject this, jlong stmt, jobjectArray values)
+{
+    jintArray changes;
+    jobject val;
+    jint i, j, *c, rc, params_count, batch_count, batch_pos, values_length;
+    sqlite3 *db = gethandle(env, this);
+    sqlite3_stmt *dbstmt = toref(stmt);
+
+    params_count = sqlite3_bind_parameter_count(dbstmt);
+    values_length = (*env)->GetArrayLength(env, values);
+    batch_count = values_length / params_count;
+
+    c = calloc(batch_count, sizeof(jint));
+    assert(c); // out-of-memory
+
+    for (i=0; i < batch_count; i++) {
+        batch_pos = i * params_count;
+        sqlite3_reset(dbstmt);
+
+        for (j=0; j < params_count; j++) {
+            val = (*env)->GetObjectArrayElement(env, values, batch_pos + j);
+            sqlbind(env, dbstmt, j + 1, val);
+        }
+
+        rc = sqlite3_step(dbstmt);
+        if (rc != SQLITE_DONE)
+            break;
+        c[i] = sqlite3_changes(db);
+    }
+
+    // handle error
+    if (rc != SQLITE_DONE) {
+        if (rc == SQLITE_ERROR)
+            rc = sqlite3_reset(dbstmt);
+        // TODO throw ex, handle schema in loop
+    }
+
+
+    changes = (*env)->NewIntArray(env, batch_count);
+    assert(changes); // out-of-memory
+    (*env)->SetIntArrayRegion(env, changes, 0, batch_count, c);
+    return changes;
+}
+
+JNIEXPORT jboolean JNICALL Java_org_sqlite_DB_execute(
+        JNIEnv *env, jobject this, jlong stmt, jobjectArray values)
+{
+    jobject val;
+    jint rc, i, values_length;
+    sqlite3_stmt *dbstmt = toref(stmt);
+
+    values_length = values ? (*env)->GetArrayLength(env, values) : 0;
+    assert(values_length == sqlite3_bind_parameter_count(dbstmt));
+
+    for (i=0; i < values_length; i++) {
+        val = (*env)->GetObjectArrayElement(env, values, i);
+        sqlbind(env, dbstmt, i + 1, val);
+    }
+
+    rc = sqlite3_step(dbstmt);
+    if (rc == SQLITE_ERROR)
+        rc = sqlite3_reset(dbstmt);
+
+    switch (rc) {
         case SQLITE_DONE:
-            changes = sqlite3_changes(gethandle(env, this)); break;
+            return JNI_FALSE;
         case SQLITE_ROW:
-            throwexmsg(env, "query returns results"); break;
+            return JNI_TRUE;
         case SQLITE_BUSY:
             throwexmsg(env, "database locked"); break;
         case SQLITE_MISUSE:
-            throwexmsg(env, "JDBC internal consistency error"); break;
+            throwexmsg(env, "jdbc internal consistency error"); break;
+        case SQLITE_SCHEMA: // TODO
+            /*sqlite3_transfer_bindings(dbstmt, newdbstmt);
+            return Java_org_sqlite_DB_execute(
+                    env, this, fromref(newdbstmt), values);*/
+        case SQLITE_INTERNAL: // TODO: be specific
+        case SQLITE_PERM:
+        case SQLITE_ABORT:
+        case SQLITE_NOMEM:
+        case SQLITE_READONLY:
+        case SQLITE_INTERRUPT:
+        case SQLITE_IOERR:
+        case SQLITE_CORRUPT:
         case SQLITE_ERROR:
         default:
-            throwex(env, this); return 0;
+            throwex(env, this);
     }
 
-    sqlite3_reset(dbstmt);
-    return changes;
+    return JNI_FALSE;
 }
 
 JNIEXPORT jobjectArray JNICALL Java_org_sqlite_DB_column_1names(

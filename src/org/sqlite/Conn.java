@@ -46,7 +46,7 @@ class Conn implements Connection
         removePointer(stmt);
         stmts.remove(stmt);
     }
-    private void removePointer(Stmt s) throws SQLException {
+    private void removePointer(RS s) throws SQLException {
         if (s == null) return;
         s.close();
         if (s.pointer != 0) {
@@ -69,7 +69,7 @@ class Conn implements Connection
         // while the Connection is being closed
         synchronized (db) { synchronized (stmts) {
             for (Iterator i = stmts.iterator(); i.hasNext(); i.remove()) {
-                Stmt s = (Stmt)(((WeakReference)i.next()).get());
+                RS s = (RS)(((WeakReference)i.next()).get());
                 removePointer(s);
             }
             db.close();
@@ -151,7 +151,7 @@ class Conn implements Connection
     public Statement createStatement(int rst, int rsc, int rsh)
         throws SQLException {
         checkCursor(rst, rsc, rsh);
-        Stmt s = new Stmt(this, db);
+        Stmt s = new Stmt(this);
         stmts.add(new WeakReference(s));
         return s;
     }
@@ -189,7 +189,7 @@ class Conn implements Connection
     public PreparedStatement prepareStatement(
             String sql, int rst, int rsc, int rsh) throws SQLException {
         checkCursor(rst, rsc, rsh);
-        PrepStmt prep = new PrepStmt(this, db, sql);
+        PrepStmt prep = new PrepStmt(this, sql);
         stmts.add(new WeakReference(prep));
         return prep;
     }
