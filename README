@@ -49,7 +49,6 @@ doesn't lend itself that way, or I haven't got around to it yet.
   retrieving the length of a blob without reading the contents into
   memory. I hope to provide non-JDBC access to this through the API
   mentioned for user-defined functions.
-- getDate() / setDate(): coming soon, just trying to find the time.
 - getObject() / setObject(): nasty functions that would make the
   JDBC driver make some choices about types, which at the moment it
   does not do. Partial implementations may come later.
