@@ -4,6 +4,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" type="text/css" href="/content.css" />
+    <link rel="stylesheet" type="text/css" href="/javasource.css" />
     <title>SQLiteJDBC - Usage</title>
 </head>
 <body>
@@ -46,10 +47,10 @@ tarball and copy the two files into your application directory:</p>
 </pre>
 
 <p>Reference the driver in your code:</p>
-<pre>
-    Class.forName("org.sqlite.JDBC");
-    Connection conn = DriverManager.getConnection("jdbc:sqlite:filename");
-    // ... use the database ...
+<pre class="code" id="Classes">
+    Class.forName(<font id="StringLiteral">"org.sqlite.JDBC"</font>);
+    Connection conn = DriverManager.getConnection(<font id="StringLiteral">"jdbc:sqlite:filename"</font>);
+    <font id="SingleLineComment">// ... use the database ...</font>
     conn.close();
 </pre>
 
@@ -74,30 +75,30 @@ format</a> as long as care is taken to transform the unix timestamp
 into what SQLite functions use, either at the point where the date is
 stored or when using it elsewhere in SQLite. For example:</p>
 
-<pre>
-    prep = conn.prepareStatement("insert into test values (?);");
-    prep.setDate(1, new Date(1000));
+<pre class="code" id="Classes">
+    prep = conn.prepareStatement(<font id="StringLiteral">"insert into test values (?);"</font>);
+    prep.setDate(<font id="IntegerLiteral">1</font>, <font id="New">new</font> Date(<font id="IntegerLiteral">1000</font>));
     prep.executeUpdate();
 
-    rs = stat.executeQuery("select * from test;");
-    rs.getString(1) = "1000";
+    rs = stat.executeQuery(<font id="StringLiteral">"select * from test;"</font>);
+    rs.getString(<font id="IntegerLiteral">1</font>) == <font id="StringLiteral">"1000"</font>;
 </pre>
 
 In the above example the date is being stored as a unix timestamp.
 To store the date in the standard SQLite format, transform it with
 the <tt>datetime()</tt> and <tt>strftime()</tt> functions:
 
-<pre>
+<pre class="code" id="Classes">
     prep = conn.prepareStatement(
-        "insert into test values datetime(?, 'unixepoch');");
-    prep.setDate(1, new Date(987654321));
+        <font id="StringLiteral">"insert into test values datetime(?, 'unixepoch');"</font>);
+    prep.setDate(<font id="IntegerLiteral">1</font>, <font id="New">new</font> Date(<font id="IntegerLiteral">987654321</font>));
     prep.executeUpdate();
 
-    rs = stat.executeQuery("select * from test;");
-    rs.getString(1) = "2001-04-19 04:25:21";
+    rs = stat.executeQuery(<font id="StringLiteral">"select * from test;"</font>);
+    rs.getString(<font id="IntegerLiteral">1</font>) = <font id="StringLiteral">"2001-04-19 04:25:21"</font>;
 
-    rs = stat.executeQuery("select strftime('%s', col1) from test;");
-    rs.getDate(1) == new Date(987654321);
+    rs = stat.executeQuery(<font id="StringLiteral">"select strftime('%s', col1) from test;"</font>);
+    rs.getDate(<font id="IntegerLiteral">1</font>) == <font id="New">new</font> Date(<font id="IntegerLiteral">987654321</font>);
 </pre>
 
 
@@ -112,7 +113,7 @@ env variable and type:</p>
 <p>See the <a href="src/README">README</a> for more details.</p>
 
 </div>
-<p class="sig">2006-08-10</p>
+<p class="sig">2006-09-26</p>
 
 </body>
 </html>

@@ -54,7 +54,7 @@
 #Volatile		{ color: #0000FF ; font-weight: bold }
 #While			{ color: #0000FF ; font-weight: bold }
 #StrictFP			{ color: #0000FF ; font-weight: bold }
-#IntegerLiteral	{ color: #000000 }
+#IntegerLiteral	{ color: #0000AA }
 #DecimalLiteral	{ color: #000000 }
 #HexLiteral		{ color: #000000 }
 #OctalLiteral		{ color: #000000 }
