@@ -31,9 +31,21 @@ final class PrepStmt extends RS
 
     /** Weaker close to support object overriding (see docs in RS.java). */
     public void close() throws SQLException {
-        if (pointer == 0 || db == null) return;
-        clearParameters();
+        batch = null;
+        if (pointer == 0 || db == null) clearRS(); else clearParameters();
     }
+
+    public void clearParameters() throws SQLException {
+        clearRS();
+        db.clear_bindings(pointer);
+        batchPos = 0;
+        if (batch != null)
+            for (int i=0; i < batch.length; i++)
+                batch[i] = null;
+    }
+
+    protected void finalize() throws SQLException { close(); }
+
 
     public boolean execute() throws SQLException {
         checkExec();
@@ -72,14 +84,6 @@ final class PrepStmt extends RS
         return db.changes();
     }
 
-    public void clearParameters() throws SQLException {
-        clearRS();
-        db.clear_bindings(pointer);
-        batchPos = 0;
-        for (int i=0; i < batch.length; i++)
-            batch[i] = null;
-    }
-
     public void addBatch() throws SQLException {
         checkExec();
         batchPos += paramCount;
@@ -113,6 +117,12 @@ final class PrepStmt extends RS
 
     // PARAMETER FUNCTIONS //////////////////////////////////////////
 
+    private void batch(int pos, Object value) throws SQLException {
+        checkExec();
+        if (batch == null) batch = new Object[paramCount];
+        batch[batchPos + pos - 1] = value;
+    }
+
     public void setBoolean(int pos, boolean value) throws SQLException {
         setInt(pos, value ? 1 : 0);
     }
@@ -120,28 +130,29 @@ final class PrepStmt extends RS
         setInt(pos, (int)value);
     }
     public void setBytes(int pos, byte[] value) throws SQLException {
-        batch[batchPos + pos - 1] = value;
+        batch(pos, value);
     }
     public void setDouble(int pos, double value) throws SQLException {
-        batch[batchPos + pos - 1] = new Double(value);
+        batch(pos, new Double(value));
     }
     public void setFloat(int pos, float value) throws SQLException {
         setDouble(pos, value);
     }
     public void setInt(int pos, int value) throws SQLException {
-        batch[batchPos + pos - 1] = new Integer(value);
+        batch(pos, new Integer(value));
     }
     public void setLong(int pos, long value) throws SQLException {
-        batch[batchPos + pos - 1] = new Long(value);
+        batch(pos, new Long(value));
     }
     public void setNull(int pos, int u1) throws SQLException {
         setNull(pos, u1, null);
     }
     public void setNull(int pos, int u1, String u2) throws SQLException {
-        batch[batchPos + pos - 1] = null;
+        batch(pos, null);
     }
     public void setObject(int pos , Object value) throws SQLException {
-        batch[batchPos + pos - 1] = value == null ? null : value.toString();
+        // TODO: catch wrapped primitives
+        batch(pos, value == null ? null : value.toString());
     }
     public void setObject(int p, Object v, int t) throws SQLException {
         setObject(p, v); }
@@ -150,9 +161,8 @@ final class PrepStmt extends RS
     public void setShort(int pos, short value) throws SQLException {
         setInt(pos, (int)value); }
     public void setString(int pos, String value) throws SQLException {
-        batch[batchPos + pos - 1] = value;
+        batch(pos, value);
     }
-
     public void setDate(int pos, Date x) throws SQLException {
         setLong(pos, x.getTime()); }
     public void setDate(int pos, Date x, Calendar cal) throws SQLException {
