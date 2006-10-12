@@ -87,7 +87,7 @@ final class PrepStmt extends RS
     public void addBatch() throws SQLException {
         checkExec();
         batchPos += paramCount;
-        if (batchPos + paramCount - 1 > batch.length) {
+        if (batchPos + paramCount > batch.length) {
             Object[] nb = new Object[batch.length * 2];
             System.arraycopy(batch, 0, nb, 0, batch.length);
             batch = nb;
