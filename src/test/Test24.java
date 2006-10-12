@@ -15,6 +15,7 @@ public class Test24 implements Test.Case
 
         Connection conn = DriverManager.getConnection("jdbc:sqlite:");
         conn.createStatement().execute("create table test(c1, c2, c3, c4);");
+        conn.createStatement().execute("create table test2(c1);");
         PreparedStatement prep = conn.prepareStatement(
                 "insert into test values(?, ?, ?, ?);");
 
@@ -50,6 +51,15 @@ public class Test24 implements Test.Case
         }
 
         rs.close();
+
+
+        // test single-parameter statement
+        prep = conn.prepareStatement("insert into test2 values(?);");
+        for (int i=0; i < rows; i++) {
+            prep.setInt(1, Integer.MIN_VALUE + i);
+            prep.addBatch();
+        }
+        prep.executeBatch();
 
         conn.close();
         return true;
