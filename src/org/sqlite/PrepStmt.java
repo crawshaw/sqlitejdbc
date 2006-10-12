@@ -44,7 +44,7 @@ final class PrepStmt extends RS
                 batch[i] = null;
     }
 
-    protected void finalize() throws SQLException { close(); }
+    protected void finalize() throws SQLException { conn.remove(this); }
 
 
     public boolean execute() throws SQLException {
