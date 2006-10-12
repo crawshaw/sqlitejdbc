@@ -44,6 +44,12 @@ public class Test04 implements Test.Case
         rs.close();
         prep.clearParameters();
 
+        prep.close();
+
+        // test finalizing of prepared statements
+        System.gc();
+        try { Thread.sleep(10); } catch (Exception e) {}
+
         conn.close();
         return true;
     }
