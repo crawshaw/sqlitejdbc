@@ -49,9 +49,6 @@ doesn't lend itself that way, or I haven't got around to it yet.
   retrieving the length of a blob without reading the contents into
   memory. I hope to provide non-JDBC access to this through the API
   mentioned for user-defined functions.
-- getObject() / setObject(): nasty functions that would make the
-  JDBC driver make some choices about types, which at the moment it
-  does not do. Partial implementations may come later.
 - ResultSet.isLast(): the only truly evil function in the JDBC spec.
   Even the JavaDoc's accept this:
      Calling the method isLast may be expensive because the JDBC
