@@ -1,12 +1,16 @@
-
     body {
-        background-color: #BBD7FF;
+        background-color: gray;
         padding: 0px;
         margin: 0px;
     }
 
+    h1, h2, h3, h4 {
+        font-family: 'Trebuchet MS', arial, sans-serif;
+    }
+
     div.content {
-        font-family: Gill Sans, sans-serif;
+        font-family: verdana, sans-serif;
+        font-size: 12px;
         background-color: white;
         border-left: 1px solid black;
         border-bottom: 1px solid black;
@@ -39,12 +43,10 @@
     p.sig {
         text-align: right;
         font-family: monospace;
-        color: grey;
     }
 
     p.item {
         font-family: Andale Mono, Courier New, monospace;
-        font-size: 0.8em;
         text-indent: 2%;
     }
 
