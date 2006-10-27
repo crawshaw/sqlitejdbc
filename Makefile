@@ -65,7 +65,8 @@ Win_LIBNAME      := sqlitejdbc.dll
 
 # Makefile Variables, loaded from OS vars above #####################
 
-java_sources := $(shell find src -name \*.java)
+libs := $(subst  ,:,$(shell find lib -name \*.jar))
+java_sources := $(shell find src/org -name \*.java)
 java_classes := $(java_sources:src/%.java=build/%.class)
 
 target    := $(os)-$(arch)
@@ -81,7 +82,7 @@ LIBNAME   := $($(os)_LIBNAME)
 
 default: test
 
-build/%.class: src/%.java
+build/org/%.class: src/org/%.java
 	@mkdir -p build
 	javac -source 1.2 -target 1.2 -sourcepath src -d build $<
 
@@ -147,12 +148,18 @@ doc:
 	mkdir -p build/doc
 	javadoc -notree -d build/doc src/org/sqlite/*.java
 
-build/test/test.db:
-	mkdir -p build/test
-	sqlite3 build/test/test.db ".read src/test/create.sql"
-
-test: compile build/test/test.db
-	java -Djava.library.path=build/$(target) -cp build test.Test
+test: compile
+	javac -target 1.5 -cp $(libs):build -sourcepath src/test -d build \
+		$(shell find src/test -name \*.java)
+	java -Djava.library.path=build/$(target) -cp build:$(libs) \
+		org.junit.runner.JUnitCore \
+		test.ConnectionTest \
+		test.StatementTest \
+		test.PrepStmtTest \
+		test.TransactionTest \
+		test.UDFTest \
+		test.RSMetaDataTest \
+		test.DBMetaDataTest
 
 speed: compile build/test/test.db
 	java -Djava.library.path=build/$(target) -cp build test.Speed

@@ -12,8 +12,6 @@ public class Speed
     };
 
     public static void main(String[] args) throws Exception {
-        Test.main(args);
-
         Class.forName("org.sqlite.JDBC");
         System.out.println("");
         System.out.println("--- Speed Tests -------------------------");
