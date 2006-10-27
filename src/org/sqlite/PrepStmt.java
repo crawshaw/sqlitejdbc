@@ -37,7 +37,7 @@ final class PrepStmt extends RS
 
     public void clearParameters() throws SQLException {
         clearRS();
-        db.clear_bindings(pointer);
+        db.reset(pointer);
         batchPos = 0;
         if (batch != null)
             for (int i=0; i < batch.length; i++)
