@@ -12,7 +12,8 @@ class MetaData implements DatabaseMetaData
         getCrossReference = null,
         getCatalogs = null,
         getSchemas = null,
-        getUDTs = null;
+        getUDTs = null,
+        getColumnsTblName = null;
 
     MetaData(Conn conn) { this.conn = conn; }
 
@@ -30,6 +31,7 @@ class MetaData implements DatabaseMetaData
             if (getCatalogs != null) getCatalogs.close();
             if (getSchemas != null) getSchemas.close();
             if (getUDTs != null) getUDTs.close();
+            if (getColumnsTblName != null) getColumnsTblName.close();
 
             getTables = null;
             getTableTypes = null;
@@ -38,6 +40,7 @@ class MetaData implements DatabaseMetaData
             getCatalogs = null;
             getSchemas = null;
             getUDTs = null;
+            getColumnsTblName = null;
         } finally {
             conn = null;
         }
@@ -208,8 +211,76 @@ class MetaData implements DatabaseMetaData
     public ResultSet getColumnPrivileges(String c, String s, String t,
                                          String colPat)
         throws SQLException { throw new SQLException("not yet implemented"); }
-    public ResultSet getColumns(String c, String s, String t, String colPat)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+
+    public ResultSet getColumns(String c, String s, String tbl, String colPat)
+            throws SQLException {
+        Statement stat = conn.createStatement();
+        ResultSet rs;
+        String sql;
+
+        checkOpen();
+
+        if (getColumnsTblName == null)
+            getColumnsTblName = conn.prepareStatement(
+                "select tbl_name from sqlite_master where tbl_name like ?;");
+
+        // determine exact table name
+        getColumnsTblName.setString(1, tbl);
+        rs = getColumnsTblName.executeQuery();
+        if (!rs.next()) return null;
+        tbl = rs.getString(1);
+        rs.close();
+
+        sql = "select "
+            + "null as TABLE_CAT, "
+            + "null as TABLE_SCHEM, "
+            + "'" + escape(tbl) + "' as TABLE_NAME, "
+            + "cn as COLUMN_NAME, "
+            + "null as DATA_TYPE, " // TODO
+            + "tn as TYPE_NAME, "
+            + Integer.MAX_VALUE + " as COLUMN_SIZE, " // TODO
+            + "null as BUFFER_LENGTH, "
+            + "null as DECIMAL_DIGITS, "
+            + "10   as NUM_PREC_RADIX, "
+            + "null as NULLABLE, " // TODO
+            + "null as REMARKS, "
+            + "null as COLUMN_DEF, "
+            + "null as SQL_DATA_TYPE, "
+            + "null as SQL_DATETIME_SUB, "
+            + Integer.MAX_VALUE + " as CHAR_OCTET_LENGTH, "
+            + "null as ORDINAL_POSITION, " // TODO
+            + "null as IS_NULLABLE, " // TODO
+            + "null as SCOPE_CATLOG, "
+            + "null as SCOPE_SCHEMA, "
+            + "null as SCOPE_TABLE, "
+            + "null as SOURCE_DATA_TYPE from (";
+
+        // the command "pragma table_info('tablename')" does not embed
+        // like a normal select statement so we must extract the information
+        // and then build a resultset from unioned select statements
+        rs = stat.executeQuery("pragma table_info ("+tbl+");");
+
+        int i;
+        for (i=0; rs.next(); i++) {
+            String colName = rs.getString(2);
+            String colType = rs.getString(3);
+
+            if (colType == null) colType = "null";
+            // TODO: handle wildcard search
+            if (colPat != null && !colPat.equalsIgnoreCase(colName)) {
+                i--; continue;
+            }
+            if (i > 0) sql += " union all ";
+
+            sql += "select '"
+                + escape(colName) + "' as cn, '"
+                + escape(colType) + "' as tn";
+        }
+        sql += i == 0 ? "select null as cn, null as tn) limit 0;" : ");";
+        rs.close();
+
+        return stat.executeQuery(sql);
+    }
 
     public ResultSet getCrossReference(String pc, String ps, String pt,
                                        String fc, String fs, String ft)
@@ -361,4 +432,18 @@ class MetaData implements DatabaseMetaData
     }
     public ResultSet getVersionColumns(String c, String s, String t)
         throws SQLException { throw new SQLException("not yet implemented"); }
+
+    /** Replace all instances of ' with '' */
+    private String escape(final String val) {
+        // TODO: this function is ugly, pass this work off to SQLite, then we
+        //       don't have to worry about Unicode 4, other characters needing
+        //       escaping, etc.
+        int len = val.length();
+        StringBuffer buf = new StringBuffer(len);
+        for (int i=0; i < len; i++) {
+            if (val.charAt(i) == '\'') buf.append('\'');
+            buf.append(val.charAt(i));
+        }
+        return buf.toString();
+    }
 }
