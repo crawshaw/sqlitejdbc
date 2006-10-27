@@ -357,6 +357,7 @@ class MetaData implements DatabaseMetaData
                 + " upper(type) as TABLE_TYPE,"
                 + " null as REMARKS,"
                 + " null as TYPE_CAT,"
+                + " null as TYPE_SCHEM,"
                 + " null as TYPE_NAME,"
                 + " null as SELF_REFERENCING_COL_NAME,"
                 + " null as REF_GENERATION"
