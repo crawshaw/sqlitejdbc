@@ -69,6 +69,26 @@ public class StatementTest
         rs.close();
     }
 
+    @Test public void execute() throws SQLException {
+        assertTrue(stat.execute("select null;"));
+        ResultSet rs = stat.getResultSet();
+        assertNotNull(rs);
+        assertTrue(rs.next());
+        assertNull(rs.getString(1));
+        assertTrue(rs.wasNull());
+        assertFalse(stat.getMoreResults());
+        assertEquals(stat.getUpdateCount(), -1);
+
+        assertTrue(stat.execute("select null;"));
+        assertFalse(stat.getMoreResults());
+        assertEquals(stat.getUpdateCount(), -1);
+
+        assertFalse(stat.execute("create table test (c1);"));
+        assertEquals(stat.getUpdateCount(), 0);
+        assertFalse(stat.getMoreResults());
+        assertEquals(stat.getUpdateCount(), -1);
+    }
+
     @Test public void colNameAccess() throws SQLException {
         assertEquals(stat.executeUpdate(
                     "create table tab (id, firstname, surname);"), 0);
@@ -170,6 +190,20 @@ public class StatementTest
         stat.executeUpdate("insert into t1 values (4);");
         conn.createStatement().executeQuery("select * from t1;").next();
         stat.executeUpdate("drop table t1;");
+    }
+
+    @Test(expected= SQLException.class)
+    public void executeNoRS() throws SQLException {
+        assertFalse(stat.execute("insert into test values (8);"));
+        stat.getResultSet();
+    }
+
+    @Test(expected= SQLException.class)
+    public void executeClearRS() throws SQLException {
+        assertTrue(stat.execute("select null;"));
+        assertNotNull(stat.getResultSet());
+        assertFalse(stat.getMoreResults());
+        stat.getResultSet();
     }
 
     @Test(expected= SQLException.class)
