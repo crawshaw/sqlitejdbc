@@ -383,8 +383,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     }
     public boolean getMoreResults(int c) throws SQLException {
         checkOpen();
-        // take this chance to clean up any open ResultSet
-        if (isRS()) close();
+        close(); // as we never have another result, clean up pointer
         return false;
     }
 }
