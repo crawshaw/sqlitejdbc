@@ -584,19 +584,19 @@ JNIEXPORT jint JNICALL Java_org_sqlite_DB_value_1type(
 JNIEXPORT jint JNICALL Java_org_sqlite_DB_create_1function(
         JNIEnv *env, jobject this, jstring name, jobject func)
 {
-    jint ret = 0;;
+    jint ret = 0;
     const char *strname = 0;
     int isAgg = 0;
+
     static jfieldID udfdatalist = 0;
+    struct UDFData *udf = malloc(sizeof(struct UDFData));
+
+    assert(udf); // out-of-memory
 
     if (!udfdatalist)
         udfdatalist = (*env)->GetFieldID(env, dbclass, "udfdatalist", "J");
 
-    struct UDFData *udf = malloc(sizeof(struct UDFData));
-    assert(udf); // out-of-memory
-
     isAgg = (*env)->IsInstanceOf(env, func, aclass);
-
     udf->env = env;
     udf->func = (*env)->NewGlobalRef(env, func);
 
