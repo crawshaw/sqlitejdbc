@@ -125,6 +125,7 @@ src-tgz:
 	cp VERSION work/$(PNAME)/.
 	cp -R src/org work/$(PNAME)/src/.
 	cp -R src/test work/$(PNAME)/src/.
+	cp -R lib work/$(PNAME)/
 	cd work && tar cfz ../dist/$(PNAME)-src.tgz $(PNAME)
 
 work/sqlite-src.zip:
