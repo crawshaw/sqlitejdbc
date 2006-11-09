@@ -23,6 +23,10 @@ ifeq ($(arch),Power Macintosh) # OS X gives funny result for 'uname -m'
 arch := powerpc
 endif
 
+ifndef JAVA_HOME
+$(error Set env variable JAVA_HOME)
+endif
+
 jni_md := $(shell find $(JAVA_HOME) -name jni_md.h)
 ifneq ($(jni_md),)
 jni_include := $(shell dirname $(jni_md))
