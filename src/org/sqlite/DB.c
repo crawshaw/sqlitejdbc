@@ -162,13 +162,13 @@ static xCall(
 
     (*env)->SetLongField(env, func, fld_context, fromref(context));
     (*env)->SetLongField(env, func, fld_value, value ? fromref(value) : 0);
-    (*env)->SetLongField(env, func, fld_args, args);
+    (*env)->SetIntField(env, func, fld_args, args);
 
     (*env)->CallVoidMethod(env, func, method);
 
     (*env)->SetLongField(env, func, fld_context, 0);
     (*env)->SetLongField(env, func, fld_value, 0);
-    (*env)->SetLongField(env, func, fld_args, 0);
+    (*env)->SetIntField(env, func, fld_args, 0);
 
     // check if xFunc threw an Exception
     if ((*env)->ExceptionCheck(env)) xFunc_error(context, env);
