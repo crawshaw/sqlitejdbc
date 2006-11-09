@@ -150,6 +150,7 @@ static xCall(
     struct UDFData *udf = 0;
 
     udf = (struct UDFData*)sqlite3_user_data(context);
+    assert(udf);
     env = udf->env;
     if (!func) func = udf->func;
 
