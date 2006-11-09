@@ -108,7 +108,7 @@ all: src-tgz
 	@mkdir -p src/jni/Linux src/jni/Darwin src/jni/Win
 	@make os=Linux arch=i386 dist
 	@make os=Win arch=i586 dist
-	@make os=Darwin arch=powerpc compile
+	#@make os=Darwin arch=powerpc compile
 	#@make os=Darwin arch=i386 compile
 	@mkdir -p build/Darwin-lipo
 	$(LIPO) -create \
