@@ -134,7 +134,7 @@ src-tgz:
 
 work/sqlite-src.zip:
 	@mkdir -p work
-	wget -O work/sqlite-src.zip http://www.sqlite.org/sqlite-source-3_3_8.zip
+	curl -owork/sqlite-src.zip http://www.sqlite.org/sqlite-source-3_3_8.zip
 
 work/sqlite/%/main.o: work/sqlite-src.zip
 	mkdir -p work/sqlite/$*
