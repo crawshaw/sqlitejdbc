@@ -174,7 +174,6 @@ public class DBMetaDataTest
     // the following functions always return an empty resultset, so
     // do not bother testing their parameters, only the column types
 
-    @Ignore
     @Test public void columnOrderOfgetProcedures() throws SQLException {
         ResultSet rs = meta.getProcedures(null, null, null);
         assertFalse(rs.next());
@@ -188,7 +187,6 @@ public class DBMetaDataTest
         assertEquals(rsmeta.getColumnName(8), "PROCEDURE_TYPE");
     }
 
-    @Ignore
     @Test public void columnOrderOfgetProcedurColumns() throws SQLException {
         ResultSet rs = meta.getProcedureColumns(null, null, null, null);
         assertFalse(rs.next());
@@ -242,7 +240,6 @@ public class DBMetaDataTest
         assertEquals(rsmeta.getColumnName(8), "IS_GRANTABLE");
     }
 
-    @Ignore
     @Test public void columnOrderOfgetTablePrivileges() throws SQLException {
         ResultSet rs = meta.getTablePrivileges(null, null, null);
         assertFalse(rs.next());

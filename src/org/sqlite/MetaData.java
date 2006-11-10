@@ -13,7 +13,13 @@ class MetaData implements DatabaseMetaData
         getCatalogs = null,
         getSchemas = null,
         getUDTs = null,
-        getColumnsTblName = null;
+        getColumnsTblName = null,
+        getSuperTypes = null,
+        getSuperTables = null,
+        getTablePrivileges = null,
+        getExportedKeys = null,
+        getProcedures = null,
+        getProcedureColumns = null;
 
     MetaData(Conn conn) { this.conn = conn; }
 
@@ -32,6 +38,12 @@ class MetaData implements DatabaseMetaData
             if (getSchemas != null) getSchemas.close();
             if (getUDTs != null) getUDTs.close();
             if (getColumnsTblName != null) getColumnsTblName.close();
+            if (getSuperTypes != null) getSuperTypes.close();
+            if (getSuperTables != null) getSuperTables.close();
+            if (getTablePrivileges != null) getTablePrivileges.close();
+            if (getExportedKeys != null) getExportedKeys.close();
+            if (getProcedures != null) getProcedures.close();
+            if (getProcedureColumns != null) getProcedureColumns.close();
 
             getTables = null;
             getTableTypes = null;
@@ -41,6 +53,12 @@ class MetaData implements DatabaseMetaData
             getSchemas = null;
             getUDTs = null;
             getColumnsTblName = null;
+            getSuperTypes = null;
+            getSuperTables = null;
+            getTablePrivileges = null;
+            getExportedKeys = null;
+            getProcedures = null;
+            getProcedureColumns = null;
         } finally {
             conn = null;
         }
@@ -325,7 +343,26 @@ class MetaData implements DatabaseMetaData
     public ResultSet getPrimaryKeys(String c, String s, String t)
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getExportedKeys(String c, String s, String t)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getExportedKeys == null) getExportedKeys = conn.prepareStatement(
+                "select "
+                + "null as PKTABLE_CAT, "
+                + "null as PKTABLE_SCHEM, "
+                + "null as PKTABLE_NAME, "
+                + "null as PKCOLUMN_NAME, "
+                + "null as FKTABLE_CAT, "
+                + "null as FKTABLE_SCHEM, "
+                + "null as FKTABLE_NAME, "
+                + "null as FKCOLUMN_NAME, "
+                + "null as KEY_SEQ, "
+                + "null as UPDATE_RULE, "
+                + "null as DELETE_RULE, "
+                + "null as FK_NAME, "
+                + "null as PK_NAME, "
+                + "null as DEFERRABILITY limit 0;");
+        return getExportedKeys.executeQuery();
+    }
+
     public ResultSet getImportedKeys(String c, String s, String t)
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getIndexInfo(String c, String s, String t,
@@ -333,15 +370,79 @@ class MetaData implements DatabaseMetaData
         throws SQLException { throw new SQLException("not yet implemented"); }
     public ResultSet getProcedureColumns(String c, String s, String p,
                                          String colPat)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getProcedures == null) getProcedureColumns = conn.prepareStatement(
+            "select "
+            + "null as PROCEDURE_CAT, "
+            + "null as PROCEDURE_SCHEM, "
+            + "null as PROCEDURE_NAME, "
+            + "null as COLUMN_NAME, "
+            + "null as COLUMN_TYPE, "
+            + "null as DATA_TYPE, "
+            + "null as TYPE_NAME, "
+            + "null as PRECISION, "
+            + "null as LENGTH, "
+            + "null as SCALE, "
+            + "null as RADIX, "
+            + "null as NULLABLE, "
+            + "null as REMARKS limit 0;");
+        return getProcedureColumns.executeQuery();
+
+    }
+
     public ResultSet getProcedures(String c, String s, String p)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getProcedures == null) getProcedures = conn.prepareStatement(
+            "select "
+            + "null as PROCEDURE_CAT, "
+            + "null as PROCEDURE_SCHEM, "
+            + "null as PROCEDURE_NAME, "
+            + "null as UNDEF1, "
+            + "null as UNDEF2, "
+            + "null as UNDEF3, "
+            + "null as REMARKS, "
+            + "null as PROCEDURE_TYPE limit 0;");
+        return getProcedures.executeQuery();
+    }
+
     public ResultSet getSuperTables(String c, String s, String t)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getSuperTables == null) getSuperTables = conn.prepareStatement(
+            "select "
+            + "null as TABLE_CAT, "
+            + "null as TABLE_SCHEM, "
+            + "null as TABLE_NAME, "
+            + "null as SUPERTABLE_NAME limit 0;");
+        return getSuperTables.executeQuery();
+    }
+
     public ResultSet getSuperTypes(String c, String s, String t)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getSuperTypes == null) getSuperTypes = conn.prepareStatement(
+            "select "
+            + "null as TYPE_CAT, "
+            + "null as TYPE_SCHEM, "
+            + "null as TYPE_NAME, "
+            + "null as SUPERTYPE_CAT, "
+            + "null as SUPERTYPE_SCHEM, "
+            + "null as SUPERTYPE_NAME limit 0;");
+        return getSuperTypes.executeQuery();
+    }
+
     public ResultSet getTablePrivileges(String c, String s, String t)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getTablePrivileges == null)
+            getTablePrivileges = conn.prepareStatement(
+            "select "
+            + "null as TABLE_CAT, "
+            + "null as TABLE_SCHEM, "
+            + "null as TABLE_NAME, "
+            + "null as GRANTOR, "
+            + "null as GRANTEE, "
+            + "null as PRIVILEGE, "
+            + "null as IS_GRANTABLE limit 0;");
+        return getTablePrivileges.executeQuery();
+    }
 
     public synchronized ResultSet getTables(String c, String s,
             String t, String[] types) throws SQLException {
