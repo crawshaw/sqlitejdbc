@@ -224,7 +224,6 @@ public class DBMetaDataTest
         assertEquals(rsmeta.getColumnName(1), "TABLE_CAT");
     }
 
-    @Ignore
     @Test public void columnOrderOfgetColumnPrivileges() throws SQLException {
         ResultSet rs = meta.getColumnPrivileges(null, null, null, null);
         assertFalse(rs.next());
@@ -254,7 +253,6 @@ public class DBMetaDataTest
         assertEquals(rsmeta.getColumnName(7), "IS_GRANTABLE");
     }
 
-    @Ignore
     @Test public void columnOrderOfgetBestRowIdentifier() throws SQLException {
         ResultSet rs = meta.getBestRowIdentifier(null, null, null, 0, false);
         assertFalse(rs.next());
@@ -270,7 +268,6 @@ public class DBMetaDataTest
         assertEquals(rsmeta.getColumnName(8), "PSEUDO_COLUMN");
     }
 
-    @Ignore
     @Test public void columnOrderOfgetVersionColumns() throws SQLException {
         ResultSet rs = meta.getVersionColumns(null, null, null);
         assertFalse(rs.next());

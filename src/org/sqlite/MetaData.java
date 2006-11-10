@@ -19,7 +19,11 @@ class MetaData implements DatabaseMetaData
         getTablePrivileges = null,
         getExportedKeys = null,
         getProcedures = null,
-        getProcedureColumns = null;
+        getProcedureColumns = null,
+        getAttributes = null,
+        getBestRowIdentifier = null,
+        getVersionColumns = null,
+        getColumnPrivileges = null;
 
     MetaData(Conn conn) { this.conn = conn; }
 
@@ -44,6 +48,10 @@ class MetaData implements DatabaseMetaData
             if (getExportedKeys != null) getExportedKeys.close();
             if (getProcedures != null) getProcedures.close();
             if (getProcedureColumns != null) getProcedureColumns.close();
+            if (getAttributes != null) getAttributes.close();
+            if (getBestRowIdentifier != null) getBestRowIdentifier.close();
+            if (getVersionColumns != null) getVersionColumns.close();
+            if (getColumnPrivileges != null) getColumnPrivileges.close();
 
             getTables = null;
             getTableTypes = null;
@@ -59,6 +67,10 @@ class MetaData implements DatabaseMetaData
             getExportedKeys = null;
             getProcedures = null;
             getProcedureColumns = null;
+            getAttributes = null;
+            getBestRowIdentifier = null;
+            getVersionColumns = null;
+            getColumnPrivileges = null;
         } finally {
             conn = null;
         }
@@ -222,13 +234,65 @@ class MetaData implements DatabaseMetaData
         { return conn.isReadOnly(); }
 
     public ResultSet getAttributes(String c, String s, String t, String a)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getAttributes == null) getAttributes = conn.prepareStatement(
+            "select "
+            + "null as TYPE_CAT, "
+            + "null as TYPE_SCHEM, "
+            + "null as TYPE_NAME, "
+            + "null as ATTR_NAME, "
+            + "null as DATA_TYPE, "
+            + "null as ATTR_TYPE_NAME, "
+            + "null as ATTR_SIZE, "
+            + "null as DECIMAL_DIGITS, "
+            + "null as NUM_PREC_RADIX, "
+            + "null as NULLABLE, "
+            + "null as REMARKS, "
+            + "null as ATTR_DEF, "
+            + "null as SQL_DATA_TYPE, "
+            + "null as SQL_DATETIME_SUB, "
+            + "null as CHAR_OCTET_LENGTH, "
+            + "null as ORDINAL_POSITION, "
+            + "null as IS_NULLABLE, "
+            + "null as SCOPE_CATALOG, "
+            + "null as SCOPE_SCHEMA, "
+            + "null as SCOPE_TABLE, "
+            + "null as SOURCE_DATA_TYPE limit 0;");
+        return getAttributes.executeQuery();
+    }
+
     public ResultSet getBestRowIdentifier(String c, String s, String t,
-                                          int scope, boolean n)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            int scope, boolean n) throws SQLException {
+        if (getBestRowIdentifier == null)
+            getBestRowIdentifier = conn.prepareStatement(
+            "select "
+            + "null as SCOPE, "
+            + "null as COLUMN_NAME, "
+            + "null as DATA_TYPE, "
+            + "null as TYPE_NAME, "
+            + "null as COLUMN_SIZE, "
+            + "null as BUFFER_LENGTH, "
+            + "null as DECIMAL_DIGITS, "
+            + "null as PSEUDO_COLUMN limit 0;");
+        return getBestRowIdentifier.executeQuery();
+    }
+
     public ResultSet getColumnPrivileges(String c, String s, String t,
                                          String colPat)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getColumnPrivileges == null)
+            getColumnPrivileges = conn.prepareStatement(
+            "select "
+            + "null as TABLE_CAT, "
+            + "null as TABLE_SCHEM, "
+            + "null as TABLE_NAME, "
+            + "null as COLUMN_NAME, "
+            + "null as GRANTOR, "
+            + "null as GRANTEE, "
+            + "null as PRIVILEGE, "
+            + "null as IS_GRANTABLE limit 0;");
+        return getColumnPrivileges.executeQuery();
+    }
 
     public ResultSet getColumns(String c, String s, String tbl, String colPat)
             throws SQLException {
@@ -533,7 +597,20 @@ class MetaData implements DatabaseMetaData
         return getUDTs.executeQuery();
     }
     public ResultSet getVersionColumns(String c, String s, String t)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+            throws SQLException {
+        if (getVersionColumns == null)
+            getVersionColumns = conn.prepareStatement(
+            "select "
+            + "null as SCOPE, "
+            + "null as COLUMN_NAME, "
+            + "null as DATA_TYPE, "
+            + "null as TYPE_NAME, "
+            + "null as COLUMN_SIZE, "
+            + "null as BUFFER_LENGTH, "
+            + "null as DECIMAL_DIGITS, "
+            + "null as PSEUDO_COLUMN limit 0;");
+        return getVersionColumns.executeQuery();
+    }
 
     /** Replace all instances of ' with '' */
     private String escape(final String val) {
