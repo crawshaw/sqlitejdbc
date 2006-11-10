@@ -404,8 +404,37 @@ class MetaData implements DatabaseMetaData
         return getCatalogs.executeQuery();
     }
 
-    public ResultSet getPrimaryKeys(String c, String s, String t)
-        throws SQLException { throw new SQLException("not yet implemented"); }
+    public ResultSet getPrimaryKeys(String c, String s, String table)
+            throws SQLException {
+        String sql;
+        ResultSet rs;
+        Statement stat = conn.createStatement();
+
+        rs = stat.executeQuery("pragma table_info("+escape(table)+");");
+
+        sql = "select "
+            + "null as TABLE_CAT, "
+            + "null as TABLE_SCHEM, "
+            + "'" + escape(table) + "' as TABLE_NAME, "
+            + "cn as COLUMN_NAME, "
+            + "0 as KEY_SEQ, "
+            + "null as PK_NAME from (";
+
+        int i;
+        for (i=0; rs.next(); i++) {
+            String colName = rs.getString(2);
+
+            if (!rs.getBoolean(6)) { i--; continue; }
+            if (i > 0) sql += " union all ";
+
+            sql += "select '" + escape(colName) + "' as cn";
+        }
+        sql += i == 0 ? "select null as cn) limit 0;" : ");";
+        rs.close();
+
+        return stat.executeQuery(sql);
+    }
+
     public ResultSet getExportedKeys(String c, String s, String t)
             throws SQLException {
         if (getExportedKeys == null) getExportedKeys = conn.prepareStatement(

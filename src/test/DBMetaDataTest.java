@@ -283,8 +283,50 @@ public class DBMetaDataTest
         assertEquals(rsmeta.getColumnName(8), "PSEUDO_COLUMN");
     }
 
-    /* TODO
     @Test public void columnOrderOfgetPrimaryKeys() throws SQLException {
+        ResultSet rs;
+        ResultSetMetaData rsmeta;
+
+        stat.executeUpdate("create table nopk (c1, c2, c3, c4);");
+        stat.executeUpdate("create table pk1 (col1 primary key, col2, col3);");
+        stat.executeUpdate("create table pk2 (col1, col2 primary key, col3);");
+        stat.executeUpdate("create table pk3 (col1, col2, col3, col4, "
+                + "primary key (col2, col3));");
+
+        rs = meta.getPrimaryKeys(null, null, "nopk");
+        assertFalse(rs.next());
+        rsmeta = rs.getMetaData();
+        assertEquals(rsmeta.getColumnCount(), 6);
+        assertEquals(rsmeta.getColumnName(1), "TABLE_CAT");
+        assertEquals(rsmeta.getColumnName(2), "TABLE_SCHEM");
+        assertEquals(rsmeta.getColumnName(3), "TABLE_NAME");
+        assertEquals(rsmeta.getColumnName(4), "COLUMN_NAME");
+        assertEquals(rsmeta.getColumnName(5), "KEY_SEQ");
+        assertEquals(rsmeta.getColumnName(6), "PK_NAME");
+        rs.close();
+
+        rs = meta.getPrimaryKeys(null, null, "pk1");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "col1");
+        assertFalse(rs.next());
+        rs.close();
+
+        rs = meta.getPrimaryKeys(null, null, "pk2");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "col2");
+        assertFalse(rs.next());
+        rs.close();
+
+        rs = meta.getPrimaryKeys(null, null, "pk3");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "col2");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "col3");
+        assertFalse(rs.next());
+        rs.close();
+    }
+
+    /* TODO
     @Test public void columnOrderOfgetImportedKeys() throws SQLException {
     @Test public void columnOrderOfgetExportedKeys() throws SQLException {
     @Test public void columnOrderOfgetCrossReference() throws SQLException {
