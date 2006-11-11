@@ -377,6 +377,13 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return this;
     }
 
+    /** As SQLite's last_insert_rowid() function is DB-specific not
+     *  statement specific, this function introduces a race condition
+     *  if the same connection is used by two threads and both insert. */
+    public ResultSet getGeneratedKeys() throws SQLException {
+        return ((MetaData)conn.getMetaData()).getGeneratedKeys();
+    }
+
     /** SQLite does not support multiple results from execute(). */
     public boolean getMoreResults() throws SQLException {
         return getMoreResults(0);

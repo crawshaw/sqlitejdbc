@@ -25,6 +25,9 @@ class MetaData implements DatabaseMetaData
         getVersionColumns = null,
         getColumnPrivileges = null;
 
+    /** Used by PrepStmt to save generating a new statement every call. */
+    private PreparedStatement getGeneratedKeys = null;
+
     MetaData(Conn conn) { this.conn = conn; }
 
     void checkOpen() throws SQLException {
@@ -52,6 +55,7 @@ class MetaData implements DatabaseMetaData
             if (getBestRowIdentifier != null) getBestRowIdentifier.close();
             if (getVersionColumns != null) getVersionColumns.close();
             if (getColumnPrivileges != null) getColumnPrivileges.close();
+            if (getGeneratedKeys != null) getGeneratedKeys.close();
 
             getTables = null;
             getTableTypes = null;
@@ -71,6 +75,7 @@ class MetaData implements DatabaseMetaData
             getBestRowIdentifier = null;
             getVersionColumns = null;
             getColumnPrivileges = null;
+            getGeneratedKeys = null;
         } finally {
             conn = null;
         }
@@ -639,6 +644,12 @@ class MetaData implements DatabaseMetaData
             + "null as DECIMAL_DIGITS, "
             + "null as PSEUDO_COLUMN limit 0;");
         return getVersionColumns.executeQuery();
+    }
+
+    ResultSet getGeneratedKeys() throws SQLException {
+        if (getGeneratedKeys == null) getGeneratedKeys = conn.prepareStatement(
+            "select last_insert_rowid();");
+        return getGeneratedKeys.executeQuery();
     }
 
     /** Replace all instances of ' with '' */

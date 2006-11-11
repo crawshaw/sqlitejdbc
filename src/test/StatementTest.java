@@ -183,6 +183,21 @@ public class StatementTest
         stat.executeUpdate("drop table t1;");
     }
 
+    @Test public void getGeneratedKeys() throws SQLException {
+        ResultSet rs;
+        stat.executeUpdate("create table t1 (c1 integer primary key, v);");
+        stat.executeUpdate("insert into t1 (v) values ('red');");
+        rs = stat.getGeneratedKeys();
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 1);
+        rs.close();
+        stat.executeUpdate("insert into t1 (v) values ('blue');");
+        rs = stat.getGeneratedKeys();
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 2);
+        rs.close();
+    }
+
     @Test(expected= SQLException.class)
     public void failToDropWhenRSOpen() throws SQLException {
         stat.executeUpdate("create table t1 (c1);");
