@@ -33,7 +33,7 @@ class Stmt extends RS implements Statement, Codes
             default:
                  int ret = db.finalize(pointer);
                  pointer = 0;
-                 throw db.ex();
+                 db.throwex(); return false;
         }
 
         return db.column_count(pointer) != 0;
@@ -54,7 +54,8 @@ class Stmt extends RS implements Statement, Codes
         batch = null;
         int resp = db.finalize(pointer);
         pointer = 0;
-        if (resp != SQLITE_OK && resp != SQLITE_MISUSE) throw db.ex();
+        if (resp != SQLITE_OK && resp != SQLITE_MISUSE)
+            db.throwex();
     }
 
     protected void finalize() throws SQLException {

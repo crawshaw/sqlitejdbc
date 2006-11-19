@@ -92,11 +92,12 @@ build/org/%.class: src/org/%.java
 
 compile: work/sqlite/$(target)/main.o $(java_classes)
 	@mkdir -p build/$(target)
-	javah -classpath build -jni -o build/DB.h org.sqlite.DB
+	javah -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
 	jar cf build/sqlitejdbc.jar -C build org
-	$(CC) $(CCFLAGS) -c -O -o build/$(target)/DB.o src/org/sqlite/DB.c
+	$(CC) $(CCFLAGS) -c -O -o build/$(target)/NativeDB.o \
+		src/org/sqlite/NativeDB.c
 	$(CC) $(CCFLAGS) $(LINKFLAGS) -o build/$(target)/$(LIBNAME) \
-		build/$(target)/DB.o work/sqlite/$(target)/*.o
+		build/$(target)/NativeDB.o work/sqlite/$(target)/*.o
 	$(STRIP) build/$(target)/$(LIBNAME)
 
 dist: compile

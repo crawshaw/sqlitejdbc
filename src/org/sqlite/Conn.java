@@ -8,7 +8,7 @@ import java.lang.ref.WeakReference;
 class Conn implements Connection
 {
     private final String url;
-    private DB db = new DB();
+    private DB db = new NativeDB();
     private Set stmts = Collections.synchronizedSet(new HashSet());
     private MetaData meta = null;
     private boolean autoCommit = true;
@@ -21,12 +21,12 @@ class Conn implements Connection
     }
 
     int getTimeout() { return timeout; }
-    void setTimeout(int ms) {
+    void setTimeout(int ms) throws SQLException {
         timeout = ms;
         db.busy_timeout(ms);
     }
     String url() { return url; }
-    String libversion() { return db.libversion(); }
+    String libversion() throws SQLException { return db.libversion(); }
     DB db() { return db; }
 
     private void checkOpen() throws SQLException {

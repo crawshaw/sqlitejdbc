@@ -115,7 +115,8 @@ class MetaData implements DatabaseMetaData
     public int getSQLStateType() { return sqlStateSQL99; }
 
     public String getDatabaseProductName() { return "SQLite"; }
-    public String getDatabaseProductVersion() { return conn.libversion(); }
+    public String getDatabaseProductVersion() throws SQLException {
+        return conn.libversion(); }
     public String getDriverName() { return "SQLiteJDBC"; }
     public String getDriverVersion() { return "1"; }
     public String getExtraNameCharacters() { return ""; }

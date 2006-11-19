@@ -126,7 +126,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
                  throw new SQLException("JDBC internal consistency error");
             case SQLITE_ERROR:
             default:
-                throw db.ex();
+                 db.throwex(); return false;
         }
     }
 
