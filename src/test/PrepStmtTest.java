@@ -192,7 +192,7 @@ public class PrepStmtTest
     }
 
     @Test public void insert1000() throws SQLException {
-        stat.executeUpdate("create temp table in1000 (a);");
+        stat.executeUpdate("create table in1000 (a);");
         PreparedStatement prep = conn.prepareStatement(
                 "insert into in1000 values (?);");
         conn.setAutoCommit(false);
@@ -209,7 +209,7 @@ public class PrepStmtTest
     }
 
     @Test public void getObject() throws SQLException {
-        stat.executeUpdate("create temp table testobj ("
+        stat.executeUpdate("create table testobj ("
             + "c1 integer, c2 float, c3, c4 varchar, c5 bit, c6, c7);");
         PreparedStatement prep = conn.prepareStatement(
             "insert into testobj values (?,?,?,?,?,?,?);");

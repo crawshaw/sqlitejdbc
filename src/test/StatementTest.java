@@ -129,8 +129,13 @@ public class StatementTest
         rs.close();
     }
 
+    @Test public void tempTable() throws SQLException {
+        assertEquals(stat.executeUpdate("create temp table myTemp (a);"), 0);
+        assertEquals(stat.executeUpdate("insert into myTemp values (2);"), 1);
+    }
+
     @Test public void insert1000() throws SQLException {
-        assertEquals(stat.executeUpdate("create temp table in1000 (a);"), 0);
+        assertEquals(stat.executeUpdate("create table in1000 (a);"), 0);
         conn.setAutoCommit(false);
         for (int i=0; i < 1000; i++)
             assertEquals(stat.executeUpdate(
