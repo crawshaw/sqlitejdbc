@@ -50,7 +50,11 @@ final class NestedDB extends DB
     }
     synchronized void close() throws SQLException {
         if (handle == 0) return;
-        if (call("sqlite3_close", handle) != SQLITE_OK) throwex();
+        if (call("sqlite3_close", handle) != SQLITE_OK) {
+            handle = 0;
+            throwex();
+        }
+        handle = 0;
     }
     synchronized void interrupt() throws SQLException {
         call("sqlite3_interrupt", handle);
