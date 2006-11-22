@@ -8,7 +8,7 @@ import java.lang.ref.WeakReference;
 class Conn implements Connection
 {
     private final String url;
-    private DB db = new NativeDB();
+    private DB db = new NestedDB(); //new NativeDB(); FIXME
     private Set stmts = Collections.synchronizedSet(new HashSet());
     private MetaData meta = null;
     private boolean autoCommit = true;
