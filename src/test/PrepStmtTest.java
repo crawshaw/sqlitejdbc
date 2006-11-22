@@ -268,13 +268,26 @@ public class PrepStmtTest
     }
 
     @Test public void utf() throws SQLException {
+        ResultSet rs = stat.executeQuery("select '"
+                +utf01+"','"+utf02+"','"+utf03+"','"+utf04+"','"
+                +utf05+"','"+utf06+"','"+utf07+"','"+utf08+"';");
+        assertEquals(rs.getString(1), utf01);
+        assertEquals(rs.getString(2), utf02);
+        assertEquals(rs.getString(3), utf03);
+        assertEquals(rs.getString(4), utf04);
+        assertEquals(rs.getString(5), utf05);
+        assertEquals(rs.getString(6), utf06);
+        assertEquals(rs.getString(7), utf07);
+        assertEquals(rs.getString(8), utf08);
+        rs.close();
+
         PreparedStatement prep = conn.prepareStatement(
             "select ?,?,?,?,?,?,?,?;");
         prep.setString(1, utf01); prep.setString(2, utf02);
         prep.setString(3, utf03); prep.setString(4, utf04);
         prep.setString(5, utf05); prep.setString(6, utf06);
         prep.setString(7, utf07); prep.setString(8, utf08);
-        ResultSet rs = prep.executeQuery();
+        rs = prep.executeQuery();
         assertTrue(rs.next());
         assertEquals(rs.getString(1), utf01);
         assertEquals(rs.getString(2), utf02);
