@@ -155,7 +155,7 @@ final class NestedDB extends DB
             throws SQLException {
         if (buf == null || buf.length < 1) return bind_null(stmt, pos);
         int len = buf.length;
-        int blob = rt.malloc(len); // free()ed by sqlite3_bind_blob
+        int blob = rt.xmalloc(len); // free()ed by sqlite3_bind_blob
         copyout(buf, blob, len);
         return call("sqlite3_bind_blob", (int)stmt, pos, blob, len,
                     rt.lookupSymbol("free"));
