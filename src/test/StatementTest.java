@@ -226,7 +226,7 @@ public class StatementTest
         stat.getResultSet();
     }
 
-    @Test(expected= SQLException.class)
+    @Test(expected= BatchUpdateException.class)
     public void batchReturnsResults() throws SQLException {
         stat.addBatch("select null;");
         stat.executeBatch();
