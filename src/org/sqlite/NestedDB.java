@@ -213,6 +213,8 @@ final class NestedDB extends DB
             meta[i][1] = deref(pass + 1) == 1;
             meta[i][2] = deref(pass + 2) == 1;
         }
+
+        rt.free(pass);
         return meta;
     }
 
