@@ -105,9 +105,9 @@ final class NestedDB extends DB
     synchronized int column_type(long stmt, int col) throws SQLException {
         return call("sqlite3_column_type", (int)stmt, col); }
     synchronized String column_name(long stmt, int col) throws SQLException {
-        return cstring(call("sqlite3_column_name", (int)stmt, col)); }
+        return utfstring(call("sqlite3_column_name", (int)stmt, col)); }
     synchronized String column_text(long stmt, int col) throws SQLException {
-        return cstring(call("sqlite3_column_text", (int)stmt, col)); }
+        return utfstring(call("sqlite3_column_text", (int)stmt, col)); }
     synchronized byte[] column_blob(long stmt, int col) throws SQLException {
         byte[] blob = new byte[call("sqlite3_column_bytes", (int)stmt, col)];
         int addr = call("sqlite3_column_blob", (int)stmt, col);
@@ -126,10 +126,10 @@ final class NestedDB extends DB
         return call("sqlite3_column_int", (int)stmt, col); }
     synchronized String column_decltype(long stmt, int col)
             throws SQLException {
-        return cstring(call("sqlite3_column_decltype", (int)stmt, col)); }
+        return utfstring(call("sqlite3_column_decltype", (int)stmt, col)); }
     synchronized String column_table_name(long stmt, int col)
             throws SQLException {
-        return cstring(call("sqlite3_column_table_name", (int)stmt, col));
+        return utfstring(call("sqlite3_column_table_name", (int)stmt, col));
     }
 
     synchronized int bind_null(long stmt, int pos) throws SQLException {
@@ -254,6 +254,10 @@ final class NestedDB extends DB
     }
     private int deref(int pointer) throws SQLException {
         try { return rt.memRead(pointer); }
+        catch (Runtime.ReadFaultException e) { throw new CausedSQLException(e);}
+    }
+    private String utfstring(int str) throws SQLException {
+        try { return rt.utfstring(str); }
         catch (Runtime.ReadFaultException e) { throw new CausedSQLException(e);}
     }
     private String cstring(int str) throws SQLException {
