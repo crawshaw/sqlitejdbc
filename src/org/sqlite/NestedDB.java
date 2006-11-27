@@ -16,44 +16,40 @@ final class NestedDB extends DB
     int handle = 0;
 
     /** sqlite binary embedded in nestedvm */
-    final Runtime rt;
-
-    {
-        Runtime run = null;
-        try {
-            run = (Runtime)Class.forName("org.sqlite.SQLite").newInstance();
-            run.start();
-        } catch (Exception e) {
-            System.err.println("SQLiteJDBC load ERROR");
-            e.printStackTrace();
-        } finally {
-            rt = run;
-        }
-    }
+    private Runtime rt = null;
 
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
     synchronized void open(String filename) throws SQLException {
         if (handle != 0) throw new SQLException("DB already open");
-        int passback = rt.xmalloc(1);
-        int str = rt.strdup(filename);
-        int ret = call("sqlite3_open", str, passback);
-        if (ret != 0) {
-            System.out.println("ERR on open"); throwex(); // TODO
+        if (rt != null) throw new SQLException("DB closed but runtime exists");
+
+        try {
+            rt = (Runtime)Class.forName("org.sqlite.SQLite").newInstance();
+            rt.start();
+        } catch (Exception e) {
+            throw new CausedSQLException(e);
         }
+
+        int passback = rt.xmalloc(4);
+        int str = rt.strdup(filename);
+        if (call("sqlite3_open", str, passback) != SQLITE_OK)
+            throwex();
         handle = deref(passback);
         rt.free(str);
         rt.free(passback);
     }
+
     synchronized void close() throws SQLException {
         if (handle == 0) return;
-        if (call("sqlite3_close", handle) != SQLITE_OK) {
-            handle = 0;
-            throwex();
-        }
+        int rc = call("sqlite3_close", handle);
         handle = 0;
+        rt.stop();
+        rt = null;
+        if (rc != SQLITE_OK) throwex();
     }
+
     synchronized void interrupt() throws SQLException {
         call("sqlite3_interrupt", handle);
     }
@@ -66,7 +62,7 @@ final class NestedDB extends DB
     }
     // TODO: store sqlite3_stmt against PhantomReference for org.sqlite.RS
     synchronized long prepare(String sql) throws SQLException {
-        int passback = rt.xmalloc(1);
+        int passback = rt.xmalloc(4);
         int str = rt.strdup(sql);
         int ret = call("sqlite3_prepare", handle, str, -1, passback, 0);
         rt.free(str);
@@ -243,12 +239,13 @@ final class NestedDB extends DB
         p5[0] = a0; p5[1] = a1; p5[2] = a2; p5[3] = a3; p5[4] = a4;
         return call(addr, p5);
     }
-
     private int call(String func, int[] args) throws SQLException {
         try {
             return rt.call(func, args);
         } catch (Runtime.CallException e) { throw new CausedSQLException(e); }
     }
+
+    /** Dereferences a pointer, returning the word it points to. */
     private int deref(int pointer) throws SQLException {
         try { return rt.memRead(pointer); }
         catch (Runtime.ReadFaultException e) { throw new CausedSQLException(e);}
