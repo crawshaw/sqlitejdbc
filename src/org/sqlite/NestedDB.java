@@ -18,6 +18,10 @@ final class NestedDB extends DB
     /** sqlite binary embedded in nestedvm */
     private Runtime rt = null;
 
+    /** user defined functions referenced by position (stored in used data) */
+    private Function[] functions = null;
+    private String[]   funcNames = null;
+
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
@@ -25,6 +29,7 @@ final class NestedDB extends DB
         if (handle != 0) throw new SQLException("DB already open");
         if (rt != null) throw new SQLException("DB closed but runtime exists");
 
+        // start the nestedvm runtime
         try {
             rt = (Runtime)Class.forName("org.sqlite.SQLite").newInstance();
             rt.start();
@@ -32,6 +37,15 @@ final class NestedDB extends DB
             throw new CausedSQLException(e);
         }
 
+        // callback for user defined functions
+        rt.setCallJavaCB(new Runtime.CallJavaCB() {
+            public int call(int xType, int context, int args, int value) {
+                xUDF(xType, context, args, value);
+                return 0;
+            }
+        });
+
+        // open the db and retrieve sqlite3_db* pointer
         int passback = rt.xmalloc(4);
         int str = rt.strdup(filename);
         if (call("sqlite3_open", str, passback) != SQLITE_OK)
@@ -147,7 +161,7 @@ final class NestedDB extends DB
             throws SQLException {
         if (v == null) return bind_null(stmt, pos);
         return call("sqlite3_bind_text", (int)stmt, pos, rt.strdup(v),
-                    rt.lookupSymbol("free"));
+                    -1, rt.lookupSymbol("free"));
     }
     synchronized int bind_blob(long stmt, int pos, byte[] buf)
             throws SQLException {
@@ -162,37 +176,149 @@ final class NestedDB extends DB
     synchronized void result_null  (long cxt) throws SQLException {
         call("sqlite3_result_null", (int)cxt); }
     synchronized void result_text  (long cxt, String val) throws SQLException {
-        int str = rt.strdup(val);
-        call("sqlite3_result_text", (int)cxt, str);
-        rt.free(str);
+        call("sqlite3_result_text", (int)cxt, rt.strdup(val), -1,
+             rt.lookupSymbol("free"));
     }
     synchronized void result_blob  (long cxt, byte[] val) throws SQLException {
-        // TODO
-        call("sqlite3_result_blob", (int)cxt);
+        if (val == null || val.length == 0) { result_null(cxt); return; }
+        int blob = rt.xmalloc(val.length);
+        copyout(val, blob, val.length);
+        call("sqlite3_result_blob", (int)cxt, blob,
+             val.length, rt.lookupSymbol("free"));
     }
     synchronized void result_double(long cxt, double val) throws SQLException {
-        call("sqlite3_result_double", (int)cxt); } // TODO
-    synchronized void result_long  (long cxt, long   val) throws SQLException {
-        call("sqlite3_result_long", (int)cxt); } // TODO
-    synchronized void result_int   (long cxt, int    val) throws SQLException {
+        result_text(cxt, Double.toString(val)); } // TODO
+    synchronized void result_long(long cxt, long val) throws SQLException {
+        result_text(cxt, Long.toString(val)); } // TODO
+    synchronized void result_int(long cxt, int val) throws SQLException {
         call("sqlite3_result_int", (int)cxt, val); }
-    synchronized void result_error (long cxt, String err) throws SQLException {
+    synchronized void result_error(long cxt, String err) throws SQLException {
         int str = rt.strdup(err);
-        call("sqlite3_result_error", (int)cxt, str);
+        call("sqlite3_result_error", (int)cxt, str, -1);
         rt.free(str);
     }
 
-    native synchronized int    value_bytes (Function f, int arg);
-    native synchronized String value_text  (Function f, int arg);
-    native synchronized byte[] value_blob  (Function f, int arg);
-    native synchronized double value_double(Function f, int arg);
-    native synchronized long   value_long  (Function f, int arg);
-    native synchronized int    value_int   (Function f, int arg);
-    native synchronized int    value_type  (Function f, int arg);
+    synchronized int value_bytes(Function f, int arg) throws SQLException {
+        return call("sqlite3_value_bytes", value(f, arg));
+    }
+    synchronized String value_text(Function f, int arg) throws SQLException {
+        return utfstring(call("sqlite3_value_text", value(f, arg)));
+    }
+    synchronized byte[] value_blob(Function f, int arg) throws SQLException {
+        byte[] blob = new byte[value_bytes(f, arg)];
+        int addr = call("sqlite3_value_blob", value(f, arg));
+        copyin(addr, blob, blob.length);
+        return blob;
+    }
+    synchronized double value_double(Function f, int arg) throws SQLException {
+        return Double.parseDouble(value_text(f, arg)); // TODO
+    }
+    synchronized long value_long(Function f, int arg) throws SQLException {
+        return Long.parseLong(value_text(f, arg)); // TODO
+    }
+    synchronized int value_int(Function f, int arg) throws SQLException {
+        return call("sqlite3_value_int", value(f, arg));
+    }
+    synchronized int value_type(Function f, int arg) throws SQLException {
+        return call("sqlite3_value_type", value(f, arg));
+    }
 
-    native synchronized int create_function(String name, Function func);
-    native synchronized int destroy_function(String name);
+    private int value(Function f, int arg) throws SQLException {
+        return deref((int)f.value + (arg*4));
+    }
+
+
+    synchronized int create_function(String name, Function func)
+            throws SQLException {
+        if (functions == null) {
+            functions = new Function[10];
+            funcNames = new String[10];
+        }
+
+        // find a position
+        int pos;
+        for (pos=0; pos < functions.length; pos++)
+            if (functions[pos] == null) break;
+
+        if (pos == functions.length) { // expand function arrays
+            Function[] fnew = new Function[functions.length * 2];
+            String[] nnew = new String[funcNames.length * 2];
+            System.arraycopy(functions, 0, fnew, 0, functions.length);
+            System.arraycopy(funcNames, 0, nnew, 0, funcNames.length);
+            functions = fnew;
+            funcNames = nnew;
+        }
+
+        // register function
+        functions[pos] = func;
+        funcNames[pos] = name;
+        int str = rt.strdup(name);
+        int rc = call("create_function_helper", handle, str, pos,
+                      func instanceof Function.Aggregate ? 1 : 0);
+        rt.free(str);
+        return rc;
+    }
+
+    synchronized int destroy_function(String name) throws SQLException {
+        if (name == null) return 0;
+
+        // find function position number
+        int pos;
+        for (pos = 0; pos < funcNames.length; pos++)
+            if (name.equals(funcNames[pos])) break;
+        if (pos == funcNames.length) return 0;
+
+        functions[pos] = null;
+        funcNames[pos] = null;
+
+        // deregister function
+        int str = rt.strdup(name);
+        int rc = call("create_function_helper", handle, str, -1, 0);
+        rt.free(str);
+        return rc;
+    }
+
+    /* unused as we use the user_data pointer to store a single word */
     synchronized void free_functions() {}
+
+    /** Callback used by xFunc (1), xStep (2) and xFinal (3). */
+    synchronized void xUDF(int xType, int context, int args, int value) {
+        Function func = null;
+
+        try {
+            int pos = call("sqlite3_user_data", context);
+            func = functions[pos];
+            if (func == null)
+                throw new SQLException("function state inconsistent");
+
+            func.context = context;
+            func.value = value;
+            func.args = args;
+
+            switch (xType) {
+                case 1: func.xFunc(); break;
+                case 2: ((Function.Aggregate)func).xStep(); break;
+                case 3: ((Function.Aggregate)func).xFinal(); break;
+            }
+        } catch (SQLException e) {
+            try {
+                String err = e.toString();
+                if (err == null) err = "unknown error";
+                int str = rt.strdup(e.toString());
+                call("sqlite3_result_error", str, -1);
+                rt.free(str);
+            } catch (SQLException exp) {
+                exp.printStackTrace();//TODO
+            }
+        } finally {
+            if (func != null) {
+                func.context = 0;
+                func.value = 0;
+                func.args = 0;
+            }
+        }
+    }
+
 
     /** Calls support function found in upstream/sqlite-metadata.patch */
     synchronized boolean[][] column_metadata(long stmt) throws SQLException {

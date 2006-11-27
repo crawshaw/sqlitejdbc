@@ -54,3 +54,35 @@
  #ifdef __cplusplus
  }  /* End of the 'extern "C"' block */
  #endif
+--- main.c	2006-11-27 23:09:41.000000000 +1100
++++ sqlite-3.3.8-nestedvm/main.c	2006-11-27 23:37:05.000000000 +1100
+@@ -1348,3 +1348,29 @@
+   db->errMask = onoff ? 0xffffffff : 0xff;
+   return SQLITE_OK;
+ }
++
++extern int _call_java(int xType, int context, int args, int value);
++
++void xFunc_helper(sqlite3_context *context, int args, sqlite3_value** value)
++{
++    _call_java(1, (int)context, args, (int)value);
++}
++
++void xStep_helper(sqlite3_context *context, int args, sqlite3_value** value)
++{
++    _call_java(2, (int)context, args, (int)value);
++}
++
++void xFinal_helper(sqlite3_context *context)
++{
++    _call_java(3, (int)context, 0, 0);
++}
++
++/* create function if pos is non-negative, aggregate if agg is true */
++int create_function_helper(sqlite3 *db, const char *name, int pos, int agg)
++{
++    return sqlite3_create_function(db, name, -1, SQLITE_ANY, (void*)pos,
++            pos>=0 ? &xFunc_helper : 0,
++            pos>=0 && agg ? &xStep_helper : 0,
++            pos>=0 && agg ? &xFinal_helper : 0);
++}
