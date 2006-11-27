@@ -35,7 +35,6 @@ final class NestedDB extends DB
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
     synchronized void open(String filename) throws SQLException {
-        try {
         if (handle != 0) throw new SQLException("DB already open");
         int passback = rt.xmalloc(1);
         int str = rt.strdup(filename);
@@ -46,7 +45,6 @@ final class NestedDB extends DB
         handle = deref(passback);
         rt.free(str);
         rt.free(passback);
-        } catch (Exception e) { throw new RuntimeException(e); }
     }
     synchronized void close() throws SQLException {
         if (handle == 0) return;
@@ -200,22 +198,17 @@ final class NestedDB extends DB
     native synchronized int destroy_function(String name);
     synchronized void free_functions() {}
 
+    /** Calls support function found in upstream/sqlite-metadata.patch */
+    synchronized boolean[][] column_metadata(long stmt) throws SQLException {
+        int colCount = call("sqlite3_column_count", (int)stmt);
+        boolean[][] meta = new boolean[colCount][3];
+        int pass = rt.xmalloc(12); // struct metadata
 
-    synchronized boolean[][] column_metadata(long stmt, String[] names)
-            throws SQLException {
-        boolean[][] meta = new boolean[names.length][3];
-        int pass = rt.xmalloc(3);
-
-        for (int i=0; i < names.length; i++) {
-            int tablename = call("sqlite3_column_table_name", (int)stmt, i);
-            int colname = rt.strdup(names[i]);
-            call("sqlite3_table_column_metadata", new int[] { handle, 0,
-                tablename, colname, 0, 0, pass, pass + 1, pass + 2 });
-            rt.free(colname);
-            rt.free(tablename);
+        for (int i=0; i < colCount; i++) {
+            call("column_metadata_helper", handle, (int)stmt, i, pass);
             meta[i][0] = deref(pass) == 1;
-            meta[i][1] = deref(pass + 1) == 1;
-            meta[i][2] = deref(pass + 2) == 1;
+            meta[i][1] = deref(pass + 4) == 1;
+            meta[i][2] = deref(pass + 8) == 1;
         }
 
         rt.free(pass);

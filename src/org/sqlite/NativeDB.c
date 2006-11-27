@@ -705,40 +705,30 @@ JNIEXPORT void JNICALL Java_org_sqlite_NativeDB_free_1functions(
 // COMPOUND FUNCTIONS ///////////////////////////////////////////////
 
 JNIEXPORT jobjectArray JNICALL Java_org_sqlite_NativeDB_column_1metadata(
-        JNIEnv *env, jobject this, jlong stmt, jobjectArray colNames)
+        JNIEnv *env, jobject this, jlong stmt)
 {
-    const char *zTableName;
-    const char *zColumnName;
-    int pNotNull, pPrimaryKey, pAutoinc;
-
-    int i, length;
+    const char *zTableName, *zColumnName;
+    int pNotNull, pPrimaryKey, pAutoinc, i, colCount;
     jobjectArray array;
-
-    jstring colName;
     jbooleanArray colData;
     jboolean* colDataRaw;
-
     sqlite3 *db;
     sqlite3_stmt *dbstmt;
-
 
     db = gethandle(env, this);
     dbstmt = toref(stmt);
 
-    length = (*env)->GetArrayLength(env, colNames);
-
+    colCount = sqlite3_column_count(dbstmt);
     array = (*env)->NewObjectArray(
-        env, length, (*env)->FindClass(env, "[Z"), NULL) ;
+        env, colCount, (*env)->FindClass(env, "[Z"), NULL) ;
     assert(array); // out-of-memory
 
     colDataRaw = (jboolean*)malloc(3 * sizeof(jboolean));
     assert(colDataRaw); // out-of-memory
 
-
-    for (i = 0; i < length; i++) {
+    for (i = 0; i < colCount; i++) {
         // load passed column name and table name
-        colName     = (jstring)(*env)->GetObjectArrayElement(env, colNames, i);
-        zColumnName = (*env)->GetStringUTFChars(env, colName, 0);
+        zColumnName = sqlite3_column_name(dbstmt, i);
         zTableName  = sqlite3_column_table_name(dbstmt, i);
 
         // request metadata for column and load into output variables
@@ -746,8 +736,6 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_NativeDB_column_1metadata(
             db, 0, zTableName, zColumnName,
             0, 0, &pNotNull, &pPrimaryKey, &pAutoinc
         );
-
-        (*env)->ReleaseStringUTFChars(env, colName, zColumnName);
 
         // load relevant metadata into 2nd dimension of return results
         colDataRaw[0] = pNotNull;

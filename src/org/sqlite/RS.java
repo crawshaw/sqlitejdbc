@@ -84,7 +84,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
 
     private void checkMeta() throws SQLException {
         checkCol(1);
-        if (meta == null) meta = db.column_metadata(pointer, cols);
+        if (meta == null) meta = db.column_metadata(pointer);
     }
 
 

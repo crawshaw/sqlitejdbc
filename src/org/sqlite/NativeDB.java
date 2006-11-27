@@ -91,7 +91,7 @@ final class NativeDB extends DB
      *   res[col][1] = true if column is part of the primary key
      *   res[col][2] = true if column is auto-increment
      */
-    native synchronized boolean[][] column_metadata(long stmt, String[] names);
+    native synchronized boolean[][] column_metadata(long stmt);
 
     static void throwex(String msg) throws SQLException {
         throw new SQLException(msg);

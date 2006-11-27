@@ -1,0 +1,56 @@
+--- sqlite-3.3.8-nestedvm/main.c	2006-10-09 03:50:59.000000000 +1000
++++ main.c	2006-11-27 10:06:10.000000000 +1000
+@@ -1199,6 +1199,21 @@
+ ** See comment in sqlite3.h (sqlite.h.in) for details.
+ */
+ #ifdef SQLITE_ENABLE_COLUMN_METADATA
++int column_metadata_helper(
++  sqlite3 *db,
++  sqlite3_stmt *stmt,
++  int col,
++  struct metadata *p
++){
++  const char *zTableName, *zColumnName;
++  zTableName = sqlite3_column_table_name(stmt, col);
++  zColumnName = sqlite3_column_name(stmt, col);
++  return sqlite3_table_column_metadata(
++    db, 0, zTableName, zColumnName, 0, 0,
++    &p->pNotNull, &p->pPrimaryKey, &p->pAutoinc
++  );
++}
++
+ int sqlite3_table_column_metadata(
+   sqlite3 *db,                /* Connection handle */
+   const char *zDbName,        /* Database name or NULL */
+--- sqlite-3.3.8-nestedvm/sqlite3.h	2006-10-09 03:50:59.000000000 +1000
++++ sqlite3.h	2006-11-27 10:07:41.000000000 +1000
+@@ -1519,6 +1519,7 @@
+   int *pAutoinc               /* OUTPUT: True if colums is auto-increment */
+ );
+ 
++
+ /*
+ ****** EXPERIMENTAL - subject to change without notice **************
+ **
+@@ -1820,6 +1821,21 @@
+ # undef double
+ #endif
+ 
++/* Provides access to metadata across NestedVM 7-argument limit on functions.*/
++struct metadata {
++  int pNotNull;
++  int pPrimaryKey;
++  int pAutoinc;
++};
++
++int column_metadata_helper(
++  sqlite3 *db,
++  sqlite3_stmt *stmt,
++  int col,
++  struct metadata *p
++);
++
++
+ #ifdef __cplusplus
+ }  /* End of the 'extern "C"' block */
+ #endif

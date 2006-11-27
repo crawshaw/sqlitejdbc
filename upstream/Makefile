@@ -34,6 +34,7 @@ $(nestedvm)/Makefile: dl/$(nestedvm).tgz
 $(sqlite)-%/main.o: dl/$(sqlite).zip
 	@mkdir -p $(sqlite)-$*
 	unzip -qo dl/$(sqlite).zip -d $(sqlite)-$*
+	(cd $(sqlite)-$* && patch -p0 < ../sqlite-metadata.patch)
 	#rm $(sqlite)-$*/shell.c TODO: replace with empty main()
 	(cd $(sqlite)-$*; $(CC) -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \

@@ -71,8 +71,7 @@ abstract class DB implements Codes
      *   res[col][1] = true if column is part of the primary key
      *   res[col][2] = true if column is auto-increment
      */
-    abstract boolean[][] column_metadata(long stmt, String[] names)
-        throws SQLException;
+    abstract boolean[][] column_metadata(long stmt) throws SQLException;
 
 
     // COMPOUND FUNCTIONS ////////////////////////////////////////////
@@ -178,11 +177,6 @@ abstract class DB implements Codes
             throw new SQLException("query returns results");
         reset(stmt);
         return changes();
-    }
-
-    final synchronized boolean[][] column_metadata(long stmt)
-            throws SQLException {
-        return column_metadata(stmt, column_names(stmt));
     }
 
 
