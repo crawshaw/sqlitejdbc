@@ -82,7 +82,7 @@
 +int create_function_helper(sqlite3 *db, const char *name, int pos, int agg)
 +{
 +    return sqlite3_create_function(db, name, -1, SQLITE_ANY, (void*)pos,
-+            pos>=0 ? &xFunc_helper : 0,
-+            pos>=0 && agg ? &xStep_helper : 0,
-+            pos>=0 && agg ? &xFinal_helper : 0);
++            pos>=0 && !agg ? &xFunc_helper : 0,
++            pos>=0 &&  agg ? &xStep_helper : 0,
++            pos>=0 &&  agg ? &xFinal_helper : 0);
 +}
