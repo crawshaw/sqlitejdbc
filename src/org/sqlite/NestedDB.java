@@ -304,8 +304,8 @@ final class NestedDB extends DB
             try {
                 String err = e.toString();
                 if (err == null) err = "unknown error";
-                int str = rt.strdup(e.toString());
-                call("sqlite3_result_error", str, -1);
+                int str = rt.strdup(err);
+                call("sqlite3_result_error", context, str, -1);
                 rt.free(str);
             } catch (SQLException exp) {
                 exp.printStackTrace();//TODO
