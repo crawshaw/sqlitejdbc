@@ -233,6 +233,38 @@ public class UDFTest
         Function.destroy(conn, "f1");
     }
 
+    @Test public void manyfunctions() throws SQLException {
+        Function.create(conn, "f1", new Function() {
+            public void xFunc() throws SQLException { result(1); } });
+        Function.create(conn, "f2", new Function() {
+            public void xFunc() throws SQLException { result(2); } });
+        Function.create(conn, "f3", new Function() {
+            public void xFunc() throws SQLException { result(3); } });
+        Function.create(conn, "f4", new Function() {
+            public void xFunc() throws SQLException { result(4); } });
+        Function.create(conn, "f5", new Function() {
+            public void xFunc() throws SQLException { result(5); } });
+        Function.create(conn, "f6", new Function() {
+            public void xFunc() throws SQLException { result(6); } });
+        Function.create(conn, "f7", new Function() {
+            public void xFunc() throws SQLException { result(7); } });
+        Function.create(conn, "f8", new Function() {
+            public void xFunc() throws SQLException { result(8); } });
+        Function.create(conn, "f9", new Function() {
+            public void xFunc() throws SQLException { result(9); } });
+        Function.create(conn, "f10", new Function() {
+            public void xFunc() throws SQLException { result(10); } });
+        Function.create(conn, "f11", new Function() {
+            public void xFunc() throws SQLException { result(11); } });
+
+        ResultSet rs = stat.executeQuery(
+                "select f1() + f2() + f3() + f4() + f5() + f6()"
+                + " + f7() + f8() + f9() + f10() + f11();");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 1+2+3+4+5+6+7+8+9+10+11);
+        rs.close();
+    }
+
     private void assertArrayEq(byte[] a, byte[] b) {
         assertNotNull(a);
         assertNotNull(b);
