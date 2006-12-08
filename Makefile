@@ -97,11 +97,7 @@ test-native: native $(test_classes)
 
 test-nested: nested $(test_classes)
 	java -cp build:upstream/build:upstream/$(nestedvm)/build:$(libs) \
-	    org.junit.runner.JUnitCore \
-		test.ConnectionTest \
-		test.StatementTest \
-		test.PrepStmtTest
-		#$(tests)
+	    org.junit.runner.JUnitCore $(tests)
 
 clean:
 	rm -rf build
