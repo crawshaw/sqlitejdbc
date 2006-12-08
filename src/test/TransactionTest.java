@@ -18,6 +18,7 @@ public class TransactionTest
     }
 
     @Before public void connect() throws Exception {
+        new File("test-trans.db").delete();
         conn1 = DriverManager.getConnection("jdbc:sqlite:test-trans.db");
         conn2 = DriverManager.getConnection("jdbc:sqlite:test-trans.db");
         conn3 = DriverManager.getConnection("jdbc:sqlite:test-trans.db");
@@ -30,6 +31,29 @@ public class TransactionTest
         stat1.close(); stat2.close(); stat3.close();
         conn1.close(); conn2.close(); conn3.close();
         new File("test-trans.db").delete();
+    }
+
+    @Test public void multiConn() throws SQLException {
+        stat1.executeUpdate("create table test (c1);");
+        stat1.executeUpdate("insert into test values (1);");
+        stat2.executeUpdate("insert into test values (2);");
+        stat3.executeUpdate("insert into test values (3);");
+
+        ResultSet rs = stat1.executeQuery("select sum(c1) from test;");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 6);
+        rs.close();
+
+        rs = stat3.executeQuery("select sum(c1) from test;");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 6);
+        rs.close();
+    }
+
+    @Test public void locking() throws SQLException {
+        stat1.executeUpdate("create table test (c1);");
+        stat1.executeUpdate("begin immediate;");
+        stat2.executeUpdate("select * from test;");
     }
 
     @Test public void insert() throws SQLException {
