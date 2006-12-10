@@ -10,23 +10,26 @@ How:   BSD License (dig in)
 
 
 -- USING ------------------------------------------------------------
-Download the binary for the platform you are developing on. Open the
-tarball and copy the two files into your application directory:
-    sqlitejdbc.jar
-    [lib]sqlitejdbc.[dll, so, jnilib]
+This driver comes in two flavours: Pure Java and native library. The
+Pure Java driver works by running a MIPS version of SQLite inside the
+JVM with NestedVM. To use, download sqlitejdbc-*version*-nested.tgz,
+extract sqlitejdbc-*version*-nested.jar and include in the classpath
+of your project. You can then invoke SQLite using the standard JDBC
+interface:
 
-Reference the driver in your code:
     Class.forName("org.sqlite.JDBC");
     Connection conn = DriverManager.getConnection(
         "jdbc:sqlite:filename");
     // ... use the database ...
     conn.close();
 
-And call your program with the driver's JAR file in the classpath
-and the C library in the librarypath. E.g.
-    java -cp lib/sqlitejdbc.jar \
-        -Djava.library.path=lib \
-        yourprog.Main
+The native library version is faster, but requires a platform and
+operating system specific binary. Place the file
+sqlitejdbc-*version*-native.jar on the classpath and the native
+library sqlitejdbc.dll or libsqlitejdbc.jnilib on the Java library
+path. To do this from the command line:
+
+    java -cp sqlitejdbc.jar -Djava.library.path=. yourprog.Main
 
 Alternatively, if you wish to load the native library at runtime,
 set the system property "org.sqlite.lib.path" to the directory
@@ -70,69 +73,3 @@ only have to rename libsqlitejdbc.so to sqlitejdbc.dll, or other
 problems may appear.
 
 To pass the tests an sqlite binary is needed on the path.
-
-
--- COMPILING WITH MSVC ----------------------------------------------
-(Thanks to Brannon King.) Grab from this project:
-    src/org/sqlite/DB.c
-    build/DB.h
-You can otherwise generate DB.h with javah (see the Makefile).
-
-Compile the sqlite3.dll from http://www.sqlite.org with:
-    #define SQLITE_ENABLE_COLUMN_METADATA
-and reference the .dll and sqlite3.h in the project containing DB.c
-and DB.h. This will produce the JNI dll.
-
-Then compile the .java sources the normal way with javac and put them
-in a jar file. Include the jar file, the JNI dll and sqlite3.dll in
-your Java project.
-
-It is unknown whether this produces a faster driver.
-
-
--- CROSS COMPILING --------------------------------------------------
-Ask yourself, do I really have to do this? Cross-compiling sucks.
-C ain't Java. Continue at risk to your innocence.
-
-Start by making the compile above work.
-
-This compile process does not use the auto-goop family. Instead, it
-is all done out of a single Makefile. Read it, you will become
-familiar with its behaviour. It downloads the stripped-source
-version of SQLite and compile it for the specified OS and
-architecture (the make variables 'os' and 'arch' respectively). Then
-the JNI-bridge file src/org/sqlite/DB.c is compiled. The resultant
-DB.o and *.o files for SQLite are linked into the OS-specific JNI
-library.
-
-I develop on an Intal Mac and compile everything on Linux. Your best
-bet is a Linux machine, though it should be possible under Mac OS or
-Cygwin.
-
-Before compiling, install your JNI headers in src/jni/$(os)/. I
-don't distribute these with the project as I worry about copyright
-issues. Two files are needed, 'jni.h' and 'jni_md.h'.
-
-On Windows:
-    C:\Program Files\Java\*jdk version*\include\, and include\win32
-On Mac:
-    /System/Library/Frameworks/JavaVM.framework/Headers
-On Linux:
-    $(JAVA_HOME)/include
-
-Now you can run:
-    make arch=[i386/powerpc] os=[Win/Darwin/Linux]
-
-When it works, it will build the library and run a series of
-JDBC-based tests to make sure the driver isn't broken. If you want
-to modifiy it, these tests will soon become your best friend. If you
-fix a bug, consider making a test for it.
-
-Often a compile on a new machine will fail just because the Maekfile
-gives the wrong name for gcc. E.g. it looks for
-$(arch)-apple-darwin-gcc when your installation uses
-$(arch)-apple-darwin8-gcc.
-
-To compile for everyone at once and make nice tarballs use:
-    make all
-

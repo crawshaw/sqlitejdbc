@@ -5,24 +5,76 @@
 # No auto-goop. Just try typing 'make'. See README for more.
 #
 
-os := default
+ifndef JAVA_HOME
+$(error Set env variable JAVA_HOME)
+endif
+
+#
+# Target-specific variables
+#
+ifeq ($(os),)
+	ifeq ($(shell uname),Darwin)
+		os := Darwin
+	endif
+	ifeq ($(shell uname),Cygwin) # TODO: check uname output on Cygwin
+		os := Win
+	endif
+endif
+ifeq ($(os),)
+	os := Default
+endif
 
 ifeq ($(arch),)
 arch := $(shell uname -m)
 endif
 
-ifeq ($(arch),Power Macintosh) # OS X gives funny result for 'uname -m'
-arch := powerpc
-endif
+Default_CC        := gcc
+Default_STRIP     := strip
+Default_CFLAGS    := -I$(JAVA_HOME)/include -O -fPIC
+Default_LINKFLAGS := -shared
+Default_LIBNAME   := libsqlitejdbc.so
 
-ifndef JAVA_HOME
-$(error Set env variable JAVA_HOME)
-endif
+Darwin_CC        := gcc -arch $(arch)
+Darwin_STRIP     := strip -x
+Darwin_CFLAGS    := -I$(JAVA_HOME)/include -O -fPIC
+Darwin_LINKFLAGS := -dynamiclib
+Darwin_LIBNAME   := libsqlitejdbc.jnilib
+
+Win_CC           := $(arch)-mingw32-gcc
+Win_STRIP        := $(arch)-mingw32-strip
+Win_CFLAGS       := -D_JNI_IMPLEMENTATION_ -Ilib/inc_win -O
+Win_LINKFLAGS    := -Wl,--kill-at -shared
+Win_LIBNAME      := sqlitejdbc.dll
+
+CC        := $($(os)_CC)
+STRIP     := $($(os)_STRIP)
+CFLAGS    := $($(os)_CFLAGS)
+LINKFLAGS := $($(os)_LINKFLAGS)
+LIBNAME   := $($(os)_LIBNAME)
+
+#
+# Generic variables
+#
+
+# TODO: remove these by using symlinks upstream/nestedvm and /sqlite
+nestedvm_version := 2006-11-19
+nestedvm := nestedvm-$(nestedvm_version)
+sqlite_version := 3.3.8
+sqlite := sqlite-$(sqlite_version)
+
+target     := $(os)-$(arch)
+sqlitejdbc := sqlitejdbc-v$(shell cat VERSION)
 
 jni_md := $(shell find $(JAVA_HOME) -name jni_md.h)
 ifneq ($(jni_md),)
 jni_include := $(shell dirname $(jni_md))
 endif
+
+CFLAGS := $(CFLAGS) -Iupstream/$(sqlite)-$(target) -Ibuild
+ifneq ($(jni_include),)
+CFLAGS := $(CFLAGS) -I$(jni_include)
+endif
+
 
 libs := $(subst  ,:,$(wildcard lib/*.jar))
 
@@ -34,33 +86,7 @@ test_sources := $(wildcard src/test/*.java)
 test_classes := $(test_sources:src/%.java=build/%.class)
 tests        := $(subst /,.,$(patsubst build/%.class,%,$(test_classes)))
 
-nestedvm_version := 2006-11-19
-nestedvm := nestedvm-$(nestedvm_version)
-
-sqlite_version := 3.3.8
-sqlite := sqlite-$(sqlite_version)
-
-target    := $(os)-$(arch)
-VERSION   := $(shell cat VERSION)
-PNAME     := sqlitejdbc-v$(VERSION)
-CC        := gcc
-CFLAGS   := -I$(JAVA_HOME)/include -I$(jni_include) -O -fPIC \
-	-Iupstream/$(sqlite)-$(target) -Ibuild
-
-ifeq ($(shell uname),Darwin)
-	STRIP     := strip -x
-	LINKFLAGS := -dynamiclib
-	LIBNAME   := libsqlitejdbc.jnilib
-	LIPO      := lipo
-else
-# TODO: sqlitejdbc.dll for cygwin
-	STRIP     := strip
-	LINKFLAGS := -shared
-	LIBNAME   := libsqlitejdbc.so
-endif
-
-
-default: test-nested
+default: test-nested test-native
 
 upstream/%:
 	$(MAKE) -C upstream $*
@@ -77,26 +103,38 @@ build/test/%.class: src/test/%.java
 native: upstream/$(sqlite)-$(target)/main.o $(native_classes)
 	@mkdir -p build/$(target)
 	javah -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
-	jar cf build/sqlitejdbc-native.jar -C build org
+	jar cf build/$(sqlitejdbc)-native.jar \
+	    $(native_classes:build/%=-C build %)
 	$(CC) $(CFLAGS) -c -O -o build/$(target)/NativeDB.o \
 		src/org/sqlite/NativeDB.c
+	rm -f upstream/$(sqlite)-$(target)/NestedDB.o # TODO this is ugly
 	$(CC) $(CFLAGS) $(LINKFLAGS) -o build/$(target)/$(LIBNAME) \
-		build/$(target)/NativeDB.o work/sqlite-$(version)/$(target)/*.o
+		build/$(target)/NativeDB.o upstream/$(sqlite)-$(target)/*.o
 	$(STRIP) build/$(target)/$(LIBNAME)
 
 nested: upstream/build/org/sqlite/SQLite.class $(nested_classes)
+	jar cf build/$(sqlitejdbc)-nested.jar \
+	    $(nested_classes:build/%=-C build %) \
+	    -C upstream/build org/sqlite/SQLite.class \
+	    -C upstream/$(nestedvm)/build org/ibex
 
-dist/$(PNAME)-$(target).tgz:
+dist/$(sqlitejdbc)-nested.tgz: nested
 	@mkdir -p dist
-	tar cfz dist/$(PNAME)-$(target).tgz README \
-	    -C build sqlitejdbc.jar -C $(target) $(LIBNAME)
+	tar cfz dist/$(sqlitejdbc)-nested.tgz \
+	    README -C build $(sqlitejdbc)-nested.jar
+
+dist/$(sqlitejdbc)-$(target).tgz: native
+	@mkdir -p dist
+	tar cfz dist/$(sqlitejdbc)-$(target).tgz README \
+	    -C build $(sqlitejdbc)-native.jar -C $(target) $(LIBNAME)
 
 test-native: native $(test_classes)
-	java -Djava.library.path=build/$(target) -cp build:$(libs) \
+	java -Djava.library.path=build/$(target) \
+	    -cp build/$(sqlitejdbc)-native.jar:build:$(libs) \
 	    org.junit.runner.JUnitCore $(tests)
 
 test-nested: nested $(test_classes)
-	java -cp build:upstream/build:upstream/$(nestedvm)/build:$(libs) \
+	java -cp build/$(sqlitejdbc)-nested.jar:build:$(libs) \
 	    org.junit.runner.JUnitCore $(tests)
 
 clean:
@@ -105,30 +143,16 @@ clean:
 
 distclean: clean upstream/clean
 
-lipo:
-	# TODO
-	$(LIPO) -create \
-	    build/Darwin-powerpc/libsqlitejdbc.jnilib \
-	    build/Darwin-i386/libsqlitejdbc.jnilib \
-	    -output build/Darwin-lipo/libsqlitejdbc.jnilib
-
-dist/$(PNAME)-src.tgz:
+dist/$(sqlitejdbc)-src.tgz:
 	@mkdir -p dist
-	@mkdir -p work/$(PNAME)/src
-	cp Makefile work/$(PNAME)/.
-	cp README work/$(PNAME)/.
-	cp LICENSE work/$(PNAME)/.
-	cp VERSION work/$(PNAME)/.
-	cp -R src/org work/$(PNAME)/src/.
-	cp -R src/test work/$(PNAME)/src/.
-	cp -R lib work/$(PNAME)/
-	cd work && tar cfz ../dist/$(PNAME)-src.tgz $(PNAME)
-
+	tar cfz dist/$(sqlitejdbc)-src.tgz \
+	    Makefile README LICENSE VERSION src lib/junit-4.1.jar upstream/Makefile
 
 doc:
 	mkdir -p build/doc
 	javadoc -notree -d build/doc src/org/sqlite/*.java
 
+# FIXME: put these in release.sh
 changes:
 	echo '<html><head>' > changes.html
 	echo '<link rel="stylesheet" type="text/css" href="/content.css" />' \
@@ -149,7 +173,7 @@ changes:
 ### only useful on the author's web server
 release:
 	make changes
-	cp dist/sqlitejdbc-v$(VERSION)-*.tgz \
+	cp dist/$(sqlitejdbc)-*.tgz \
 		/var/www/zentus.com/www/sqlitejdbc/dist/
 	cd /var/www/zentus.com/www/sqlitejdbc/src && darcs pull -a
 	mv changes.html /var/www/zentus.com/www/sqlitejdbc/
