@@ -35,6 +35,7 @@ $(sqlite)-%/main.o: dl/$(sqlite).zip
 	@mkdir -p $(sqlite)-$*
 	unzip -qo dl/$(sqlite).zip -d $(sqlite)-$*
 	cp ../src/org/sqlite/NestedDB.c $(sqlite)-$*
+	perl -pi -e "s/sqlite3_api;/sqlite3_api = 0;/g" $(sqlite)-$*/sqlite3ext.h
 	#rm $(sqlite)-$*/shell.c TODO: replace with empty main()
 	(cd $(sqlite)-$*; $(CC) -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \

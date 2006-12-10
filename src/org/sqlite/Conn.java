@@ -8,13 +8,35 @@ import java.lang.ref.WeakReference;
 class Conn implements Connection
 {
     private final String url;
-    private DB db = new NestedDB(); //new NativeDB(); FIXME
+    private DB db = null;
     private Set stmts = Collections.synchronizedSet(new HashSet());
     private MetaData meta = null;
     private boolean autoCommit = true;
     private int timeout = 0;
 
     public Conn(String url, String filename) throws SQLException {
+        // TODO: library variable to explicitly control load type
+        // attempt to use the Native library first
+        try {
+            Class nativedb = Class.forName("org.sqlite.NativeDB");
+            if (((Boolean)nativedb.getDeclaredMethod("load", null)
+                        .invoke(null, null)).booleanValue())
+                db = (DB)nativedb.newInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(
+                "Native SQLite not found, falling back to Nested SQLite");
+        }
+
+        // load nested library
+        if (db == null) {
+            try {
+                db = (DB)Class.forName("org.sqlite.NestedDB").newInstance();
+            } catch (Exception e) {
+                throw new SQLException("no SQLite library found");
+            }
+        }
+
         this.url = url;
         db.open(filename);
         setTimeout(3000);

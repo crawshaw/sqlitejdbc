@@ -7,24 +7,30 @@ import java.sql.SQLException;
 /** This class provides a thin JNI layer over the SQLite3 C API. */
 final class NativeDB extends DB
 {
-    /** linked list of all instanced UDFDatas */
-    private long udfdatalist = 0;
+    private static Boolean loaded = null;
 
-    static {
+    static boolean load() {
+        if (loaded != null) return loaded == Boolean.TRUE;
+
         String libpath = System.getProperty("org.sqlite.lib.path");
         String libname = System.getProperty("org.sqlite.lib.name");
         if (libname == null) libname = System.mapLibraryName("sqlitejdbc");
 
-        if (libpath != null) {
-            try {
-                System.load(new File(libpath, libname).getAbsolutePath());
-            } catch (UnsatisfiedLinkError e) {
-                throw new RuntimeException(
-                    "property org.sqlite.lib.path set but does not reference"
-                    + " a path containing the SQLiteJDBC native library", e);
-            }
-        } else System.loadLibrary("sqlitejdbc");
+        try {
+            if (libpath == null) System.loadLibrary("sqlitejdbc");
+            else System.load(new File(libpath, libname).getAbsolutePath());
+        } catch (UnsatisfiedLinkError e) {
+            loaded = Boolean.FALSE;
+            return false;
+        }
+
+        loaded = Boolean.TRUE;
+        return true;
     }
+
+
+    /** linked list of all instanced UDFDatas */
+    private long udfdatalist = 0;
 
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////

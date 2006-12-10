@@ -498,7 +498,7 @@ JNIEXPORT jint JNICALL Java_org_sqlite_NativeDB_bind_1blob(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jbyteArray v)
 {
     jint rc;
-    const void *a;
+    void *a;
     jsize size = (*env)->GetArrayLength(env, v);
     assert(a = (*env)->GetPrimitiveArrayCritical(env, v, 0));
     rc = sqlite3_bind_blob(toref(stmt), pos, a, size, SQLITE_TRANSIENT);
