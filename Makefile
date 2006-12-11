@@ -151,31 +151,3 @@ dist/$(sqlitejdbc)-src.tgz:
 doc:
 	mkdir -p build/doc
 	javadoc -notree -d build/doc src/org/sqlite/*.java
-
-# FIXME: put these in release.sh
-changes:
-	echo '<html><head>' > changes.html
-	echo '<link rel="stylesheet" type="text/css" href="/content.css" />' \
-		>> changes.html
-	echo '<title>SQLiteJDBC - Changelog</title></head><body>' >> changes.html
-	cat web/ad.inc >> changes.html
-	echo '<div class="content">' >> changes.html
-	echo '<h1>Changelog</h1>' >> changes.html
-	cat web/nav.inc >> changes.html
-	echo '<h3>HEAD</h3><ul>' >> changes.html
-	darcs changes --from-patch="version 008" | grep \* >> changes.html
-	perl -pi -e \
-		"s/^  \* version ([0-9]+)\$$/<\/ul><h3>Version \$$1<\/h3><ul>/g" \
-		changes.html
-	perl -pi -e "s/^  \* (.*)$$/<li>\$$1<\/li>/g" changes.html
-	echo '</ul></div></body></html>' >> changes.html
-
-### only useful on the author's web server
-release:
-	make changes
-	cp dist/$(sqlitejdbc)-*.tgz \
-		/var/www/zentus.com/www/sqlitejdbc/dist/
-	cd /var/www/zentus.com/www/sqlitejdbc/src && darcs pull -a
-	mv changes.html /var/www/zentus.com/www/sqlitejdbc/
-	cp web/*.html web/*.css /var/www/zentus.com/www/sqlitejdbc/
-	rm build/Darwin-i386/libsqlitejdbc.jnilib
