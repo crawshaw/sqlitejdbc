@@ -22,11 +22,7 @@ class Conn implements Connection
             if (((Boolean)nativedb.getDeclaredMethod("load", null)
                         .invoke(null, null)).booleanValue())
                 db = (DB)nativedb.newInstance();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println(
-                "Native SQLite not found, falling back to Nested SQLite");
-        }
+        } catch (Exception e) { } // fall through to nested library
 
         // load nested library
         if (db == null) {
