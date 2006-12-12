@@ -103,8 +103,8 @@ build/test/%.class: src/test/%.java
 native: upstream/$(sqlite)-$(target)/main.o $(native_classes)
 	@mkdir -p build/$(target)
 	javah -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
-	jar cf build/$(sqlitejdbc)-native.jar \
-	    $(native_classes:build/%=-C build %)
+	rm -f build/org/sqlite/NestedDB*.class
+	cd build && jar cf $(sqlitejdbc)-native.jar `find org -name \*.class`
 	$(CC) $(CFLAGS) -c -O -o build/$(target)/NativeDB.o \
 		src/org/sqlite/NativeDB.c
 	rm -f upstream/$(sqlite)-$(target)/NestedDB.o # TODO this is ugly
@@ -113,10 +113,11 @@ native: upstream/$(sqlite)-$(target)/main.o $(native_classes)
 	$(STRIP) build/$(target)/$(LIBNAME)
 
 nested: upstream/build/org/sqlite/SQLite.class $(nested_classes)
-	jar cf build/$(sqlitejdbc)-nested.jar \
-	    $(nested_classes:build/%=-C build %) \
-	    -C upstream/build org/sqlite/SQLite.class \
-	    -C upstream/$(nestedvm)/build org/ibex
+	rm -f build/org/sqlite/NativeDB*.class
+	cd build && jar cf $(sqlitejdbc)-native.jar \
+	    `find org -name \*.class` \
+	    -C ../upstream/build org/sqlite/SQLite.class \
+	    -C ../upstream/$(nestedvm)/build org/ibex
 
 dist/$(sqlitejdbc)-nested.tgz: nested
 	@mkdir -p dist
