@@ -10,7 +10,7 @@ import java.sql.*;
 // FEATURE: strdup is wasteful, SQLite interface will take unterminated char*
 
 /** Communicates with the Java version of SQLite provided by NestedVM. */
-final class NestedDB extends DB
+final class NestedDB extends DB implements Runtime.CallJavaCB
 {
     /** database pointer */
     int handle = 0;
@@ -38,12 +38,7 @@ final class NestedDB extends DB
         }
 
         // callback for user defined functions
-        rt.setCallJavaCB(new Runtime.CallJavaCB() {
-            public int call(int xType, int context, int args, int value) {
-                xUDF(xType, context, args, value);
-                return 0;
-            }
-        });
+        rt.setCallJavaCB(this);
 
         // open the db and retrieve sqlite3_db* pointer
         int passback = rt.xmalloc(4);
@@ -53,6 +48,12 @@ final class NestedDB extends DB
         handle = deref(passback);
         rt.free(str);
         rt.free(passback);
+    }
+
+    /* callback for Runtime.CallJavaCB above */
+    public int call(int xType, int context, int args, int value) {
+        xUDF(xType, context, args, value);
+        return 0;
     }
 
     synchronized void close() throws SQLException {
