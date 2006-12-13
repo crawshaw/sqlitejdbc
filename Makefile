@@ -57,7 +57,7 @@ LIBNAME   := $($(os)_LIBNAME)
 #
 
 # TODO: remove these by using symlinks upstream/nestedvm and /sqlite
-nestedvm_version := 2006-11-19
+nestedvm_version := 2006-12-13
 nestedvm := nestedvm-$(nestedvm_version)
 sqlite_version := 3.3.8
 sqlite := sqlite-$(sqlite_version)
@@ -141,6 +141,7 @@ test-nested: nested $(test_classes)
 clean:
 	rm -rf build
 	rm -rf dist
+	rm -rf upstream/build
 
 distclean: clean upstream/clean
 

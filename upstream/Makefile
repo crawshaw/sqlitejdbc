@@ -1,5 +1,5 @@
 sqlite_version := 3.3.8
-nestedvm_version := 2006-11-19
+nestedvm_version := 2006-12-13
 
 nestedvm := nestedvm-$(nestedvm_version)
 sqlite := sqlite-$(sqlite_version)
@@ -25,11 +25,10 @@ dl/$(sqlite).zip:
 
 dl/$(nestedvm).tgz:
 	@mkdir -p dl
-	curl -odl/$(nestedvm).tgz \
-	    http://www.zentus.com/nestedvm/dist/$(nestedvm).tgz
+	curl -odl/$(nestedvm).tgz http://nestedvm.ibex.org/dist/$(nestedvm).tgz
 
 $(nestedvm)/Makefile: dl/$(nestedvm).tgz
-	tar xfz ../dl/$(nestedvm).tgz
+	tar xfz dl/$(nestedvm).tgz
 
 $(sqlite)-%/main.o: dl/$(sqlite).zip
 	@mkdir -p $(sqlite)-$*
