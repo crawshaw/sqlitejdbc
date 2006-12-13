@@ -114,7 +114,7 @@ native: upstream/$(sqlite)-$(target)/main.o $(native_classes)
 
 nested: upstream/build/org/sqlite/SQLite.class $(nested_classes)
 	rm -f build/org/sqlite/NativeDB*.class
-	cd build && jar cf $(sqlitejdbc)-native.jar \
+	cd build && jar cf $(sqlitejdbc)-nested.jar \
 	    `find org -name \*.class` \
 	    -C ../upstream/build org/sqlite/SQLite.class \
 	    -C ../upstream/$(nestedvm)/build org/ibex
