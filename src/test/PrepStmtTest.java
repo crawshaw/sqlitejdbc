@@ -208,6 +208,7 @@ public class PrepStmtTest
         rs.close();
     }
 
+    @Ignore
     @Test public void getObject() throws SQLException {
         stat.executeUpdate("create table testobj ("
             + "c1 integer, c2 float, c3, c4 varchar, c5 bit, c6, c7);");
