@@ -69,6 +69,10 @@
         font-style: italic;
     }
 
+    .mono {
+        font-family: monospace;
+    }
+
     img.photo {
     	border: 1px solid black;
     }
