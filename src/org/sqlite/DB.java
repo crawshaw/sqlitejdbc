@@ -1,31 +1,98 @@
 /* Copyright 2006 David Crawshaw, see LICENSE file for licensing [BSD]. */
 package org.sqlite;
 
+import java.lang.ref.*;
 import java.io.File;
 import java.sql.*;
+import java.util.*;
 
 abstract class DB implements Codes
 {
     /** database pointer */
     long pointer = 0;
 
+    /** tracer for statements to avoid unfinalized statements on db close */
+    private Map stmts = new Hashtable();
+
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
     abstract void open(String filename) throws SQLException;
-    abstract void close() throws SQLException;
     abstract void interrupt() throws SQLException;
     abstract void busy_timeout(int ms) throws SQLException;
-    abstract void exec(String sql) throws SQLException;
-    abstract long prepare(String sql) throws SQLException;
     abstract String errmsg() throws SQLException;
     abstract String libversion() throws SQLException;
     abstract int changes() throws SQLException;
 
-    abstract int finalize(long stmt) throws SQLException;
-    abstract int step(long stmt) throws SQLException;
-    abstract int reset(long stmt) throws SQLException;
-    abstract int clear_bindings(long stmt) throws SQLException;
+    final synchronized void exec(String sql) throws SQLException {
+        long pointer = 0;
+        try {
+            pointer = prepare(sql);
+            if (step(pointer) == SQLITE_ERROR)
+                throwex();
+        } finally {
+            finalize(pointer);
+        }
+    }
 
+    final synchronized void close() throws SQLException {
+        // finalize any remaining statements before closing db
+        synchronized (stmts) {
+            Iterator i = stmts.entrySet().iterator();
+            while (i.hasNext()) {
+                Map.Entry entry = (Map.Entry)i.next();
+                RS stmt = (RS)((WeakReference)entry.getValue()).get();
+                finalize(((Long)entry.getKey()).longValue());
+                if (stmt != null) stmt.pointer = 0;
+                i.remove();
+            }
+        }
+
+        // remove memory used by user-defined functions
+        free_functions();
+
+        _close();
+    }
+
+    final synchronized void prepare(RS stmt) throws SQLException {
+        if (stmt.pointer != 0)
+            finalize(stmt);
+        stmt.pointer = prepare(stmt.sql);
+        stmts.put(new Long(stmt.pointer),
+                  new WeakReference(stmt));
+    }
+
+    final synchronized int finalize(RS stmt) throws SQLException {
+        if (stmt.pointer == 0) return 0;
+        int rc = SQLITE_ERROR;
+        try {
+            rc = finalize(stmt.pointer);
+        } finally {
+            stmts.remove(new Long(stmt.pointer));
+            stmt.pointer = 0;
+        }
+        return rc;
+    }
+
+    final synchronized int step(RS stmt) throws SQLException {
+        int rc = step(stmt.pointer);
+
+        // deal with goofy interface
+        if (rc == SQLITE_ERROR)
+            rc = reset(stmt.pointer);
+        if (rc == SQLITE_SCHEMA) {
+            prepare(stmt);
+            return step(stmt);
+        }
+        return rc;
+    }
+
+    protected abstract void _close() throws SQLException;
+    protected abstract long prepare(String sql) throws SQLException;
+    protected abstract int finalize(long stmt) throws SQLException;
+    protected abstract int step(long stmt) throws SQLException;
+    protected abstract int reset(long stmt) throws SQLException;
+
+    abstract int clear_bindings(long stmt) throws SQLException; // TODO remove?
     abstract int bind_parameter_count(long stmt) throws SQLException;
 
     abstract int    column_count      (long stmt) throws SQLException;
@@ -103,7 +170,7 @@ abstract class DB implements Codes
         }
     }
 
-    final int[] executeBatch(long stmt, int count, Object[] vals)
+    final synchronized int[] executeBatch(long stmt, int count, Object[] vals)
             throws SQLException {
         if (count < 1) throw new SQLException("count (" + count + ") < 1");
 
@@ -112,7 +179,7 @@ abstract class DB implements Codes
         int rc;
         int[] changes = new int[count];
 
-        BATCH: for (int i=0; i < count; i++) {
+        for (int i=0; i < count; i++) {
             reset(stmt);
             for (int j=0; j < params; j++)
                 if (sqlbind(stmt, j, vals[(i * params) + j]) != SQLITE_OK)
@@ -134,48 +201,44 @@ abstract class DB implements Codes
         return changes;
     }
 
-    final synchronized boolean execute(long stmt, Object[] vals)
+    final synchronized boolean execute(RS stmt, Object[] vals)
             throws SQLException {
         if (vals != null) {
-            final int params = bind_parameter_count(stmt);
+            final int params = bind_parameter_count(stmt.pointer);
             if (params != vals.length)
                 throw new SQLException("assertion failure: param count ("
                         + params + ") != value count (" + vals.length + ")");
 
             for (int i=0; i < params; i++)
-                if (sqlbind(stmt, i, vals[i]) != SQLITE_OK) throwex();
+                if (sqlbind(stmt.pointer, i, vals[i]) != SQLITE_OK) throwex();
         }
 
-        int rc = step(stmt);
-        if (rc == SQLITE_ERROR)
-            rc = reset(stmt);
-
-        switch (rc) {
-            case SQLITE_DONE: return false;
+        switch (step(stmt)) {
+            case SQLITE_DONE:
+                reset(stmt.pointer);
+                return false;
             case SQLITE_ROW: return true;
             case SQLITE_BUSY: throw new SQLException("database locked");
             case SQLITE_MISUSE:
+                throw new SQLException(errmsg());
+                //throw new SQLException("jdbc internal consistency error");
+            case SQLITE_SCHEMA:
                 throw new SQLException("jdbc internal consistency error");
-            case SQLITE_SCHEMA: // TODO
-                /*sqlite3_transfer_bindings(dbstmt, newdbstmt);
-                return Java_org_sqlite_DB_execute(
-                        env, this, fromref(newdbstmt), values);*/
             case SQLITE_INTERNAL: // TODO: be specific
             case SQLITE_PERM: case SQLITE_ABORT: case SQLITE_NOMEM:
             case SQLITE_READONLY: case SQLITE_INTERRUPT: case SQLITE_IOERR:
-            case SQLITE_CORRUPT: case SQLITE_ERROR:
+            case SQLITE_CORRUPT:
             default:
-                throwex();
-                return false;
+                finalize(stmt);
+                throw new SQLException(errmsg());
         }
     }
 
-    final synchronized int executeUpdate(long stmt, Object[] vals)
+    final synchronized int executeUpdate(RS stmt, Object[] vals)
             throws SQLException {
-        int changes = 0;
         if (execute(stmt, vals))
             throw new SQLException("query returns results");
-        reset(stmt);
+        reset(stmt.pointer);
         return changes();
     }
 

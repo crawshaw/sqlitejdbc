@@ -281,7 +281,8 @@ JNIEXPORT void JNICALL Java_org_sqlite_NativeDB_open(
     sethandle(env, this, db);
 }
 
-JNIEXPORT void JNICALL Java_org_sqlite_NativeDB_close(JNIEnv *env, jobject this)
+JNIEXPORT void JNICALL Java_org_sqlite_NativeDB__1close(
+        JNIEnv *env, jobject this)
 {
     if (sqlite3_close(gethandle(env, this)) != SQLITE_OK)
         throwex(env, this);
@@ -297,15 +298,6 @@ JNIEXPORT void JNICALL Java_org_sqlite_NativeDB_busy_1timeout(
     JNIEnv *env, jobject this, jint ms)
 {
     sqlite3_busy_timeout(gethandle(env, this), ms);
-}
-
-JNIEXPORT void JNICALL Java_org_sqlite_NativeDB_exec(
-        JNIEnv *env, jobject this, jstring sql)
-{
-    const char *strsql = (*env)->GetStringUTFChars(env, sql, 0);
-    if (sqlite3_exec(gethandle(env, this), strsql, 0, 0, 0) != SQLITE_OK)
-        throwex(env, this);
-    (*env)->ReleaseStringUTFChars(env, sql, strsql);
 }
 
 JNIEXPORT jlong JNICALL Java_org_sqlite_NativeDB_prepare(

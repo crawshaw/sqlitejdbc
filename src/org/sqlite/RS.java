@@ -34,6 +34,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     Conn conn;
     DB db;
 
+    String sql = null;
     long pointer = 0;
     boolean isAfterLast = false;
     boolean resultsWaiting = false;

@@ -56,13 +56,16 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         return 0;
     }
 
-    synchronized void close() throws SQLException {
+    protected synchronized void _close() throws SQLException {
         if (handle == 0) return;
-        int rc = call("sqlite3_close", handle);
-        handle = 0;
-        rt.stop();
-        rt = null;
-        if (rc != SQLITE_OK) throwex();
+        try {
+            if (call("sqlite3_close", handle) != SQLITE_OK)
+                throwex();
+        } finally {
+            handle = 0;
+            rt.stop();
+            rt = null;
+        }
     }
 
     synchronized void interrupt() throws SQLException {
@@ -71,12 +74,7 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     synchronized void busy_timeout(int ms) throws SQLException {
         call("sqlite3_busy_timeout", handle, ms);
     }
-    synchronized void exec(String sql) throws SQLException {
-        int pointer = (int)prepare(sql);
-        try { execute(pointer, null); } finally { finalize(pointer); }
-    }
-    // TODO: store sqlite3_stmt against PhantomReference for org.sqlite.RS
-    synchronized long prepare(String sql) throws SQLException {
+    protected synchronized long prepare(String sql) throws SQLException {
         int passback = rt.xmalloc(4);
         int str = rt.strdup(sql);
         int ret = call("sqlite3_prepare", handle, str, -1, passback, 0);
@@ -96,16 +94,11 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     synchronized int changes() throws SQLException {
         return call("sqlite3_changes", handle); }
 
-    // TODO: clear sqlite3_stmt from PhantomReference
-    synchronized int finalize(long stmt) throws SQLException {
+    protected synchronized int finalize(long stmt) throws SQLException {
         return call("sqlite3_finalize", (int)stmt); }
-    synchronized int step(long stmt) throws SQLException {
-        int rc = call("sqlite3_step", (int)stmt);
-        if (rc == SQLITE_ERROR)
-            rc = reset(stmt);
-        return rc;
-    }
-    synchronized int reset(long stmt) throws SQLException {
+    protected synchronized int step(long stmt) throws SQLException {
+        return call("sqlite3_step", (int)stmt); }
+    protected synchronized int reset(long stmt) throws SQLException {
         return call("sqlite3_reset", (int)stmt); }
     synchronized int clear_bindings(long stmt) throws SQLException {
         return call("sqlite3_clear_bindings", (int)stmt); }

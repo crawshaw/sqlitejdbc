@@ -9,7 +9,6 @@ class Conn implements Connection
 {
     private final String url;
     private DB db = null;
-    private Set stmts = Collections.synchronizedSet(new HashSet());
     private MetaData meta = null;
     private boolean autoCommit = true;
     private int timeout = 0;
@@ -60,39 +59,12 @@ class Conn implements Connection
             "SQLite only supports closing cursors at commit");
     }
 
-    void remove(RS rs) throws SQLException {
-        removePointer(rs);
-        stmts.remove(rs);
-    }
-    private void removePointer(RS s) throws SQLException {
-        if (s == null) return;
-        s.close();
-        if (s.pointer != 0) {
-            db.finalize(s.pointer);
-            s.pointer = 0;
-        }
-        s.db = null;
-    }
-
     public void finalize() throws SQLException { close(); }
     public void close() throws SQLException {
         if (db == null) return;
         if (meta != null) meta.close();
 
-        // remove memory used by user-defined functions
-        db.free_functions();
-
-        // must be  synchronized against both db and stmts to ensure
-        // no database access occurs or a new statement is created
-        // while the Connection is being closed
-        synchronized (db) { synchronized (stmts) {
-            for (Iterator i = stmts.iterator(); i.hasNext(); i.remove()) {
-                RS s = (RS)(((WeakReference)i.next()).get());
-                removePointer(s);
-            }
-            db.close();
-            db = null;
-        } }
+        db.close();
     }
 
     public boolean isClosed() throws SQLException { return db == null; }
@@ -169,9 +141,7 @@ class Conn implements Connection
     public Statement createStatement(int rst, int rsc, int rsh)
         throws SQLException {
         checkCursor(rst, rsc, rsh);
-        Stmt s = new Stmt(this);
-        stmts.add(new WeakReference(s));
-        return s;
+        return new Stmt(this);
     }
 
     public CallableStatement prepareCall(String sql) throws SQLException {
@@ -207,9 +177,7 @@ class Conn implements Connection
     public PreparedStatement prepareStatement(
             String sql, int rst, int rsc, int rsh) throws SQLException {
         checkCursor(rst, rsc, rsh);
-        PrepStmt prep = new PrepStmt(this, sql);
-        stmts.add(new WeakReference(prep));
-        return prep;
+        return new PrepStmt(this, sql);
     }
 
 

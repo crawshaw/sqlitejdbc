@@ -17,23 +17,12 @@ class Stmt extends RS implements Statement, Codes
             "SQLite JDBC internal error: pointer == 0 on exec.");
         if (isRS()) throw new SQLException(
             "SQLite JDBC internal error: isRS() on exec.");
-        resultsWaiting = false;
 
-        // deal with goofy interface
-        int rc = db.step(pointer);
-        if (rc == SQLITE_ERROR) rc = db.reset(pointer);
-
-        switch (rc) {
-            case SQLITE_DONE:   db.reset(pointer); break;
-            case SQLITE_ROW:    resultsWaiting = true; break;
-            case SQLITE_BUSY:   throw new SQLException("database locked");
-            case SQLITE_MISUSE:
-                 throw new SQLException("JDBC internal consistency error");
-            case SQLITE_ERROR:
-            default:
-                 int ret = db.finalize(pointer);
-                 pointer = 0;
-                 db.throwex(); return false;
+        boolean rc = false;
+        try {
+            rc = db.execute(this, null);
+        } finally {
+            resultsWaiting = rc;
         }
 
         return db.column_count(pointer) != 0;
@@ -52,16 +41,14 @@ class Stmt extends RS implements Statement, Codes
         colsMeta = null;
         meta = null;
         batch = null;
-        int resp = db.finalize(pointer);
-        pointer = 0;
+        int resp = db.finalize(this);
         if (resp != SQLITE_OK && resp != SQLITE_MISUSE)
             db.throwex();
     }
 
-    protected void finalize() throws SQLException {
-        Stmt.this.close();
-        if (conn != null) conn.remove(this);;
-    }
+    /** The JVM does not ensure finalize() is called, so a Map in the
+     *  DB class keeps track of statements for finalization. */
+    protected void finalize() throws SQLException { close(); }
 
     public int getUpdateCount() throws SQLException {
         checkOpen();
@@ -71,13 +58,15 @@ class Stmt extends RS implements Statement, Codes
 
     public boolean execute(String sql) throws SQLException {
         checkOpen(); close();
-        pointer = db.prepare(sql);
+        this.sql = sql;
+        db.prepare(this);
         return exec();
     }
 
     public ResultSet executeQuery(String sql) throws SQLException {
         checkOpen(); close();
-        pointer = db.prepare(sql);
+        this.sql = sql;
+        db.prepare(this);
         if (!exec()) {
             close();
             throw new SQLException("query does not return ResultSet");
@@ -87,9 +76,12 @@ class Stmt extends RS implements Statement, Codes
 
     public int executeUpdate(String sql) throws SQLException {
         checkOpen(); close();
-        pointer = db.prepare(sql);
+        this.sql = sql;
         int changes = 0;
-        try { changes = db.executeUpdate(pointer, null); } finally { close(); }
+        try {
+            db.prepare(this);
+            changes = db.executeUpdate(this, null);
+        } finally { close(); }
         return changes;
     }
 
@@ -107,17 +99,24 @@ class Stmt extends RS implements Statement, Codes
         checkOpen(); close();
         if (batch == null) return new int[] {};
 
-        ArrayList run = batch;
-        int[] changes = new int[run.size()];
-        for (int i=0; i < changes.length; i++) {
-            pointer = db.prepare((String)run.get(i));
-            try {
-                changes[i] = db.executeUpdate(pointer, null);
-            } catch (SQLException e) {
-                throw new BatchUpdateException(
-                    "batch entry " + i + ": " + e.getMessage(), changes);
-            } finally { close(); }
-        }
+        int[] changes = new int[batch.size()];
+
+        synchronized (db) { try {
+            for (int i=0; i < changes.length; i++) {
+                try {
+                    sql = (String)batch.get(i);
+                    db.prepare(this);
+                    changes[i] = db.executeUpdate(this, null);
+                } catch (SQLException e) {
+                    throw new BatchUpdateException(
+                        "batch entry " + i + ": " + e.getMessage(), changes);
+                } finally {
+                    db.finalize(this);
+                }
+            }
+        } finally {
+            batch.clear();
+        } }
 
         return changes;
     }

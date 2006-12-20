@@ -21,7 +21,8 @@ final class PrepStmt extends RS
     PrepStmt(Conn conn, String sql) throws SQLException {
         super(conn);
 
-        pointer = db.prepare(sql);
+        this.sql = sql;
+        db.prepare(this);
         colsMeta = db.column_names(pointer);
         columnCount = db.column_count(pointer);
         paramCount = db.bind_parameter_count(pointer);
@@ -44,14 +45,17 @@ final class PrepStmt extends RS
                 batch[i] = null;
     }
 
-    protected void finalize() throws SQLException { conn.remove(this); }
+    protected void finalize() throws SQLException {
+        db.finalize(this);
+        // TODO
+    }
 
 
     public boolean execute() throws SQLException {
         checkExec();
         clearRS();
-        db.reset(pointer);
-        resultsWaiting = db.execute(pointer, batch);
+        db.reset(pointer); // TODO: needed?
+        resultsWaiting = db.execute(this, batch);
         return columnCount != 0;
     }
 
@@ -60,8 +64,8 @@ final class PrepStmt extends RS
         if (columnCount == 0)
             throw new SQLException("query does not return results");
         clearRS();
-        db.reset(pointer);
-        resultsWaiting = db.execute(pointer, batch);
+        db.reset(pointer); // TODO: needed?
+        resultsWaiting = db.execute(this, batch);
         return getResultSet();
     }
 
@@ -71,7 +75,7 @@ final class PrepStmt extends RS
             throw new SQLException("query returns results");
         clearRS();
         db.reset(pointer);
-        return db.executeUpdate(pointer, batch);
+        return db.executeUpdate(this, batch);
     }
 
     public int[] executeBatch() throws SQLException {

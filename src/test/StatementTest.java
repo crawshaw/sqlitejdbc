@@ -61,6 +61,10 @@ public class StatementTest
         rs.close();
     }
 
+    @Test public void autoClose() throws SQLException {
+        conn.createStatement().executeQuery("select 1;");
+    }
+
     @Test public void stringRS() throws SQLException {
         ResultSet rs = stat.executeQuery("select \"Russell\";");
         assertTrue(rs.next());

@@ -36,18 +36,18 @@ final class NativeDB extends DB
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
     native synchronized void open(String filename) throws SQLException;
-    native synchronized void close() throws SQLException;
+    protected native synchronized void _close() throws SQLException;
     native synchronized void interrupt();
     native synchronized void busy_timeout(int ms);
-    native synchronized void exec(String sql) throws SQLException;
-    native synchronized long prepare(String sql) throws SQLException;
+    //native synchronized void exec(String sql) throws SQLException;
+    protected native synchronized long prepare(String sql) throws SQLException;
     native synchronized String errmsg();
     native synchronized String libversion();
     native synchronized int changes();
 
-    native synchronized int finalize(long stmt);
-    native synchronized int step(long stmt);
-    native synchronized int reset(long stmt);
+    protected native synchronized int finalize(long stmt);
+    protected native synchronized int step(long stmt);
+    protected native synchronized int reset(long stmt);
     native synchronized int clear_bindings(long stmt);
 
     native synchronized int bind_parameter_count(long stmt);
