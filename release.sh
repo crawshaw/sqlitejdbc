@@ -66,9 +66,10 @@ echo '</ul></div></body></html>' >> changes.html
 # push release to web server
 #
 if [ "$1" = "elmo" ]; then
-    cp dist/$sqlitejdbc-*.tgz \
-        /var/www/zentus.com/www/sqlitejdbc/dist/
-    cd /var/www/zentus.com/www/sqlitejdbc/src && darcs pull -a
-    mv changes.html /var/www/zentus.com/www/sqlitejdbc/
-    cp web/*.html web/*.css /var/www/zentus.com/www/sqlitejdbc/
+    webloc=/var/www/zentus.com/www/sqlitejdbc
+    darcs push
+    scp dist/$sqlitejdbc-*.tgz elmo.zentus.com:$webloc/dist/
+    scp changes.html web/*.html web/*.css elmo.zentus.com:$webloc/
+    rm changes.html
+    ssh elmo.zentus.com "cd $webloc/src && darcs pull -a"
 fi
