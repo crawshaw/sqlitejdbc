@@ -6,6 +6,14 @@ sqlite := sqlite-$(sqlite_version)
 
 nestedvm_bin := $(nestedvm)/upstream/install/bin
 
+sep := :
+ifeq ($(findstring CYGWIN, $(shell uname)),CYGWIN)
+	sep := ;
+endif
+ifeq ($(findstring MINGW, $(shell uname)),MINGW)
+	sep := ;
+endif
+
 #
 # Gneral Glue
 #
@@ -52,7 +60,7 @@ build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh
 			#-Wl,--gc-sections
 
 build/org/sqlite/SQLite.class: build/SQLite.mips
-	java -cp $(nestedvm)/build:$(nestedvm)/upstream/build/classgen/build \
+	java -cp $(nestedvm)/build$(sep)$(nestedvm)/upstream/build/classgen/build \
 	    org.ibex.nestedvm.Compiler \
 	    -outformat class -d build -o unixRuntime \
 	    org.sqlite.SQLite build/SQLite.mips

@@ -16,12 +16,22 @@ ifeq ($(os),)
 	ifeq ($(shell uname),Darwin)
 		os := Darwin
 	endif
-	ifeq ($(shell uname),Cygwin) # TODO: check uname output on Cygwin
+	ifeq ($(findstring CYGWIN, $(shell uname)),CYGWIN)
+		os := Win
+	endif
+	ifeq ($(findstring MINGW, $(shell uname)),MINGW)
 		os := Win
 	endif
 endif
 ifeq ($(os),)
 	os := Default
+endif
+
+# Windows uses different path separators, because they hate me
+ifeq ($(os),Win)
+	sep := ;
+else
+	sep := :
 endif
 
 ifeq ($(arch),)
@@ -65,9 +75,9 @@ sqlite := sqlite-$(sqlite_version)
 target     := $(os)-$(arch)
 sqlitejdbc := sqlitejdbc-v$(shell cat VERSION)
 
-jni_md := $(shell find $(JAVA_HOME) -name jni_md.h)
+jni_md := $(shell find "$(JAVA_HOME)" -name jni_md.h)
 ifneq ($(jni_md),)
-jni_include := $(shell dirname $(jni_md))
+jni_include := $(shell dirname "$(jni_md)")
 endif
 
 CFLAGS := $(CFLAGS) -Iupstream/$(sqlite)-$(target) -Ibuild
@@ -76,7 +86,7 @@ CFLAGS := $(CFLAGS) -I$(jni_include)
 endif
 
 
-libs := $(subst  ,:,$(wildcard lib/*.jar))
+libs := build$(sep)$(subst  ,$(sep),$(wildcard lib/*.jar))
 
 java_sources := $(wildcard src/org/sqlite/*.java)
 java_classes := $(java_sources:src/%.java=build/%.class)
@@ -93,12 +103,12 @@ upstream/%:
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build
-	javac -source 1.2 -target 1.2 -cp upstream/$(nestedvm)/build \
+	javac -source 1.2 -target 1.2 -cp "upstream/$(nestedvm)/build" \
 	    -sourcepath src -d build $<
 
 build/test/%.class: src/test/%.java
 	@mkdir -p build
-	javac -target 1.5 -cp $(libs):build -sourcepath src/test -d build $<
+	javac -target 1.5 -cp "$(libs)" -sourcepath src/test -d build $<
 
 native: upstream/$(sqlite)-$(target)/main.o $(native_classes)
 	@mkdir -p build/$(target)
@@ -131,11 +141,11 @@ dist/$(sqlitejdbc)-$(target).tgz: native
 
 test-native: native $(test_classes)
 	java -Djava.library.path=build/$(target) \
-	    -cp build/$(sqlitejdbc)-native.jar:build:$(libs) \
+	    -cp "build/$(sqlitejdbc)-native.jar$(sep)$(libs)" \
 	    org.junit.runner.JUnitCore $(tests)
 
 test-nested: nested $(test_classes)
-	java -cp build/$(sqlitejdbc)-nested.jar:build:$(libs) \
+	java -cp "build/$(sqlitejdbc)-nested.jar$(sep)$(libs)" \
 	    org.junit.runner.JUnitCore $(tests)
 
 clean:
