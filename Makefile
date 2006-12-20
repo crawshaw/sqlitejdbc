@@ -16,10 +16,10 @@ ifeq ($(os),)
 	ifeq ($(shell uname),Darwin)
 		os := Darwin
 	endif
-	ifeq ($(findstring CYGWIN, $(shell uname)),CYGWIN)
+	ifeq ($(findstring CYGWIN,$(shell uname)),CYGWIN)
 		os := Win
 	endif
-	ifeq ($(findstring MINGW, $(shell uname)),MINGW)
+	ifeq ($(findstring MINGW,$(shell uname)),MINGW)
 		os := Win
 	endif
 endif
@@ -62,6 +62,7 @@ CFLAGS    := $($(os)_CFLAGS)
 LINKFLAGS := $($(os)_LINKFLAGS)
 LIBNAME   := $($(os)_LIBNAME)
 
+
 #
 # Generic variables
 #
@@ -80,12 +81,6 @@ ifneq ($(jni_md),)
 jni_include := $(shell dirname "$(jni_md)")
 endif
 
-CFLAGS := $(CFLAGS) -Iupstream/$(sqlite)-$(target) -Ibuild
-ifneq ($(jni_include),)
-CFLAGS := $(CFLAGS) -I$(jni_include)
-endif
-
-
 libs := build$(sep)$(subst  ,$(sep),$(wildcard lib/*.jar))
 
 java_sources := $(wildcard src/org/sqlite/*.java)
@@ -98,7 +93,22 @@ tests        := $(subst /,.,$(patsubst build/%.class,%,$(test_classes)))
 
 default: test-nested test-native
 
+
+CC        := $($(os)_CC)
+STRIP     := $($(os)_STRIP)
+CFLAGS    := $($(os)_CFLAGS)
+LINKFLAGS := $($(os)_LINKFLAGS)
+LIBNAME   := $($(os)_LIBNAME)
+
+CFLAGS := $(CFLAGS) -Iupstream/$(sqlite)-$(target) -Ibuild
+ifneq ($(jni_include),)
+CFLAGS := $(CFLAGS) -I$(jni_include)
+endif
+
+
 upstream/%:
+	export CC
+	export CFLAGS
 	$(MAKE) -C upstream $*
 
 build/org/%.class: src/org/%.java
