@@ -42,7 +42,10 @@ abstract class DB implements Codes
                 Map.Entry entry = (Map.Entry)i.next();
                 RS stmt = (RS)((WeakReference)entry.getValue()).get();
                 finalize(((Long)entry.getKey()).longValue());
-                if (stmt != null) stmt.pointer = 0;
+                if (stmt != null) {
+                    stmt.pointer = 0;
+                    stmt.db = null;
+                }
                 i.remove();
             }
         }

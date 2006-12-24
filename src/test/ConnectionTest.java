@@ -27,4 +27,13 @@ public class ConnectionTest
         assertTrue(testdb.exists());
         testdb.delete();
     }
+
+    @Test(expected= SQLException.class)
+    public void closeTest() throws SQLException {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+        PreparedStatement prep = conn.prepareStatement("select null;");
+        ResultSet rs = prep.executeQuery();
+        conn.close();
+        prep.clearParameters();
+    }
 }
