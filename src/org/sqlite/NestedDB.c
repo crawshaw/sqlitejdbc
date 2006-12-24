@@ -15,12 +15,23 @@ int column_metadata_helper(
   struct metadata *p
 ){
   const char *zTableName, *zColumnName;
+  int rc = 0;
+
+  p->pNotNull = 0;
+  p->pPrimaryKey = 0;
+  p->pAutoinc = 0;
+
   zTableName = sqlite3_column_table_name(stmt, col);
   zColumnName = sqlite3_column_name(stmt, col);
-  return sqlite3_table_column_metadata(
-    db, 0, zTableName, zColumnName, 0, 0,
-    &p->pNotNull, &p->pPrimaryKey, &p->pAutoinc
-  );
+
+  if (zTableName && zColumnName) {
+    rc = sqlite3_table_column_metadata(
+      db, 0, zTableName, zColumnName, 0, 0,
+      &p->pNotNull, &p->pPrimaryKey, &p->pAutoinc
+    );
+  }
+
+  return rc;
 }
 
 
