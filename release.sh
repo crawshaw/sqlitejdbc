@@ -67,7 +67,7 @@ echo '</ul></div></body></html>' >> changes.html
 #
 if [ "$1" = "elmo" ]; then
     webloc=/var/www/zentus.com/www/sqlitejdbc
-    darcs push
+    darcs push -a
     scp dist/$sqlitejdbc-*.tgz elmo.zentus.com:$webloc/dist/
     scp changes.html web/*.html web/*.css elmo.zentus.com:$webloc/
     rm changes.html

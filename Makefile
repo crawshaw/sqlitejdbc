@@ -113,12 +113,12 @@ upstream/%:
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build
-	javac -source 1.2 -target 1.2 -cp "upstream/$(nestedvm)/build" \
+	javac -source 1.2 -target 1.2 -classpath "upstream/$(nestedvm)/build" \
 	    -sourcepath src -d build $<
 
 build/test/%.class: src/test/%.java
 	@mkdir -p build
-	javac -target 1.5 -cp "$(libs)" -sourcepath src/test -d build $<
+	javac -target 1.5 -classpath "$(libs)" -sourcepath src/test -d build $<
 
 native: upstream/$(sqlite)-$(target)/main.o $(native_classes)
 	@mkdir -p build/$(target)
