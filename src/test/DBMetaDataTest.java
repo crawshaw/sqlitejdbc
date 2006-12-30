@@ -34,20 +34,36 @@ public class DBMetaDataTest
         ResultSet rs = meta.getTables(null, null, null, null);
         assertNotNull(rs);
         assertTrue(rs.next());
-        assertEquals(rs.getString("TABLE_NAME"), "test"); // 3
+        assertEquals(rs.getString("TABLE_NAME"), "TEST"); // 3
         assertEquals(rs.getString("TABLE_TYPE"), "TABLE"); // 4
         assertTrue(rs.next());
-        assertEquals(rs.getString("TABLE_NAME"), "testView");
+        assertEquals(rs.getString("TABLE_NAME"), "TESTVIEW");
         assertEquals(rs.getString("TABLE_TYPE"), "VIEW");
+        rs.close();
 
         rs = meta.getTables(null, null, "bob", null);
         assertFalse(rs.next());
+        rs.close();
         rs = meta.getTables(null, null, "test", null);
         assertTrue(rs.next());
         assertFalse(rs.next());
+        rs.close();
         rs = meta.getTables(null, null, "test%", null);
         assertTrue(rs.next());
         assertTrue(rs.next());
+        rs.close();
+
+        rs = meta.getTables(null, null, null, new String[] { "table" });
+        assertTrue(rs.next());
+        assertEquals(rs.getString("TABLE_NAME"), "TEST");
+        assertFalse(rs.next());
+        rs.close();
+
+        rs = meta.getTables(null, null, null, new String[] { "view" });
+        assertTrue(rs.next());
+        assertEquals(rs.getString("TABLE_NAME"), "TESTVIEW");
+        assertFalse(rs.next());
+        rs.close();
     }
 
     @Test public void getTableTypes() throws SQLException {
@@ -82,13 +98,51 @@ public class DBMetaDataTest
         assertEquals(rs.getString("TABLE_NAME"), "test");
         assertEquals(rs.getString("COLUMN_NAME"), "id");
         assertFalse(rs.next());
-        // TODO
+
         rs = meta.getColumns(null, null, "test", "fn");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "fn");
+        assertFalse(rs.next());
+
         rs = meta.getColumns(null, null, "test", "sn");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "sn");
+        assertFalse(rs.next());
+
         rs = meta.getColumns(null, null, "test", "%");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "id");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "fn");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "sn");
+        assertFalse(rs.next());
+
         rs = meta.getColumns(null, null, "test", "%n");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "fn");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "sn");
+        assertFalse(rs.next());
+
         rs = meta.getColumns(null, null, "test%", "%");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "id");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "fn");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "sn");
+        assertFalse(rs.next());
+
         rs = meta.getColumns(null, null, "%", "%");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("TABLE_NAME"), "test");
+        assertEquals(rs.getString("COLUMN_NAME"), "id");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "fn");
+        assertTrue(rs.next());
+        assertEquals(rs.getString("COLUMN_NAME"), "sn");
+        assertFalse(rs.next());
     }
 
     @Test public void columnOrderOfgetTables() throws SQLException {

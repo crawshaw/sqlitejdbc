@@ -324,20 +324,21 @@ class MetaData implements DatabaseMetaData
             + "null as TABLE_SCHEM, "
             + "'" + escape(tbl) + "' as TABLE_NAME, "
             + "cn as COLUMN_NAME, "
-            + "null as DATA_TYPE, " // TODO
+            + "-1 as DATA_TYPE, "
             + "tn as TYPE_NAME, "
-            + Integer.MAX_VALUE + " as COLUMN_SIZE, " // TODO
-            + "null as BUFFER_LENGTH, "
-            + "null as DECIMAL_DIGITS, "
+            + "2000000000 as COLUMN_SIZE, "
+            + "2000000000 as BUFFER_LENGTH, "
+            + "10   as DECIMAL_DIGITS, "
             + "10   as NUM_PREC_RADIX, "
-            + "null as NULLABLE, " // TODO
+            + "colnullable as NULLABLE, "
             + "null as REMARKS, "
             + "null as COLUMN_DEF, "
-            + "null as SQL_DATA_TYPE, "
-            + "null as SQL_DATETIME_SUB, "
-            + Integer.MAX_VALUE + " as CHAR_OCTET_LENGTH, "
-            + "null as ORDINAL_POSITION, " // TODO
-            + "null as IS_NULLABLE, " // TODO
+            + "0    as SQL_DATA_TYPE, "
+            + "0    as SQL_DATETIME_SUB, "
+            + "2000000000 as CHAR_OCTET_LENGTH, "
+            + "ordpos as ORDINAL_POSITION, "
+            + "(case colnullable when 0 then 'N' when 1 then 'Y' else '' end)"
+            + "    as IS_NULLABLE, "
             + "null as SCOPE_CATLOG, "
             + "null as SCOPE_SCHEMA, "
             + "null as SCOPE_TABLE, "
@@ -348,23 +349,30 @@ class MetaData implements DatabaseMetaData
         // and then build a resultset from unioned select statements
         rs = stat.executeQuery("pragma table_info ("+tbl+");");
 
-        int i;
-        for (i=0; rs.next(); i++) {
+        boolean colFound = false;
+        for (int i=0; rs.next(); i++) {
             String colName = rs.getString(2);
             String colType = rs.getString(3);
+            String colNotNull = rs.getString(4);
 
-            if (colType == null) colType = "null";
-            // TODO: handle wildcard search
-            if (colPat != null && !colPat.equalsIgnoreCase(colName)) {
-                i--; continue;
-            }
-            if (i > 0) sql += " union all ";
+            int colNullable = 2;
+            if (colType == null) colType = "TEXT";
+            if (colNotNull != null) colNullable = colNotNull.equals("0") ? 1:0;
+            if (colFound) sql += " union all ";
+            colFound = true;
 
-            sql += "select '"
+            sql += "select "
+                + i + " as ordpos, "
+                + colNullable + " as colnullable, '"
                 + escape(colName) + "' as cn, '"
                 + escape(colType) + "' as tn";
+
+            if (colPat != null)
+                sql += " where upper(cn) like upper('" + escape(colPat) + "')";
         }
-        sql += i == 0 ? "select null as cn, null as tn) limit 0;" : ");";
+        sql += colFound ? ");" :
+            "select null as ordpos, null as colnullable, "
+            + "null as cn, null as tn) limit 0;";
         rs.close();
 
         return stat.executeQuery(sql);
@@ -547,13 +555,12 @@ class MetaData implements DatabaseMetaData
             String t, String[] types) throws SQLException {
         checkOpen();
 
-        if (getTables == null) {
-            // TODO: perhaps return "GLOBAL TEMPORARY" for temp tables
-            getTables = conn.prepareStatement(
-                "select"
+        t = (t == null || "".equals(t)) ? "%" : t.toUpperCase();
+
+        String sql = "select"
                 + " null as TABLE_CAT,"
                 + " null as TABLE_SCHEM,"
-                + " name as TABLE_NAME,"
+                + " upper(name) as TABLE_NAME,"
                 + " upper(type) as TABLE_TYPE,"
                 + " null as REMARKS,"
                 + " null as TYPE_CAT,"
@@ -563,13 +570,20 @@ class MetaData implements DatabaseMetaData
                 + " null as REF_GENERATION"
                 + " from (select name, type from sqlite_master union all"
                 + "       select name, type from sqlite_temp_master)"
-                + " where name like ?;"
-            );
+                + " where TABLE_NAME like '" + escape(t) + "'";
+
+        if (types != null) {
+            sql += " and TABLE_TYPE in (";
+            for (int i=0; i < types.length; i++) {
+                if (i > 0) sql += ", ";
+                sql += "'" + types[i].toUpperCase() + "'";
+            }
+            sql += ")";
         }
 
-        getTables.clearParameters();
-        getTables.setString(1, t == null || "".equals(t) ? "%" : t);
-        return getTables.executeQuery();
+        sql += ";";
+
+        return conn.createStatement().executeQuery(sql);
     }
 
     public ResultSet getTableTypes() throws SQLException {
