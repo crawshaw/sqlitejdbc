@@ -1,5 +1,5 @@
-sqlite_version := 3.3.8
-nestedvm_version := 2006-12-13
+sqlite_version := 3.3.12
+nestedvm_version := 2007-01-12
 
 nestedvm := nestedvm-$(nestedvm_version)
 sqlite := sqlite-$(sqlite_version)

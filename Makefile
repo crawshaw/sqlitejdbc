@@ -68,9 +68,9 @@ LIBNAME   := $($(os)_LIBNAME)
 #
 
 # TODO: remove these by using symlinks upstream/nestedvm and /sqlite
-nestedvm_version := 2006-12-13
+nestedvm_version := 2007-01-12
 nestedvm := nestedvm-$(nestedvm_version)
-sqlite_version := 3.3.8
+sqlite_version := 3.3.12
 sqlite := sqlite-$(sqlite_version)
 
 target     := $(os)-$(arch)
