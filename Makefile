@@ -107,9 +107,7 @@ endif
 
 
 upstream/%:
-	export CC
-	export CFLAGS
-	$(MAKE) -C upstream $*
+	$(MAKE) -C upstream CC="$(CC)" CFLAGS="$(CFLAGS)" $*
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build
