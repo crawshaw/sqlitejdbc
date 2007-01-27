@@ -406,10 +406,7 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_NativeDB_column_1name(
 JNIEXPORT jstring JNICALL Java_org_sqlite_NativeDB_column_1text(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    jint length;
-    const void *str = sqlite3_column_text16(toref(stmt), col);
-    length = sqlite3_column_bytes16(toref(stmt), col) / 2; // in jchars
-    return str ? (*env)->NewString(env, str, length) : NULL;
+    return (*env)->NewStringUTF(env, sqlite3_column_text(toref(stmt), col));
 }
 
 JNIEXPORT jbyteArray JNICALL Java_org_sqlite_NativeDB_column_1blob(
@@ -477,13 +474,8 @@ JNIEXPORT jint JNICALL Java_org_sqlite_NativeDB_bind_1double(
 JNIEXPORT jint JNICALL Java_org_sqlite_NativeDB_bind_1text(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jstring v)
 {
-    jint rc;
-    const jchar *str;
-    jint size = (*env)->GetStringLength(env, v) * 2; // in bytes
-    assert(str = (*env)->GetStringCritical(env, v, 0));
-    rc = sqlite3_bind_text16(toref(stmt), pos, str, size, SQLITE_TRANSIENT);
-    (*env)->ReleaseStringCritical(env, v, str);
-    return rc;
+    const char *chars = (*env)->GetStringUTFChars(env, v, 0);
+    return sqlite3_bind_text(toref(stmt), pos, chars, -1, free);
 }
 
 JNIEXPORT jint JNICALL Java_org_sqlite_NativeDB_bind_1blob(
