@@ -56,10 +56,10 @@ echo '<div class="content"><h1>Changelog</h1>' >> changes.html
 cat web/nav.inc >> changes.html
 echo '<h3>HEAD</h3><ul>' >> changes.html
 # do not go back before version 008
-sh -c 'darcs changes --from-patch="version 015"' | grep \* >> changes.html
+sh -c 'darcs changes --from-patch="version 026"' | grep \* >> changes.html
 perl -pi -e "s/^  \* version ([0-9]+)$/<\/ul><h3>Version \$1<\/h3><ul>/g" \
 	changes.html
-perl -pi -e "s/^  \* (.*)$$/<li>\$1<\/li>/g" changes.html
+perl -pi -e "s/^  \* (.*)\$/<li>\$1<\/li>/g" changes.html
 echo '</ul></div></body></html>' >> changes.html
 
 #
