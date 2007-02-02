@@ -65,6 +65,7 @@ class Conn implements Connection
         if (meta != null) meta.close();
 
         db.close();
+        db = null;
     }
 
     public boolean isClosed() throws SQLException { return db == null; }

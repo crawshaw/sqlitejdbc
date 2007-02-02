@@ -18,6 +18,12 @@ public class ConnectionTest
         conn.close();
     }
 
+    @Test public void isClosed() throws SQLException {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+        conn.close();
+        assertTrue(conn.isClosed());
+    }
+
     @Test public void openFile() throws SQLException {
         File testdb = new File("test.db");
         if (testdb.exists()) testdb.delete();
