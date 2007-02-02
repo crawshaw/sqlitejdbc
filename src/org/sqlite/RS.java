@@ -150,8 +150,9 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     }
 
     public boolean isAfterLast() throws SQLException { return isAfterLast; }
-    public boolean isBeforeFirst() throws SQLException { return row == 0; }
-    public boolean isFirst() throws SQLException { return row == 1; }
+    public boolean isBeforeFirst() throws SQLException {
+        return !isAfterLast && row == 1; }
+    public boolean isFirst() throws SQLException { return row == 2; }
     public boolean isLast() throws SQLException { // FIXME
         throw new SQLException("function not yet implemented for SQLite"); }
 

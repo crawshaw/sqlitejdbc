@@ -208,6 +208,21 @@ public class StatementTest
         rs.close();
     }
 
+    @Test public void isBeforeFirst() throws SQLException {
+        ResultSet rs = stat.executeQuery("select 1 union all select 2;");
+        assertTrue(rs.isBeforeFirst());
+        assertTrue(rs.next());
+        assertTrue(rs.isFirst());
+        assertEquals(rs.getInt(1), 1);
+        assertTrue(rs.next());
+        assertFalse(rs.isBeforeFirst());
+        assertFalse(rs.isFirst());
+        assertEquals(rs.getInt(1), 2);
+        assertFalse(rs.next());
+        assertFalse(rs.isBeforeFirst());
+        rs.close();
+    }
+
     @Test(expected= SQLException.class)
     public void failToDropWhenRSOpen() throws SQLException {
         stat.executeUpdate("create table t1 (c1);");
