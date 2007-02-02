@@ -62,6 +62,11 @@ public class RSMetaDataTest
         assertEquals(meta.getColumnName(4), "dob");
     }
 
+    @Test public void nullable() throws SQLException {
+        meta = stat.executeQuery("select null;").getMetaData();
+        assertEquals(meta.isNullable(1), ResultSetMetaData.columnNullable);
+    }
+
     @Test(expected= SQLException.class)
     public void badCatalogIndex() throws SQLException { meta.getCatalogName(4);}
 

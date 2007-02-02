@@ -715,11 +715,17 @@ JNIEXPORT jobjectArray JNICALL Java_org_sqlite_NativeDB_column_1metadata(
         zColumnName = sqlite3_column_name(dbstmt, i);
         zTableName  = sqlite3_column_table_name(dbstmt, i);
 
+        pNotNull = 0;
+        pPrimaryKey = 0;
+        pAutoinc = 0;
+
         // request metadata for column and load into output variables
-        sqlite3_table_column_metadata(
-            db, 0, zTableName, zColumnName,
-            0, 0, &pNotNull, &pPrimaryKey, &pAutoinc
-        );
+        if (zTableName && zColumnName) {
+            sqlite3_table_column_metadata(
+                db, 0, zTableName, zColumnName,
+                0, 0, &pNotNull, &pPrimaryKey, &pAutoinc
+            );
+        }
 
         // load relevant metadata into 2nd dimension of return results
         colDataRaw[0] = pNotNull;
