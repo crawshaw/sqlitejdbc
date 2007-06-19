@@ -70,7 +70,7 @@ LIBNAME   := $($(os)_LIBNAME)
 # TODO: remove these by using symlinks upstream/nestedvm and /sqlite
 nestedvm_version := 2007-01-12
 nestedvm := nestedvm-$(nestedvm_version)
-sqlite_version := 3.3.12
+sqlite_version := 3.4.0
 sqlite := sqlite-$(sqlite_version)
 
 target     := $(os)-$(arch)
@@ -125,7 +125,6 @@ native: upstream/$(sqlite)-$(target)/main.o $(native_classes)
 	cd build && jar cf $(sqlitejdbc)-native.jar `find org -name \*.class`
 	$(CC) $(CFLAGS) -c -O -o build/$(target)/NativeDB.o \
 		src/org/sqlite/NativeDB.c
-	rm -f upstream/$(sqlite)-$(target)/NestedDB.o # TODO this is ugly
 	$(CC) $(CFLAGS) $(LINKFLAGS) -o build/$(target)/$(LIBNAME) \
 		build/$(target)/NativeDB.o upstream/$(sqlite)-$(target)/*.o
 	$(STRIP) build/$(target)/$(LIBNAME)

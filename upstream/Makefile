@@ -1,4 +1,4 @@
-sqlite_version := 3.3.12
+sqlite_version := 3.4.0
 nestedvm_version := 2007-01-12
 
 nestedvm := nestedvm-$(nestedvm_version)
@@ -41,19 +41,30 @@ $(nestedvm)/Makefile: dl/$(nestedvm).tgz
 $(sqlite)-%/main.o: dl/$(sqlite).zip
 	@mkdir -p $(sqlite)-$*
 	unzip -qo dl/$(sqlite).zip -d $(sqlite)-$*
-	cp ../src/org/sqlite/NestedDB.c $(sqlite)-$*
 	perl -pi -e "s/sqlite3_api;/sqlite3_api = 0;/g" $(sqlite)-$*/sqlite3ext.h
-	#rm $(sqlite)-$*/shell.c TODO: replace with empty main()
+	rm $(sqlite)-$*/tclsqlite.c
 	(cd $(sqlite)-$*; $(CC) -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
-	    -DNO_TCL \
 	    -DSQLITE_CORE \
-	    -DSQLITE_ENABLE_FTS1 \
 	    -DSQLITE_OMIT_LOAD_EXTENSION *.c)
 
 build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh
 	@mkdir -p build
-	(. ./$(nestedvm)/env.sh; $(MAKE) -e $(sqlite)-nestedvm/main.o)
+	@mkdir -p $(sqlite)-nestedvm
+	unzip -qo dl/$(sqlite).zip -d $(sqlite)-nestedvm
+	cp ../src/org/sqlite/NestedDB.c $(sqlite)-nestedvm
+	perl -pi -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
+	    $(sqlite)-nestedvm/sqlite3ext.h
+	# WARNING: line below could be dangerous to native driver, that's why
+	#          I've replicated the code from above and ensured no other sane
+	#          human being will ever understand this build process. Sorry.
+	perl -pi -e "s/# define THREADSAFE 1//g" $(sqlite)-nestedvm/os_unix.c
+	rm $(sqlite)-nestedvm/tclsqlite.c
+	(. ./$(nestedvm)/env.sh; cd $(sqlite)-nestedvm; $$CC -c $$CFLAGS \
+	    -DSQLITE_ENABLE_COLUMN_METADATA \
+	    -DSQLITE_CORE \
+	    -DSQLITE_OMIT_LOAD_EXTENSION *.c)
+
 	./$(nestedvm)/upstream/install/bin/mips-unknown-elf-gcc \
 	        -march=mips1 --static \
 	        -o $@ $(sqlite)-nestedvm/*.o
