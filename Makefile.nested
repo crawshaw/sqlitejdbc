@@ -17,8 +17,7 @@ build/test/%.class: src/test/%.java
 nested: build/org/sqlite/SQLite.class $(nested_classes)
 	rm -f build/org/sqlite/NativeDB*.class
 	cd build && jar cf $(sqlitejdbc)-nested.jar \
-	    org/sqlite/SQLite.class \
-	    $(patsubst build/%, %, $(wildcard $(nested_classes:%.class=%*))) \
+	    org/sqlite/SQLite.class $(nested_classlist) \
 	    -C ../$(nestedvm)/build org/ibex
 
 dist/$(sqlitejdbc)-nested.tgz: nested
