@@ -29,6 +29,17 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         if (handle != 0) throw new SQLException("DB already open");
         if (rt != null) throw new SQLException("DB closed but runtime exists");
 
+        // check the path to the file exists
+        File p = new File(filename).getAbsoluteFile().getParentFile();
+        if (p != null && !p.exists()) {
+            for (File up = p; up != null && !up.exists();) {
+                p = up;
+                up = up.getParentFile();
+            }
+            throw new SQLException("path to '" + filename + "': '"
+                    + p + "' does not exist");
+        }
+
         // handle silly windows drive letter mapping
         if (filename.length() > 2) {
             char drive = Character.toLowerCase(filename.charAt(0));
