@@ -475,7 +475,9 @@ JNIEXPORT jint JNICALL Java_org_sqlite_NativeDB_bind_1text(
         JNIEnv *env, jobject this, jlong stmt, jint pos, jstring v)
 {
     const char *chars = (*env)->GetStringUTFChars(env, v, 0);
-    return sqlite3_bind_text(toref(stmt), pos, chars, -1, free);
+    int rc = sqlite3_bind_text(toref(stmt), pos, chars, -1, SQLITE_TRANSIENT);
+    (*env)->ReleaseStringUTFChars(env, v, chars);
+    return rc;
 }
 
 JNIEXPORT jint JNICALL Java_org_sqlite_NativeDB_bind_1blob(
