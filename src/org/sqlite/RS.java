@@ -271,7 +271,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public String getCatalogName(int col) throws SQLException {
         return db.column_table_name(pointer, checkCol(col)); }
     public String getColumnClassName(int col) throws SQLException {
-        checkCol(col); throw new SQLException("NYI"); }
+        checkCol(col); return "java.lang.Object"; }
     public int getColumnCount() throws SQLException {
         checkCol(1); return colsMeta.length;
     }
