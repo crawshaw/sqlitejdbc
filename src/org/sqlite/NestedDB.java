@@ -29,6 +29,16 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         if (handle != 0) throw new SQLException("DB already open");
         if (rt != null) throw new SQLException("DB closed but runtime exists");
 
+        // handle silly windows drive letter mapping
+        if (filename.length() > 2) {
+            char drive = Character.toLowerCase(filename.charAt(0));
+            if (filename.charAt(1) == ':' && drive > 'a' && drive < 'z') {
+                filename = filename.substring(2);
+                filename = filename.replace('\\', '/');
+                filename = "/" + drive + filename;
+            }
+        }
+
         // start the nestedvm runtime
         try {
             rt = (Runtime)Class.forName("org.sqlite.SQLite").newInstance();
