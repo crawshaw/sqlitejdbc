@@ -297,8 +297,7 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     }
     public int getPrecision(int col) throws SQLException { return 0; } // FIXME
     public int getScale(int col) throws SQLException { return 0; }
-    public String getSchemaName(int col) throws SQLException {
-        throw new SQLException("NYI"); } 
+    public String getSchemaName(int col) throws SQLException { return ""; }
     public String getTableName(int col) throws SQLException {
         return db.column_table_name(pointer, checkCol(col)); }
     public int isNullable(int col) throws SQLException {
