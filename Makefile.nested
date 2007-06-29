@@ -52,8 +52,16 @@ build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh
 	cp src/org/sqlite/NestedDB.c build/$(sqlite)-nestedvm
 	perl -pi -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
 	    build/$(sqlite)-nestedvm/sqlite3ext.h
+
+	######
+	# NestedVM-related SQLite patches
+	#
 	# we don't use threads in NestedVM
 	perl -pi -e "s/# define THREADSAFE 1//g" build/$(sqlite)-nestedvm/os_unix.c
+	# unix-style resolution is bad, leave it up to java
+	perl -pi -e "s/sqlite3UnixFullPathname/sqliteStrDup/g" \
+	    build/$(sqlite)-nestedvm/os.h
+
 	rm build/$(sqlite)-nestedvm/tclsqlite.c
 	(. ./$(nestedvm)/env.sh; cd build/$(sqlite)-nestedvm; $$CC -c $$CFLAGS \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
