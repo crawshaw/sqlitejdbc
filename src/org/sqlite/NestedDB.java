@@ -32,7 +32,7 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         // handle silly windows drive letter mapping
         if (filename.length() > 2) {
             char drive = Character.toLowerCase(filename.charAt(0));
-            if (filename.charAt(1) == ':' && drive > 'a' && drive < 'z') {
+            if (filename.charAt(1) == ':' && drive >= 'a' && drive <= 'z') {
 
                 // convert to nestedvm's "/c:/file" format
                 filename = filename.substring(2);
