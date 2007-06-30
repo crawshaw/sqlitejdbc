@@ -7,11 +7,27 @@
 sqlitejdbc="sqlitejdbc-v`cat VERSION`"
 
 #
-# pure java and source
+# pure java compile
 #
 echo '*** compiling pure java ***'
-make dist/$sqlitejdbc-nested.tgz \
-     dist/$sqlitejdbc-src.tgz
+make -f Makefile.nested test \
+     dist/$sqlitejdbc-nested.tgz
+
+#
+# bundle source code
+#
+echo '*** bundling source ***'
+mkdir -p dist
+mkdir -p work/$sqlitejdbc/src
+cp Makefile.native work/$sqlitejdbc/Makefile
+cp Makefile.* work/$sqlitejdbc/.
+cp README work/$sqlitejdbc/.
+cp LICENSE work/$sqlitejdbc/.
+cp VERSION work/$sqlitejdbc/.
+cp -R src/org work/$sqlitejdbc/src/.
+cp -R src/test work/$sqlitejdbc/src/.
+(cd work && tar cfz ../dist/$sqlitejdbc-src.tgz $sqlitejdbc)
+rm -rf work
 
 #
 # universal binary
@@ -19,10 +35,10 @@ make dist/$sqlitejdbc-nested.tgz \
 maclib=libsqlitejdbc.jnilib
 
 echo '*** compiling for mac/ppc ***'
-make os=Darwin arch=ppc native
+make -f Makefile.native os=Darwin arch=ppc native
 
 echo '*** compiling for mac/i386 ***'
-make os=Darwin arch=i386 native
+make -f Makefile.native os=Darwin arch=i386 native
 
 echo '*** lipo ppc and i386 ***'
 mkdir -p build/Darwin-universal
@@ -38,7 +54,8 @@ tar cfz dist/$sqlitejdbc-Mac.tgz README \
 # windows
 #
 echo '*** compiling for windows ***'
-make os=Win arch=i386 dist/$sqlitejdbc-Win-i386.tgz
+make -f Makefile.native os=Win arch=i386 \
+    dist/$sqlitejdbc-Win-i386.tgz
 
 #
 # build changes.html
