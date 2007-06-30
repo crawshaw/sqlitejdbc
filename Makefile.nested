@@ -1,6 +1,6 @@
 include Makefile.common
 
-nestedvm_version := 2007-01-12
+nestedvm_version := 2007-06-30
 nestedvm := nestedvm-$(nestedvm_version)
 
 default: test
@@ -39,12 +39,12 @@ dl/$(sqlite).zip:
 
 dl/$(nestedvm).tgz:
 	@mkdir -p dl
-	curl -odl/$(nestedvm).tgz http://nestedvm.ibex.org/dist/$(nestedvm).tgz
+	curl -odl/$(nestedvm).tgz http://zentus.com/sqlitejdbc/dist/$(nestedvm).tgz
 
 $(nestedvm)/Makefile: dl/$(nestedvm).tgz
 	tar xfz dl/$(nestedvm).tgz
 
-build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh
+build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh dl/$(sqlite).zip
 	@mkdir -p build
 	@mkdir -p build/$(sqlite)-nestedvm
 	unzip -qo dl/$(sqlite).zip -d build/$(sqlite)-nestedvm
