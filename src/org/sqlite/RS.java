@@ -194,7 +194,10 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public Date getDate(int col) throws SQLException {
         return new Date(db.column_long(pointer, markCol(col))); }
     public Date getDate(int col, Calendar cal) throws SQLException {
-        throw new SQLException("NYI"); } // TODO
+        if (cal == null) return getDate(col);
+        cal.setTimeInMillis(db.column_long(pointer, markCol(col)));
+        return new Date(cal.getTime().getTime());
+    }
     public Date getDate(String col) throws SQLException {
         return getDate(findColumn(col), Calendar.getInstance()); }
     public Date getDate(String col, Calendar cal) throws SQLException {
@@ -233,7 +236,10 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public Time getTime(int col) throws SQLException {
         return new Time(db.column_long(pointer, markCol(col))); }
     public Time getTime(int col, Calendar cal) throws SQLException {
-        throw new SQLException("NYI"); } // TODO
+        if (cal == null) return getTime(col);
+        cal.setTimeInMillis(db.column_long(pointer, markCol(col)));
+        return new Time(cal.getTime().getTime());
+    }
     public Time getTime(String col) throws SQLException {
         return getTime(findColumn(col)); }
     public Time getTime(String col, Calendar cal) throws SQLException {
@@ -242,9 +248,12 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     public Timestamp getTimestamp(int col) throws SQLException {
         return new Timestamp(db.column_long(pointer, markCol(col))); }
     public Timestamp getTimestamp(int col, Calendar cal) throws SQLException {
-        throw new SQLException("NYI"); } // TODO
+        if (cal == null) return getTimestamp(col);
+        cal.setTimeInMillis(db.column_long(pointer, markCol(col)));
+        return new Timestamp(cal.getTime().getTime());
+    }
     public Timestamp getTimestamp(String col) throws SQLException {
-        return getTimestamp(findColumn(col), Calendar.getInstance()); }
+        return getTimestamp(findColumn(col)); }
     public Timestamp getTimestamp(String c, Calendar ca) throws SQLException {
         return getTimestamp(findColumn(c), ca); }
 
