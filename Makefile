@@ -40,8 +40,7 @@ build/test/%.class: src/test/%.java
 native: build/$(sqlite)-$(target)/main.o $(native_classes)
 	@mkdir -p build/$(target)
 	javah -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
-	rm -f build/org/sqlite/NestedDB*.class
-	cd build && jar cf $(sqlitejdbc)-native.jar $(native_classlist)
+	cd build && jar cf $(sqlitejdbc)-native.jar $(java_classlist)
 	$(CC) $(CFLAGS) -c -O -o build/$(target)/NativeDB.o \
 		src/org/sqlite/NativeDB.c
 	$(CC) $(CFLAGS) $(LINKFLAGS) -o build/$(target)/$(LIBNAME) \

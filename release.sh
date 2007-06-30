@@ -19,8 +19,7 @@ make -f Makefile.nested test \
 echo '*** bundling source ***'
 mkdir -p dist
 mkdir -p work/$sqlitejdbc/src
-cp Makefile.native work/$sqlitejdbc/Makefile
-cp Makefile.* work/$sqlitejdbc/.
+cp Makefile* work/$sqlitejdbc/.
 cp README work/$sqlitejdbc/.
 cp LICENSE work/$sqlitejdbc/.
 cp VERSION work/$sqlitejdbc/.
@@ -35,10 +34,10 @@ rm -rf work
 maclib=libsqlitejdbc.jnilib
 
 echo '*** compiling for mac/ppc ***'
-make -f Makefile.native os=Darwin arch=ppc native
+make os=Darwin arch=ppc native
 
 echo '*** compiling for mac/i386 ***'
-make -f Makefile.native os=Darwin arch=i386 native
+make os=Darwin arch=i386 native
 
 echo '*** lipo ppc and i386 ***'
 mkdir -p build/Darwin-universal
@@ -54,7 +53,7 @@ tar cfz dist/$sqlitejdbc-Mac.tgz README \
 # windows
 #
 echo '*** compiling for windows ***'
-make -f Makefile.native os=Win arch=i386 \
+make os=Win arch=i386 \
     dist/$sqlitejdbc-Win-i386.tgz
 
 #

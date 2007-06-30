@@ -14,10 +14,9 @@ build/test/%.class: src/test/%.java
 	@mkdir -p build
 	javac -target 1.5 -classpath "$(libs)" -sourcepath src/test -d build $<
 
-nested: build/org/sqlite/SQLite.class $(nested_classes)
-	rm -f build/org/sqlite/NativeDB*.class
+nested: build/org/sqlite/SQLite.class $(java_classes)
 	cd build && jar cf $(sqlitejdbc)-nested.jar \
-	    org/sqlite/SQLite.class $(nested_classlist) \
+	    org/sqlite/SQLite.class $(java_classlist) \
 	    -C ../$(nestedvm)/build org/ibex
 
 dist/$(sqlitejdbc)-nested.tgz: nested
