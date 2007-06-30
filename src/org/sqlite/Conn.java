@@ -3,6 +3,7 @@ package org.sqlite;
 
 import java.sql.*;
 import java.util.*;
+import java.io.File;
 import java.lang.ref.WeakReference;
 
 class Conn implements Connection
@@ -14,6 +15,29 @@ class Conn implements Connection
     private int timeout = 0;
 
     public Conn(String url, String filename) throws SQLException {
+        // check the path to the file exists
+        if (!":memory:".equals(filename)) {
+            File file = new File(filename).getAbsoluteFile();
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                for (File up = parent; up != null && !up.exists();) {
+                    parent = up;
+                    up = up.getParentFile();
+                }
+                throw new SQLException("path to '" + filename + "': '"
+                        + parent + "' does not exist");
+            }
+
+            // check write access if file does not exist
+            try {
+                if (file.createNewFile()) file.delete();
+            } catch (Exception e) {
+                throw new SQLException(
+                    "opening db: '" + filename + "': " +e.getMessage());
+            }
+            filename = file.getAbsolutePath();
+        }
+
         // TODO: library variable to explicitly control load type
         // attempt to use the Native library first
         try {
