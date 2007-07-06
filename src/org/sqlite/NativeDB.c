@@ -416,7 +416,8 @@ JNIEXPORT jstring JNICALL Java_org_sqlite_NativeDB_column_1name(
 JNIEXPORT jstring JNICALL Java_org_sqlite_NativeDB_column_1text(
         JNIEnv *env, jobject this, jlong stmt, jint col)
 {
-    return (*env)->NewStringUTF(env, sqlite3_column_text(toref(stmt), col));
+    return (*env)->NewStringUTF(
+        env, (const char*)sqlite3_column_text(toref(stmt), col));
 }
 
 JNIEXPORT jbyteArray JNICALL Java_org_sqlite_NativeDB_column_1blob(
