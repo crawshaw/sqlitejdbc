@@ -2,6 +2,7 @@ package test;
 
 import java.io.File;
 import java.sql.*;
+import java.util.*;
 import org.sqlite.Function;
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -263,6 +264,43 @@ public class UDFTest
         assertTrue(rs.next());
         assertEquals(rs.getInt(1), 1+2+3+4+5+6+7+8+9+10+11);
         rs.close();
+    }
+
+    @Test public void multipleThreads() throws Exception {
+        Function func = new Function() {
+            int sum = 0;
+            protected void xFunc() { try {
+                sum += value_int(1);
+            } catch (SQLException e) { e.printStackTrace(); } }
+            public String toString() { return String.valueOf(sum); }
+        };
+        Function.create(conn, "func", func);
+        stat.executeUpdate("create table foo (col integer);");
+        stat.executeUpdate(
+            "create trigger foo_trigger after insert on foo begin"
+            + " select func(new.rowid, new.col); end;");
+        int times = 1000;
+        List<Thread> threads = new LinkedList<Thread>();
+        for (int tn=0; tn < times; tn++) {
+             threads.add(new Thread("func thread " + tn) {
+                 public void run() { try {
+                     Statement s = conn.createStatement();
+                     s.executeUpdate("insert into foo values (1);");
+                     s.close();
+                 } catch (SQLException e) { e.printStackTrace(); } }
+             });
+        }
+        for (Thread thread: threads) thread.start();
+        for (Thread thread: threads) thread.join();
+
+        // check that all of the threads successfully executed
+        ResultSet rs = stat.executeQuery("select sum(col) from foo;");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), times);
+        rs.close();
+
+        // check that custom function was executed each time
+        assertEquals(Integer.parseInt(func.toString()), times);
     }
 
     private void assertArrayEq(byte[] a, byte[] b) {
