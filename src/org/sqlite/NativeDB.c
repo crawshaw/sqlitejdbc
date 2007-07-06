@@ -72,7 +72,7 @@ static jsize jstrlen(const jchar *str)
 // User Defined Function SUPPORT ////////////////////////////////////
 
 struct UDFData {
-    JNIEnv *env;
+    JavaVM *vm;
     jobject func;
     struct UDFData *next;  // linked list of all UDFData instances
 };
@@ -151,7 +151,7 @@ static xCall(
 
     udf = (struct UDFData*)sqlite3_user_data(context);
     assert(udf);
-    env = udf->env;
+    (*udf->vm)->AttachCurrentThread(udf->vm, (void **)&env, 0);
     if (!func) func = udf->func;
 
     if (!fld_context || !fld_value || !fld_args) {
@@ -179,7 +179,9 @@ void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
 {
     static jmethodID mth = 0;
     if (!mth) {
-        JNIEnv *env = ((struct UDFData*)sqlite3_user_data(context))->env;
+        JNIEnv *env;
+        struct UDFData *udf = (struct UDFData*)sqlite3_user_data(context);
+        (*udf->vm)->AttachCurrentThread(udf->vm, (void **)&env, 0);
         mth = (*env)->GetMethodID(env, fclass, "xFunc", "()V");
     }
     xCall(context, args, value, 0, mth);
@@ -187,12 +189,16 @@ void xFunc(sqlite3_context *context, int args, sqlite3_value** value)
 
 void xStep(sqlite3_context *context, int args, sqlite3_value** value)
 {
+    JNIEnv *env;
+    struct UDFData *udf;
     jobject *func = 0;
     static jmethodID mth = 0;
     static jmethodID clone = 0;
 
     if (!mth || !clone) {
-        JNIEnv *env = ((struct UDFData*)sqlite3_user_data(context))->env;
+        udf = (struct UDFData*)sqlite3_user_data(context);
+        (*udf->vm)->AttachCurrentThread(udf->vm, (void **)&env, 0);
+
         mth = (*env)->GetMethodID(env, aclass, "xStep", "()V");
         clone = (*env)->GetMethodID(env, aclass, "clone",
             "()Ljava/lang/Object;");
@@ -202,9 +208,11 @@ void xStep(sqlite3_context *context, int args, sqlite3_value** value)
     // in SQLite's aggregate_context (clean up in xFinal)
     func = sqlite3_aggregate_context(context, sizeof(jobject));
     if (!*func) {
-        struct UDFData *udf = (struct UDFData*)sqlite3_user_data(context);
-        *func = (*udf->env)->CallObjectMethod(udf->env, udf->func, clone);
-        *func = (*udf->env)->NewGlobalRef(udf->env, *func);
+        udf = (struct UDFData*)sqlite3_user_data(context);
+        (*udf->vm)->AttachCurrentThread(udf->vm, (void **)&env, 0);
+
+        *func = (*env)->CallObjectMethod(env, udf->func, clone);
+        *func = (*env)->NewGlobalRef(env, *func);
     }
 
     xCall(context, args, value, *func, mth);
@@ -213,10 +221,12 @@ void xStep(sqlite3_context *context, int args, sqlite3_value** value)
 void xFinal(sqlite3_context *context)
 {
     JNIEnv *env = 0;
+    struct UDFData *udf = 0;
     jobject *func = 0;
     static jmethodID mth = 0;
 
-    env = ((struct UDFData*)sqlite3_user_data(context))->env;
+    udf = (struct UDFData*)sqlite3_user_data(context);
+    (*udf->vm)->AttachCurrentThread(udf->vm, (void **)&env, 0);
 
     if (!mth) mth = (*env)->GetMethodID(env, aclass, "xFinal", "()V");
 
@@ -631,8 +641,8 @@ JNIEXPORT jint JNICALL Java_org_sqlite_NativeDB_create_1function(
         udfdatalist = (*env)->GetFieldID(env, dbclass, "udfdatalist", "J");
 
     isAgg = (*env)->IsInstanceOf(env, func, aclass);
-    udf->env = env;
     udf->func = (*env)->NewGlobalRef(env, func);
+    (*env)->GetJavaVM(env, &udf->vm);
 
     // add new function def to linked list
     udf->next = toref((*env)->GetLongField(env, this, udfdatalist));
