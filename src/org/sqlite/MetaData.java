@@ -347,7 +347,7 @@ class MetaData implements DatabaseMetaData
         // the command "pragma table_info('tablename')" does not embed
         // like a normal select statement so we must extract the information
         // and then build a resultset from unioned select statements
-        rs = stat.executeQuery("pragma table_info ("+tbl+");");
+        rs = stat.executeQuery("pragma table_info ('"+escape(tbl)+"');");
 
         boolean colFound = false;
         for (int i=0; rs.next(); i++) {
@@ -424,7 +424,7 @@ class MetaData implements DatabaseMetaData
         ResultSet rs;
         Statement stat = conn.createStatement();
 
-        rs = stat.executeQuery("pragma table_info("+escape(table)+");");
+        rs = stat.executeQuery("pragma table_info('"+escape(table)+"');");
 
         sql = "select "
             + "null as TABLE_CAT, "
