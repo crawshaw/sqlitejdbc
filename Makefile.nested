@@ -62,6 +62,7 @@ build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh dl/$(sqlite).zip
 
 	rm build/$(sqlite)-nestedvm/tclsqlite.c
 	(. ./$(nestedvm)/env.sh; cd build/$(sqlite)-nestedvm; $$CC -c $$CFLAGS \
+	    -DSQLITE_THREADSAFE=0 \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
 	    -DSQLITE_CORE \
 	    -DSQLITE_OMIT_LOAD_EXTENSION *.c)
