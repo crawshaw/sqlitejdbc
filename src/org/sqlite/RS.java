@@ -259,7 +259,13 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
 
     public Object getObject(int col) throws SQLException {
         switch (db.column_type(pointer, checkCol(col))) {
-            case SQLITE_INTEGER: return new Integer(getInt(col));
+            case SQLITE_INTEGER:
+                long val = getLong(col);
+                if (val > (long)Integer.MAX_VALUE
+                        || val < (long)Integer.MIN_VALUE)
+                    return new Long(val);
+                else
+                    return new Integer((int)val);
             case SQLITE_FLOAT:   return new Double(getDouble(col));
             case SQLITE_BLOB:    return getBytes(col);
             case SQLITE_NULL:    return null;
