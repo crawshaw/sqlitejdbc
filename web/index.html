@@ -19,6 +19,8 @@ wherever possible. Binaries are provided for Windows and Mac OS X.</p>
 
 <h3>News</h3>
 <ul class="mono">
+    <li>2007-12-30: Version v038 released: Upgrade to 3.5.4,
+        without pure driver for now.</li>
     <li>2007-10-10: Version v037 released: Upgrade to 3.4.2</li>
     <li>2007-07-01: Version v036 released: Incorporate Joe Wilson's NestedVM
         patches and support Calendar dates.</li>
@@ -44,7 +46,7 @@ public class Test {
         stat.executeUpdate(<font id="StringLiteral">"create table people (name, occupation);"</font>);
         stat.executeUpdate(<font id="StringLiteral">"insert into people values ('Gandhi', 'politics');"</font>);
         stat.executeUpdate(<font id="StringLiteral">"insert into people values ('Turing', 'computers');"</font>);
-        stat.executeUpdate(<font id="StringLiteral">"insert into people values ('Wittgenstein', 'smartypants);"</font>);
+        stat.executeUpdate(<font id="StringLiteral">"insert into people values ('Wittgenstein', 'smartypants');"</font>);
 
         ResultSet rs = stat.executeQuery(<font id="StringLiteral">"select * from people;"</font>);
         while (rs.next()) {
@@ -89,14 +91,14 @@ Released under a <a href="src/LICENSE">BSD</a> license.</p>
 
 
 </td><td id="aside">
-<p>Current Version: <b>v037</b></p>
+<p>Current Version: <b>v038</b></p>
 
 <h3>Download</h3>
 <ul>
-    <li><a href="dist/sqlitejdbc-v037-nested.tgz">Pure Java</a></li>
-    <li><a href="dist/sqlitejdbc-v037-Win-i386.tgz">Windows</a></li>
-    <li><a href="dist/sqlitejdbc-v037-Mac.tgz">Mac OS X</a></li>
-    <li><a href="dist/sqlitejdbc-v037-src.tgz">Source Code</a></li>
+    <li><a href="dist/sqlitejdbc-v037-nested.tgz">Pure Java</a> (3.4.2)</li>
+    <li><a href="dist/sqlitejdbc-v038-Win-i386.tgz">Windows</a> (3.5.4)</li>
+    <li><a href="dist/sqlitejdbc-v038-Mac.tgz">Mac OS X</a> (3.5.4)</li>
+    <li><a href="dist/sqlitejdbc-v038-src.tgz">Source Code</a> (3.5.4)</li>
 </ul>
 
 <script type="text/javascript"><!--

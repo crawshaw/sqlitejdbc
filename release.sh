@@ -9,9 +9,9 @@ sqlitejdbc="sqlitejdbc-v`cat VERSION`"
 #
 # pure java compile
 #
-echo '*** compiling pure java ***'
-make -f Makefile.nested test \
-     dist/$sqlitejdbc-nested.tgz
+#echo '*** compiling pure java ***'
+#make -f Makefile.nested test \
+#     dist/$sqlitejdbc-nested.tgz
 
 #
 # bundle source code
