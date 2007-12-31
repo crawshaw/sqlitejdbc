@@ -171,8 +171,16 @@ final class PrepStmt extends RS
         batch(pos, null);
     }
     public void setObject(int pos , Object value) throws SQLException {
-        // TODO: catch wrapped primitives
-        batch(pos, value == null ? null : value.toString());
+        if (value == null)
+            batch(pos, null);
+        else if (value instanceof java.util.Date)
+            batch(pos, new Long(((java.util.Date)value).getTime()));
+        else if (value instanceof Long) batch(pos, value);
+        else if (value instanceof Integer) batch(pos, value);
+        else if (value instanceof Float) batch(pos, value);
+        else if (value instanceof Double) batch(pos, value);
+        else
+            batch(pos, value.toString());
     }
     public void setObject(int p, Object v, int t) throws SQLException {
         setObject(p, v); }
