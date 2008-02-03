@@ -59,7 +59,7 @@ abstract class DB implements Codes
             Iterator i = stmts.entrySet().iterator();
             while (i.hasNext()) {
                 Map.Entry entry = (Map.Entry)i.next();
-                RS stmt = (RS)((WeakReference)entry.getValue()).get();
+                RS stmt = (RS)entry.getValue();
                 finalize(((Long)entry.getKey()).longValue());
                 if (stmt != null) {
                     stmt.pointer = 0;
@@ -79,8 +79,7 @@ abstract class DB implements Codes
         if (stmt.pointer != 0)
             finalize(stmt);
         stmt.pointer = prepare(stmt.sql);
-        stmts.put(new Long(stmt.pointer),
-                  new WeakReference(stmt));
+        stmts.put(new Long(stmt.pointer), stmt);
     }
 
     final synchronized int finalize(RS stmt) throws SQLException {
