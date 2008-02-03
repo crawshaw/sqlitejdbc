@@ -211,12 +211,18 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getDate(findColumn(col), cal); }
 
     public double getDouble(int col) throws SQLException {
-        return db.column_double(pointer, markCol(col)); }
+        if (db.column_type(point, markCol(col)) == SQLITE_NULL)
+            return 0;
+        return db.column_double(pointer, markCol(col));
+    }
     public double getDouble(String col) throws SQLException {
         return getDouble(findColumn(col)); }
 
     public float getFloat(int col) throws SQLException {
-        return (float)db.column_double(pointer, markCol(col)); }
+        if (db.column_type(point, markCol(col)) == SQLITE_NULL)
+            return 0;
+        return (float)db.column_double(pointer, markCol(col));
+    }
     public float getFloat(String col) throws SQLException {
         return getFloat(findColumn(col)); }
 
