@@ -332,7 +332,7 @@ JNIEXPORT jlong JNICALL Java_org_sqlite_NativeDB_prepare(
     sqlite3_stmt* stmt;
 
     const char *strsql = (*env)->GetStringUTFChars(env, sql, 0);
-    int status = sqlite3_prepare(db, strsql, -1, &stmt, 0);
+    int status = sqlite3_prepare_v2(db, strsql, -1, &stmt, 0);
     (*env)->ReleaseStringUTFChars(env, sql, strsql);
 
     if (status != SQLITE_OK) {

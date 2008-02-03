@@ -144,28 +144,27 @@ class Conn implements Connection
     public void clearWarnings() throws SQLException { }
     public SQLWarning getWarnings() throws SQLException { return null; }
 
-    // TODO: optimise with direct jni calls for begin/commit/rollback
     public boolean getAutoCommit() throws SQLException {
         checkOpen(); return autoCommit; }
     public void setAutoCommit(boolean ac) throws SQLException {
         checkOpen();
         if (autoCommit == ac) return;
         autoCommit = ac;
-        db.exec(autoCommit ? "COMMIT;" : "BEGIN DEFERRED;");
+        db.exec(autoCommit ? "commit;" : "begin;");
     }
 
     public void commit() throws SQLException {
         checkOpen();
         if (autoCommit) throw new SQLException("database in auto-commit mode");
-        db.exec("COMMIT;");
-        db.exec("BEGIN DEFERRED;");
+        db.exec("commit;");
+        db.exec("begin;");
     }
 
     public void rollback() throws SQLException {
         checkOpen();
         if (autoCommit) throw new SQLException("database in auto-commit mode");
-        db.exec("ROLLBACK;");
-        db.exec("BEGIN DEFERRED;");
+        db.exec("rollback;");
+        db.exec("begin;");
     }
 
     public Statement createStatement() throws SQLException {

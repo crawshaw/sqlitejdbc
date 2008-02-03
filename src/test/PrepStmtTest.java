@@ -229,6 +229,7 @@ public class PrepStmtTest
         assertTrue(rs.next());
 
         assertEquals(rs.getInt(1), Integer.MAX_VALUE);
+        assertEquals((int)rs.getLong(1), Integer.MAX_VALUE);
         assertEquals(rs.getFloat(2), Float.MAX_VALUE);
         assertEquals(rs.getDouble(3), Double.MAX_VALUE);
         assertEquals(rs.getLong(4), Long.MAX_VALUE);
@@ -411,6 +412,16 @@ public class PrepStmtTest
         assertTrue(rs.next());
         assertEquals(rs.getLong(1), d1.getTime());
         assertTrue(rs.getDate(1).equals(d1));
+    }
+
+    @Test public void changeSchema() throws SQLException {
+        stat.execute("create table t (c1);");
+        PreparedStatement prep = conn.prepareStatement(
+                "insert into t values (?);");
+        conn.createStatement().execute("create table t2 (c2);");
+        prep.setInt(1, 1000);
+        prep.execute();
+        prep.executeUpdate();
     }
 
     @Test(expected= SQLException.class)

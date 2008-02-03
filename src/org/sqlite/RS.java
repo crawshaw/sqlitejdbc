@@ -125,21 +125,14 @@ abstract class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         if (limitRows != 0 && row >= limitRows) return false;
 
         // do the real work
-        int rc = db.step(pointer);
-        if (rc == SQLITE_ERROR)
-            db.reset(pointer);
-
-        switch (rc) {
-            case SQLITE_BUSY:
-                throw new SQLException("database locked");
+        switch (db.step(pointer)) {
             case SQLITE_DONE:
                 isAfterLast = true;
                 close();      // agressive closing to avoid writer starvation
                 return false;
             case SQLITE_ROW: row++; return true;
-            case SQLITE_MISUSE:
-                 throw new SQLException("JDBC internal consistency error");
-            case SQLITE_ERROR:
+            case SQLITE_BUSY:
+                throw new SQLException("database locked");
             default:
                  db.throwex(); return false;
         }
