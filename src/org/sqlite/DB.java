@@ -13,6 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+
 package org.sqlite;
 
 import java.lang.ref.*;
@@ -41,8 +42,13 @@ abstract class DB implements Codes
         long pointer = 0;
         try {
             pointer = prepare(sql);
-            if (step(pointer) == SQLITE_ERROR)
-                throwex();
+            switch (step(pointer)) {
+                case SQLITE_DONE:
+                case SQLITE_ROW:
+                    return;
+                default:
+                    throwex();
+            }
         } finally {
             finalize(pointer);
         }
@@ -86,19 +92,6 @@ abstract class DB implements Codes
         } finally {
             stmts.remove(new Long(stmt.pointer));
             stmt.pointer = 0;
-        }
-        return rc;
-    }
-
-    final synchronized int step(RS stmt) throws SQLException {
-        int rc = step(stmt.pointer);
-
-        // deal with goofy interface
-        if (rc == SQLITE_ERROR)
-            rc = reset(stmt.pointer);
-        if (rc == SQLITE_SCHEMA) {
-            prepare(stmt);
-            return step(stmt);
         }
         return rc;
     }
@@ -203,7 +196,6 @@ abstract class DB implements Codes
                     throwex();
 
             rc = step(stmt);
-            // TODO: handle SQLITE_SCHEMA
             if (rc != SQLITE_DONE) {
                 reset(stmt);
                 if (rc == SQLITE_ROW) throw new BatchUpdateException(
@@ -230,21 +222,15 @@ abstract class DB implements Codes
                 if (sqlbind(stmt.pointer, i, vals[i]) != SQLITE_OK) throwex();
         }
 
-        switch (step(stmt)) {
+        switch (step(stmt.pointer)) {
             case SQLITE_DONE:
                 reset(stmt.pointer);
                 return false;
-            case SQLITE_ROW: return true;
+            case SQLITE_ROW:
+                return true;
             case SQLITE_BUSY: throw new SQLException("database locked");
             case SQLITE_MISUSE:
                 throw new SQLException(errmsg());
-                //throw new SQLException("jdbc internal consistency error");
-            case SQLITE_SCHEMA:
-                throw new SQLException("jdbc internal consistency error");
-            case SQLITE_INTERNAL: // TODO: be specific
-            case SQLITE_PERM: case SQLITE_ABORT: case SQLITE_NOMEM:
-            case SQLITE_READONLY: case SQLITE_INTERRUPT: case SQLITE_IOERR:
-            case SQLITE_CORRUPT:
             default:
                 finalize(stmt);
                 throw new SQLException(errmsg());
