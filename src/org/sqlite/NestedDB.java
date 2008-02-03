@@ -141,8 +141,9 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     synchronized String column_text(long stmt, int col) throws SQLException {
         return utfstring(call("sqlite3_column_text", (int)stmt, col)); }
     synchronized byte[] column_blob(long stmt, int col) throws SQLException {
-        byte[] blob = new byte[call("sqlite3_column_bytes", (int)stmt, col)];
         int addr = call("sqlite3_column_blob", (int)stmt, col);
+        if (addr == 0) return null;
+        byte[] blob = new byte[call("sqlite3_column_bytes", (int)stmt, col)];
         copyin(addr, blob, blob.length);
         return blob;
     }
@@ -225,8 +226,9 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         return utfstring(call("sqlite3_value_text", value(f, arg)));
     }
     synchronized byte[] value_blob(Function f, int arg) throws SQLException {
-        byte[] blob = new byte[value_bytes(f, arg)];
         int addr = call("sqlite3_value_blob", value(f, arg));
+        if (addr == 0) return null;
+        byte[] blob = new byte[value_bytes(f, arg)];
         copyin(addr, blob, blob.length);
         return blob;
     }
