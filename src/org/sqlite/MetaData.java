@@ -696,4 +696,10 @@ class MetaData implements DatabaseMetaData
         }
         return buf.toString();
     }
+
+    public Struct createStruct(String t, Object[] attr) throws SQLException {
+        throw new SQLException("Not yet implemented by SQLite JDBC driver"); }
+    public ResultSet getFunctionColumns(String a, String b, String c,
+                String d) throws SQLException {
+        throw new SQLException("Not yet implemented by SQLite JDBC driver"); }
 }

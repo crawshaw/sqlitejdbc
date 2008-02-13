@@ -230,4 +230,6 @@ class Conn implements Connection
     public void rollback(Savepoint savepoint) throws SQLException {
         throw new SQLException("unsupported by SQLite: savepoints"); }
 
+    public Struct createStruct(String t, Object[] attr) throws SQLException {
+        throw new SQLException("unsupported by SQLite"); }
 }
