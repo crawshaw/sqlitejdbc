@@ -13,6 +13,8 @@ public class TransactionTest
     private Connection conn1, conn2, conn3;
     private Statement stat1, stat2, stat3;
 
+    boolean done = false;
+
     @BeforeClass public static void forName() throws Exception {
         Class.forName("org.sqlite.JDBC");
     }
@@ -139,6 +141,81 @@ public class TransactionTest
         assertTrue(rs.next());
         assertEquals(1+2+3+4+5, rs.getInt(1));
         rs.close();
+    }
+
+    @Test
+    public void transactionsDontMindReads() throws SQLException {
+        stat1.executeUpdate("create table t (c1);");
+        stat1.executeUpdate("insert into t values (1);");
+        stat1.executeUpdate("insert into t values (2);");
+        ResultSet rs = stat1.executeQuery("select * from t;");
+        assertTrue(rs.next()); // select is open
+
+        conn2.setAutoCommit(false);
+        stat1.executeUpdate("insert into t values (2);");
+
+        rs.close();
+        conn2.commit();
+    }
+
+    @Test
+    public void secondConnWillWait() throws Exception {
+        stat1.executeUpdate("create table t (c1);");
+        stat1.executeUpdate("insert into t values (1);");
+        stat1.executeUpdate("insert into t values (2);");
+        ResultSet rs = stat1.executeQuery("select * from t;");
+        assertTrue(rs.next());
+
+        final TransactionTest lock = this;
+        lock.done = false;
+        new Thread() { public void run() {
+            try {
+                stat2.executeUpdate("insert into t values (3);");
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return;
+            }
+
+            synchronized (lock) {
+                lock.done = true;
+            }
+        } }.start();
+
+        rs.close();
+
+        for (int i=0; i < 40; i++) {
+            boolean isDone = false;
+            synchronized (lock) {
+                isDone = lock.done;
+            }
+            if (isDone)
+                return;
+            try { Thread.sleep(100); } catch (Exception e) {}
+        }
+
+        throw new Exception("should have caught done from second thread");
+    }
+
+    @Test(expected= SQLException.class)
+    public void secondConnMustTimeout() throws SQLException {
+        stat1.executeUpdate("create table t (c1);");
+        stat1.executeUpdate("insert into t values (1);");
+        stat1.executeUpdate("insert into t values (2);");
+        ResultSet rs = stat1.executeQuery("select * from t;");
+        assertTrue(rs.next());
+
+        stat2.executeUpdate("insert into t values (3);"); // can't be done
+    }
+
+    @Test(expected= SQLException.class)
+    public void cantUpdateWhileReading() throws SQLException {
+        stat1.executeUpdate("create table t (c1);");
+        stat1.executeUpdate("insert into t values (1);");
+        stat1.executeUpdate("insert into t values (2);");
+        ResultSet rs = conn1.createStatement().executeQuery("select * from t;");
+        assertTrue(rs.next());
+
+        stat1.executeUpdate("insert into t values (3);"); // can't be done
     }
 
     @Test(expected= SQLException.class)
