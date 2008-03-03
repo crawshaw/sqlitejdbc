@@ -82,11 +82,10 @@ echo '</ul></div></body></html>' >> changes.html
 #
 # push release to web server
 #
-if [ "$1" = "mire" ]; then
-    webloc=web/zentus/sqlitejdbc
+if [ "$1" = "push" ]; then
+    loc=/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc
     darcs push -a
-    scp dist/$sqlitejdbc-*.tgz mire:$webloc/dist/
-    scp changes.html web/*.html web/*.css mire:$webloc/
+    cp dist/$sqlitejdbc-*.tgz $loc/dist/
+    cp changes.html web/*.html web/*.css $loc/
     rm changes.html
-    ssh mire "cd $webloc/src && darcs pull -a"
 fi
