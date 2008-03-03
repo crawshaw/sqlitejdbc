@@ -39,7 +39,7 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
-    synchronized void open(String filename) throws SQLException {
+    protected synchronized void _open(String filename) throws SQLException {
         if (handle != 0) throw new SQLException("DB already open");
         if (rt != null) throw new SQLException("DB closed but runtime exists");
 

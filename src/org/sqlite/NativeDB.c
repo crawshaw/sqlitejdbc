@@ -282,7 +282,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 
 // WRAPPERS for sqlite_* functions //////////////////////////////////
 
-JNIEXPORT void JNICALL Java_org_sqlite_NativeDB_open(
+JNIEXPORT void JNICALL Java_org_sqlite_NativeDB__1open(
         JNIEnv *env, jobject this, jstring file)
 {
     int ret;

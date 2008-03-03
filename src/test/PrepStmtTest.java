@@ -341,7 +341,7 @@ public class PrepStmtTest
     @Test public void dbclose() throws SQLException {
         conn.prepareStatement("select ?;").setString(1, "Hello World");
         conn.prepareStatement("select null;").close();
-        conn.prepareStatement("select null;").executeQuery();
+        conn.prepareStatement("select null;").executeQuery().close();
         conn.prepareStatement("create table t (c);").executeUpdate();
         conn.prepareStatement("select null;");
     }

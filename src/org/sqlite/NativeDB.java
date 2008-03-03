@@ -50,7 +50,7 @@ final class NativeDB extends DB
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
-    native synchronized void open(String filename) throws SQLException;
+    protected native synchronized void _open(String file) throws SQLException;
     protected native synchronized void _close() throws SQLException;
     native synchronized void interrupt();
     native synchronized void busy_timeout(int ms);

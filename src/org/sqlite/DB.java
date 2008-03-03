@@ -20,17 +20,36 @@ import java.io.File;
 import java.sql.*;
 import java.util.*;
 
+/*
+ * This class is the interface to SQLite. It provides some helper functions
+ * used by other parts of the driver. The goal of the helper functions here
+ * are not only to provide functionality, but to handle contractual
+ * differences between the JDBC specification and the SQLite C API.
+ *
+ * The process of moving SQLite weirdness into this class is incomplete.
+ * You'll still find lots of code in Stmt and PrepStmt that are doing
+ * implicit contract conversions. Sorry.
+ *
+ * The two subclasses, NativeDB and NestedDB, provide the actual access to
+ * SQLite functions.
+ */
 abstract class DB implements Codes
 {
-    /** database pointer */
+    /** The JDBC Connection that 'owns' this database instance. */
+    Conn conn = null;
+
+    /** SQLite connection handle. */
     long pointer = 0;
 
-    /** tracer for statements to avoid unfinalized statements on db close */
+    /** The "begin;"and  "commit;" statement handles. */
+    long begin = 0;
+    long commit = 0;
+
+    /** Tracer for statements to avoid unfinalized statements on db close. */
     private Map stmts = new Hashtable();
 
     // WRAPPER FUNCTIONS ////////////////////////////////////////////
 
-    abstract void open(String filename) throws SQLException;
     abstract void interrupt() throws SQLException;
     abstract void busy_timeout(int ms) throws SQLException;
     abstract String errmsg() throws SQLException;
@@ -43,6 +62,8 @@ abstract class DB implements Codes
             pointer = prepare(sql);
             switch (step(pointer)) {
                 case SQLITE_DONE:
+                    ensureAutoCommit();
+                    return;
                 case SQLITE_ROW:
                     return;
                 default:
@@ -51,6 +72,11 @@ abstract class DB implements Codes
         } finally {
             finalize(pointer);
         }
+    }
+
+    final synchronized void open(Conn conn, String file) throws SQLException {
+        this.conn = conn;
+        _open(file);
     }
 
     final synchronized void close() throws SQLException {
@@ -71,6 +97,16 @@ abstract class DB implements Codes
 
         // remove memory used by user-defined functions
         free_functions();
+
+        // clean up commit object
+        if (begin != 0) {
+            finalize(begin);
+            begin = 0;
+        }
+        if (commit != 0) {
+            finalize(commit);
+            commit = 0;
+        }
 
         _close();
     }
@@ -94,6 +130,7 @@ abstract class DB implements Codes
         return rc;
     }
 
+    protected abstract void _open(String filename) throws SQLException;
     protected abstract void _close() throws SQLException;
     protected abstract long prepare(String sql) throws SQLException;
     protected abstract int finalize(long stmt) throws SQLException;
@@ -187,6 +224,7 @@ abstract class DB implements Codes
         int rc;
         int[] changes = new int[count];
 
+        try {
         for (int i=0; i < count; i++) {
             reset(stmt);
             for (int j=0; j < params; j++)
@@ -202,6 +240,9 @@ abstract class DB implements Codes
             }
 
             changes[i] = changes();
+        }
+        } finally {
+            ensureAutoCommit();
         }
 
         reset(stmt);
@@ -223,10 +264,13 @@ abstract class DB implements Codes
         switch (step(stmt.pointer)) {
             case SQLITE_DONE:
                 reset(stmt.pointer);
+                ensureAutoCommit();
                 return false;
             case SQLITE_ROW:
                 return true;
-            case SQLITE_BUSY: throw new SQLException("database locked");
+            case SQLITE_BUSY:
+            case SQLITE_LOCKED:
+                throw new SQLException("database locked");
             case SQLITE_MISUSE:
                 throw new SQLException(errmsg());
             default:
@@ -243,10 +287,61 @@ abstract class DB implements Codes
         return changes();
     }
 
-
-    // HELPER FUNCTIONS /////////////////////////////////////////////
-
     final void throwex() throws SQLException {
         throw new SQLException(errmsg());
+    }
+
+    /*
+     * SQLite and the JDBC API have very different ideas about the meaning
+     * of auto-commit. Under JDBC, when executeUpdate() returns in
+     * auto-commit mode (the default), the programmer assumes the data has
+     * been written to disk. In SQLite however, a call to sqlite3_step()
+     * with an INSERT statement can return SQLITE_OK, and yet the data is
+     * still in limbo.
+     *
+     * This limbo appears when another statement on the database is active,
+     * e.g. a SELECT. SQLite auto-commit waits until the final read
+     * statement finishes, and then writes whatever updates have already
+     * been OKed. So if a program crashes before the reads are complete,
+     * data is lost. E.g:
+     *
+     *     select begins
+     *     insert
+     *     select continues
+     *     select finishes
+     *
+     * Works as expected, however
+     *
+     *     select beings
+     *     insert
+     *     select continues
+     *     crash
+     *
+     * Results in the data never being written to disk.
+     *
+     * As a solution, we call "commit" after every statement in auto-commit
+     * mode.
+     */
+    final void ensureAutoCommit() throws SQLException {
+        if (!conn.getAutoCommit())
+            return;
+
+        if (begin == 0)
+            begin = prepare("begin;");
+        if (commit == 0)
+            commit = prepare("commit;");
+
+        try {
+            if (step(begin) != SQLITE_DONE)
+                return; // assume we are in a transaction
+            if (step(commit) != SQLITE_DONE) {
+                reset(commit);
+                throwex();
+            }
+            //throw new SQLException("unable to auto-commit");
+        } finally {
+            reset(begin);
+            reset(commit);
+        }
     }
 }

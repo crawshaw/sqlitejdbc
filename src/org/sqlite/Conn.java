@@ -76,7 +76,7 @@ class Conn implements Connection
         }
 
         this.url = url;
-        db.open(filename);
+        db.open(this, filename);
         setTimeout(3000);
     }
 
