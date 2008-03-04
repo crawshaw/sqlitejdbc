@@ -58,8 +58,18 @@ make os=Win arch=i386 \
     dist/$sqlitejdbc-Win-i386.tgz
 
 #
+# linux
+#
+echo '*** compiling for linux ***'
+darcs push -a debian:repo/sqlitejdbc
+ssh debian "cd repo/sqlitejdbc && make arch=i386 dist/$sqlitejdbc-Default-i386.tgz"
+scp debian:repo/sqlitejdbc/dist/$sqlitejdbc-Default-i386.tgz \
+    dist/$sqlitejdbc-Linux-i386.tgz
+
+#
 # build changes.html
 #
+echo '*** building changes.html ***'
 cat > changes.html << EOF
 <html>
 <head>
@@ -83,6 +93,7 @@ echo '</ul></div></body></html>' >> changes.html
 # push release to web server
 #
 if [ "$1" = "push" ]; then
+    echo '*** pushing release to afs ***'
     loc=/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc
     darcs push -a
     cp dist/$sqlitejdbc-*.tgz $loc/dist/
