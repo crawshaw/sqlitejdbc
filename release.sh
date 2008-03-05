@@ -5,6 +5,7 @@
 #
 
 sqlitejdbc="sqlitejdbc-v`cat VERSION`"
+repo="/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc/src"
 
 #
 # pure java compile
@@ -17,6 +18,7 @@ sqlitejdbc="sqlitejdbc-v`cat VERSION`"
 # bundle source code
 #
 echo '*** bundling source ***'
+echo $repo > _darcs/prefs/defaultrepo
 mkdir -p dist
 mkdir -p work/$sqlitejdbc/src
 cp Makefile* work/$sqlitejdbc/.
@@ -95,7 +97,7 @@ echo '</ul></div></body></html>' >> changes.html
 if [ "$1" = "push" ]; then
     echo '*** pushing release to afs ***'
     loc=/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc
-    darcs push -a
+    darcs push -a $repo
     cp dist/$sqlitejdbc-*.tgz $loc/dist/
     cp changes.html web/*.html web/*.css $loc/
     rm changes.html
