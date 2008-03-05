@@ -16,15 +16,14 @@ default: test
 dl/$(sqlite).zip:
 	@mkdir -p dl
 	curl -odl/$(sqlite).zip \
-	    http://www.sqlite.org/sqlite-source-$(subst .,_,$(sqlite_version)).zip
+	    http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
 
-build/$(sqlite)-%/main.o: dl/$(sqlite).zip
+build/$(sqlite)-%/sqlite3.o: dl/$(sqlite).zip
 	@mkdir -p build/$(sqlite)-$*
 	unzip -qo dl/$(sqlite).zip -d build/$(sqlite)-$*
 	perl -pi -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
 	    build/$(sqlite)-$*/sqlite3ext.h
-	rm build/$(sqlite)-$*/tclsqlite.c
-	(cd build/$(sqlite)-$*; $(CC) -c $(CFLAGS) \
+	(cd build/$(sqlite)-$*; $(CC) -o sqlite3.o -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
 	    -DSQLITE_CORE \
 	    -DSQLITE_OMIT_LOAD_EXTENSION *.c)
@@ -37,7 +36,7 @@ build/test/%.class: src/test/%.java
 	@mkdir -p build
 	javac -target 1.5 -classpath "$(libs)" -sourcepath src/test -d build $<
 
-native: build/$(sqlite)-$(target)/main.o $(native_classes)
+native: build/$(sqlite)-$(target)/sqlite3.o $(native_classes)
 	@mkdir -p build/$(target)
 	javah -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
 	cd build && jar cf $(sqlitejdbc)-native.jar $(java_classlist)
