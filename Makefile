@@ -41,7 +41,7 @@ native: build/$(sqlite)-$(target)/sqlite3.o $(native_classes)
 	@mkdir -p build/$(target)
 	javah -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
 	cd build && jar cf $(sqlitejdbc)-native.jar $(java_classlist)
-	$(CC) $(CFLAGS) -c -O -o build/$(target)/NativeDB.o \
+	$(CC) $(CFLAGS) -c -o build/$(target)/NativeDB.o \
 		src/org/sqlite/NativeDB.c
 	$(CC) $(CFLAGS) $(LINKFLAGS) -o build/$(target)/$(LIBNAME) \
 		build/$(target)/NativeDB.o build/$(sqlite)-$(target)/*.o
