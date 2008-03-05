@@ -26,6 +26,7 @@ build/$(sqlite)-%/sqlite3.o: dl/$(sqlite).zip
 	(cd build/$(sqlite)-$*; $(CC) -o sqlite3.o -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
 	    -DSQLITE_CORE \
+	    -DSQLITE_ENABLE_FTS3 \
 	    -DSQLITE_OMIT_LOAD_EXTENSION *.c)
 
 build/org/%.class: src/org/%.java
