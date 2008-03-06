@@ -401,14 +401,15 @@ public class PrepStmtTest
     }
 
     @Test public void date2() throws SQLException {
-        Date d1 = new Date(987654321);
+        Date d1 = new Date(1092941466000L);
         stat.execute("create table t (c1);");
         PreparedStatement prep = conn.prepareStatement(
-                "insert into t values (datetime(?, 'unixepoch'));");
+                "insert into t values (datetime(?/1000, 'unixepoch'));");
         prep.setDate(1, d1);
         prep.executeUpdate();
 
-        ResultSet rs = stat.executeQuery("select strftime('%s', c1) from t;");
+        ResultSet rs = stat.executeQuery(
+            "select strftime('%s', c1) * 1000 from t;");
         assertTrue(rs.next());
         assertEquals(rs.getLong(1), d1.getTime());
         assertTrue(rs.getDate(1).equals(d1));

@@ -90,15 +90,15 @@ the <tt>datetime()</tt> and <tt>strftime()</tt> functions:
 
 <pre class="code" id="Classes">
     prep = conn.prepareStatement(
-        <font id="StringLiteral">"insert into test values datetime(?, 'unixepoch');"</font>);
-    prep.setDate(<font id="IntegerLiteral">1</font>, <font id="New">new</font> Date(<font id="IntegerLiteral">987654321</font>));
+        <font id="StringLiteral">"insert into test values datetime(? / 1000, 'unixepoch');"</font>);
+    prep.setDate(<font id="IntegerLiteral">1</font>, <font id="New">new</font> Date(<font id="IntegerLiteral">1092941466000</font>));
     prep.executeUpdate();
 
     rs = stat.executeQuery(<font id="StringLiteral">"select * from test;"</font>);
-    rs.getString(<font id="IntegerLiteral">1</font>) = <font id="StringLiteral">"2001-04-19 04:25:21"</font>;
+    assert(rs.getString(<font id="IntegerLiteral">1</font>).equals(<font id="StringLiteral">"2004-08-10 18:51:06"</font>));
 
-    rs = stat.executeQuery(<font id="StringLiteral">"select strftime('%s', col1) from test;"</font>);
-    rs.getDate(<font id="IntegerLiteral">1</font>) == <font id="New">new</font> Date(<font id="IntegerLiteral">987654321</font>);
+    rs = stat.executeQuery(<font id="StringLiteral">"select strftime('%s', col1) * 1000 from test;"</font>);
+    assert(rs.getDate(<font id="IntegerLiteral">1</font>).equals(<font id="New">new</font> Date(<font id="IntegerLiteral">987654321</font>)));
 </pre>
 
 
