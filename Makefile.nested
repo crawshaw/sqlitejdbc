@@ -59,7 +59,9 @@ build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh dl/$(sqlite)-amal.zip
 	    -DSQLITE_THREADSAFE=0 \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
 	    -DSQLITE_CORE \
-	    -DSQLITE_OMIT_LOAD_EXTENSION sqlite3.c; \
+	    -DSQLITE_ENABLE_FTS3 \
+	    -DSQLITE_OMIT_LOAD_EXTENSION \
+		sqlite3.c; \
 	$$CC -c $$CFLAGS -o NestedDB.o NestedDB.c)
 
 	./$(nestedvm)/upstream/install/bin/mips-unknown-elf-gcc \
