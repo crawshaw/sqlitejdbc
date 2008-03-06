@@ -13,21 +13,21 @@ include Makefile.common
 
 default: test
 
-dl/$(sqlite).zip:
+dl/$(sqlite)-amal.zip:
 	@mkdir -p dl
-	curl -odl/$(sqlite).zip \
+	curl -odl/$(sqlite)-amal.zip \
 	    http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
 
-build/$(sqlite)-%/sqlite3.o: dl/$(sqlite).zip
+build/$(sqlite)-%/sqlite3.o: dl/$(sqlite)-amal.zip
 	@mkdir -p build/$(sqlite)-$*
-	unzip -qo dl/$(sqlite).zip -d build/$(sqlite)-$*
+	unzip -qo dl/$(sqlite)-amal.zip -d build/$(sqlite)-$*
 	perl -pi -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
 	    build/$(sqlite)-$*/sqlite3ext.h
 	(cd build/$(sqlite)-$*; $(CC) -o sqlite3.o -c $(CFLAGS) \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
 	    -DSQLITE_CORE \
 	    -DSQLITE_ENABLE_FTS3 \
-	    -DSQLITE_OMIT_LOAD_EXTENSION *.c)
+	    -DSQLITE_OMIT_LOAD_EXTENSION sqlite3.c)
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build

@@ -5,7 +5,8 @@
 #
 
 sqlitejdbc="sqlitejdbc-v`cat VERSION`"
-repo="/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc/src"
+afs="/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc"
+repo="$afs/src"
 
 #
 # pure java compile
@@ -96,9 +97,8 @@ echo '</ul></div></body></html>' >> changes.html
 #
 if [ "$1" = "push" ]; then
     echo '*** pushing release to afs ***'
-    loc=/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc
     darcs push -a $repo
-    cp dist/$sqlitejdbc-*.tgz $loc/dist/
-    cp changes.html web/*.html web/*.css $loc/
+    cp dist/$sqlitejdbc-*.tgz $afs/dist/
+    cp changes.html web/*.html web/*.css $afs/
     rm changes.html
 fi
