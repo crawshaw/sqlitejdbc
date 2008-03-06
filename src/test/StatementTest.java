@@ -133,7 +133,6 @@ public class StatementTest
         rs.close();
     }
 
-    @Ignore
     @Test public void tempTable() throws SQLException {
         assertEquals(stat.executeUpdate("create temp table myTemp (a);"), 0);
         assertEquals(stat.executeUpdate("insert into myTemp values (2);"), 1);
