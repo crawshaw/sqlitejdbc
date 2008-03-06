@@ -103,7 +103,7 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     protected synchronized long prepare(String sql) throws SQLException {
         int passback = rt.xmalloc(4);
         int str = rt.strdup(sql);
-        int ret = call("sqlite3_prepare", handle, str, -1, passback, 0);
+        int ret = call("sqlite3_prepare_v2", handle, str, -1, passback, 0);
         rt.free(str);
         if (ret != SQLITE_OK) {
             rt.free(passback);
