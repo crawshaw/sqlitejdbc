@@ -9,13 +9,6 @@ afs="/afs/hcoop.net/user/c/cr/crawshaw/web/zentus/sqlitejdbc"
 repo="$afs/src"
 
 #
-# pure java compile
-#
-#echo '*** compiling pure java ***'
-#make -f Makefile.nested test \
-#     dist/$sqlitejdbc-nested.tgz
-
-#
 # bundle source code
 #
 echo '*** bundling source ***'
@@ -68,6 +61,14 @@ darcs push -a debian:repo/sqlitejdbc
 ssh debian "cd repo/sqlitejdbc && make arch=i386 dist/$sqlitejdbc-Default-i386.tgz"
 scp debian:repo/sqlitejdbc/dist/$sqlitejdbc-Default-i386.tgz \
     dist/$sqlitejdbc-Linux-i386.tgz
+
+#
+# pure java compile
+#
+echo '*** compiling pure java ***'
+ssh debian "cd repo/sqlitejdbc && make -f Makefile.nested test dist/$sqlitejdbc-nested.tgz"
+scp debian:repo/sqlitejdbc/dist/$sqlitejdbc-nested.tgz \
+    dist/$sqlitejdbc-nested.tgz
 
 #
 # build changes.html
