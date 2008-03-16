@@ -7,8 +7,7 @@ default: test
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build
-	$(JAVAC) -bootclasspath "$(libjdbc)$(sep)$$JAVA_HOME/jre/lib/rt.jar" \
-	    -source 1.2 -target 1.2 -classpath "$(nestedvm)/build" \
+	$(JAVAC) -source 1.2 -target 1.2 -classpath "$(nestedvm)/build" \
 	    -sourcepath src -d build $<
 
 build/test/%.class: src/test/%.java

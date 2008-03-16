@@ -31,13 +31,11 @@ build/$(sqlite)-%/sqlite3.o: dl/$(sqlite)-amal.zip
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build
-	$(JAVAC) -bootclasspath "$(libjdbc)$(sep)$$JAVA_HOME/jre/lib/rt.jar" \
-	    -source 1.2 -target 1.2 -sourcepath src -d build $<
+	$(JAVAC) -source 1.2 -target 1.2 -sourcepath src -d build $<
 
 build/test/%.class: src/test/%.java
 	@mkdir -p build
-	$(JAVAC) -bootclasspath "$(libjdbc)$(sep)$$JAVA_HOME/jre/lib/rt.jar" \
-	    -target 1.5 -classpath "build$(sep)$(libjunit)" \
+	$(JAVAC) -target 1.5 -classpath "build$(sep)$(libjunit)" \
 	    -sourcepath src/test -d build $<
 
 native: build/$(sqlite)-$(target)/sqlite3.o $(native_classes)
