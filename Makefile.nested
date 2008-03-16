@@ -7,12 +7,14 @@ default: test
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build
-	javac -source 1.2 -target 1.2 -classpath "$(nestedvm)/build" \
+	$(JAVAC) -bootclasspath "$(libjdbc)$(sep)$$JAVA_HOME/jre/lib/rt.jar" \
+	    -source 1.2 -target 1.2 -classpath "$(nestedvm)/build" \
 	    -sourcepath src -d build $<
 
 build/test/%.class: src/test/%.java
 	@mkdir -p build
-	javac -target 1.5 -classpath "$(libs)" -sourcepath src/test -d build $<
+	$(JAVAC) -target 1.5 -classpath "build$(sep)$(libjunit)" \
+	    -sourcepath src/test -d build $<
 
 nested: build/org/sqlite/SQLite.class $(java_classes)
 	cd build && jar cf $(sqlitejdbc)-nested.jar \
@@ -25,7 +27,7 @@ dist/$(sqlitejdbc)-nested.tgz: nested
 	    README -C build $(sqlitejdbc)-nested.jar
 
 test: nested $(test_classes)
-	java -cp "build/$(sqlitejdbc)-nested.jar$(sep)$(libs)" \
+	$(JAVA) -cp "build/$(sqlitejdbc)-nested.jar$(sep)build$(sep)$(libjunit)" \
 	    org.junit.runner.JUnitCore $(tests)
 
 $(nestedvm)/%:

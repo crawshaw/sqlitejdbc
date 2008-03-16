@@ -38,7 +38,12 @@ ifneq ($(jni_md),)
 jni_include := $(shell dirname "$(jni_md)")
 endif
 
-libs := build$(sep)$(subst  ,$(sep),$(wildcard lib/*.jar))
+JAVA  := $$JAVA_HOME/bin/java
+JAVAC := $$JAVA_HOME/bin/javac
+JAVAH := $$JAVA_HOME/bin/javah
+
+libjdbc  := $(wildcard lib/jdbc-*.jar)
+libjunit := $(wildcard lib/junit-*.jar)
 
 java_sources = $(wildcard src/org/sqlite/*.java)
 java_classes = $(java_sources:src/%.java=build/%.class)

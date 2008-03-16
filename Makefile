@@ -31,15 +31,18 @@ build/$(sqlite)-%/sqlite3.o: dl/$(sqlite)-amal.zip
 
 build/org/%.class: src/org/%.java
 	@mkdir -p build
-	javac -source 1.2 -target 1.2 -sourcepath src -d build $<
+	$(JAVAC) -bootclasspath "$(libjdbc)$(sep)$$JAVA_HOME/jre/lib/rt.jar" \
+	    -source 1.2 -target 1.2 -sourcepath src -d build $<
 
 build/test/%.class: src/test/%.java
 	@mkdir -p build
-	javac -target 1.5 -classpath "$(libs)" -sourcepath src/test -d build $<
+	$(JAVAC) -bootclasspath "$(libjdbc)$(sep)$$JAVA_HOME/jre/lib/rt.jar" \
+	    -target 1.5 -classpath "build$(sep)$(libjunit)" \
+	    -sourcepath src/test -d build $<
 
 native: build/$(sqlite)-$(target)/sqlite3.o $(native_classes)
 	@mkdir -p build/$(target)
-	javah -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
+	$(JAVAH) -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
 	cd build && jar cf $(sqlitejdbc)-native.jar $(java_classlist)
 	$(CC) $(CFLAGS) -c -o build/$(target)/NativeDB.o \
 		src/org/sqlite/NativeDB.c
@@ -53,8 +56,8 @@ dist/$(sqlitejdbc)-$(target).tgz: native
 	    -C build $(sqlitejdbc)-native.jar -C $(target) $(LIBNAME)
 
 test: native $(test_classes)
-	java -Djava.library.path=build/$(target) \
-	    -cp "build/$(sqlitejdbc)-native.jar$(sep)$(libs)" \
+	$(JAVA) -Djava.library.path=build/$(target) \
+	    -cp "build/$(sqlitejdbc)-native.jar$(sep)build$(sep)$(libjunit)" \
 	    org.junit.runner.JUnitCore $(tests)
 
 clean:
