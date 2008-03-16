@@ -44,21 +44,37 @@ public class Test {
         Class.forName(<font id="StringLiteral">"org.sqlite.JDBC"</font>);
         Connection conn = DriverManager.getConnection(<font id="StringLiteral">"jdbc:sqlite:test.db"</font>);
         Statement stat = conn.createStatement();
+        stat.executeUpdate(<font id="StringLiteral">"drop table if exists people;"</font>);
         stat.executeUpdate(<font id="StringLiteral">"create table people (name, occupation);"</font>);
-        stat.executeUpdate(<font id="StringLiteral">"insert into people values ('Gandhi', 'politics');"</font>);
-        stat.executeUpdate(<font id="StringLiteral">"insert into people values ('Turing', 'computers');"</font>);
-        stat.executeUpdate(<font id="StringLiteral">"insert into people values ('Wittgenstein', 'smartypants');"</font>);
+        PreparedStatement prep = conn.prepareStatement(
+            <font id="StringLiteral">"insert into people values (?, ?);"</font>);
+
+        prep.setString(1, <font id="StringLiteral">"Gandhi"</font>);
+        prep.setString(2, <font id="StringLiteral">"politics"</font>);
+        prep.addBatch();
+        prep.setString(1, <font id="StringLiteral">"Turing"</font>);
+        prep.setString(2, <font id="StringLiteral">"computers"</font>);
+        prep.addBatch();
+        prep.setString(1, <font id="StringLiteral">"Wittgenstein"</font>);
+        prep.setString(2, <font id="StringLiteral">"smartypants"</font>);
+        prep.addBatch();
+
+        conn.setAutoCommit(false);
+        prep.executeBatch();
+        conn.setAutoCommit(true);
 
         ResultSet rs = stat.executeQuery(<font id="StringLiteral">"select * from people;"</font>);
         while (rs.next()) {
             System.out.println(<font id="StringLiteral">"name = "</font> + rs.getString(<font id="StringLiteral">"name"</font>));
-            System.out.println(<font id="StringLiteral">"occupation = "</font> + rs.getString(<font id="StringLiteral">"occupation"</font>));
+            System.out.println(<font id="StringLiteral">"job = "</font> + rs.getString(<font id="StringLiteral">"occupation"</font>));
         }
         rs.close();
         conn.close();
     }
 }
 </pre>
+Run with:
+<tt>java -cp .:sqlitejdbc-v042-native.jar -Djava.library.path=. Test</tt>
 
 <h3>Getting Help</h3>
 <p>If you have any problems or questions, there is a public mailing list
