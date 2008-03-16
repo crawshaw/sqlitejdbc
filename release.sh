@@ -22,6 +22,7 @@ cp VERSION work/$sqlitejdbc/.
 cp -R src/org work/$sqlitejdbc/src/.
 cp -R src/test work/$sqlitejdbc/src/.
 cp -R _darcs work/$sqlitejdbc/.
+cp -R lib work/$sqlitejdbc/.
 (cd work && tar cfz ../dist/$sqlitejdbc-src.tgz $sqlitejdbc)
 rm -rf work
 
