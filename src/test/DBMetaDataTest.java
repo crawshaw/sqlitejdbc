@@ -403,4 +403,8 @@ public class DBMetaDataTest
         assertEquals(rsmeta.getColumnName(6), "REMARKS");
         assertEquals(rsmeta.getColumnName(7), "BASE_TYPE");
     }
+
+    @Test public void version() throws SQLException {
+        assertNotNull(meta.getDatabaseProductVersion());
+    }
 }
