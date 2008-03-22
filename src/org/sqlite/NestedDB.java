@@ -114,6 +114,7 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         call("sqlite3_busy_timeout", handle, ms);
     }
     protected synchronized long prepare(String sql) throws SQLException {
+        synchronized (rtLock) {
         int passback = rt.xmalloc(4);
         int str = rt.strdup(sql);
         int ret = call("sqlite3_prepare_v2", handle, str, -1, passback, 0);
@@ -125,6 +126,7 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         int pointer = deref(passback);
         rt.free(passback);
         return pointer;
+        }
     }
     synchronized String errmsg() throws SQLException {
         synchronized (rtLock) {
