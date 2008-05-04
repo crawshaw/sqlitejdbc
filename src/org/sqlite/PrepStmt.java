@@ -24,72 +24,61 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-/** See comment in RS.java to explain the strange inheritance hierarchy. */
-final class PrepStmt extends RS
+final class PrepStmt extends Stmt
         implements PreparedStatement, ParameterMetaData, Codes
 {
     private int columnCount;
     private int paramCount;
-    private int batchPos;
-    private Object[] batch;
 
     PrepStmt(Conn conn, String sql) throws SQLException {
         super(conn);
 
         this.sql = sql;
         db.prepare(this);
-        colsMeta = db.column_names(pointer);
+        rs.colsMeta = db.column_names(pointer);
         columnCount = db.column_count(pointer);
         paramCount = db.bind_parameter_count(pointer);
         batch = new Object[paramCount];
         batchPos = 0;
     }
 
-    /** Weaker close to support object overriding (see docs in RS.java). */
     public void close() throws SQLException {
         batch = null;
-        if (pointer == 0 || db == null) clearRS(); else clearParameters();
+        clearParameters();
+        super.close();
     }
 
     public void clearParameters() throws SQLException {
         checkOpen();
-        clearRS();
         db.reset(pointer);
-        batchPos = 0;
-        if (batch != null)
-            for (int i=0; i < batch.length; i++)
-                batch[i] = null;
+        clearBatch();
     }
 
-    protected void finalize() throws SQLException {
-        db.finalize(this);
-        // TODO
-    }
-
+    protected void finalize() throws SQLException { close(); }
 
     public boolean execute() throws SQLException {
-        checkExec();
-        clearRS();
-        db.reset(pointer); // TODO: needed?
+        checkOpen();
+        rs.close();
+        db.reset(pointer);
         resultsWaiting = db.execute(this, batch);
         return columnCount != 0;
     }
 
     public ResultSet executeQuery() throws SQLException {
-        checkExec();
+        checkOpen();
         if (columnCount == 0)
             throw new SQLException("query does not return results");
-        clearRS();
-        db.reset(pointer); // TODO: needed?
+        rs.close();
+        db.reset(pointer);
         resultsWaiting = db.execute(this, batch);
         return getResultSet();
     }
 
     public int executeUpdate() throws SQLException {
-        checkExec();
+        checkOpen();
         if (columnCount != 0)
             throw new SQLException("query returns results");
-        clearRS();
+        rs.close();
         db.reset(pointer);
         return db.executeUpdate(this, batch);
     }
@@ -105,7 +94,7 @@ final class PrepStmt extends RS
     }
 
     public void addBatch() throws SQLException {
-        checkExec();
+        checkOpen();
         batchPos += paramCount;
         if (batchPos + paramCount > batch.length) {
             Object[] nb = new Object[batch.length * 2];
@@ -114,17 +103,15 @@ final class PrepStmt extends RS
         }
     }
 
-    public void clearBatch() throws SQLException { clearParameters(); }
-
 
     // ParameterMetaData FUNCTIONS //////////////////////////////////
 
     public ParameterMetaData getParameterMetaData() { return this; }
 
     public int getParameterCount() throws SQLException {
-        checkExec(); return paramCount; }
+        checkOpen(); return paramCount; }
     public String getParameterClassName(int param) throws SQLException {
-        checkExec(); return "java.lang.String"; }
+        checkOpen(); return "java.lang.String"; }
     public String getParameterTypeName(int pos) { return "VARCHAR"; }
     public int getParameterType(int pos) { return Types.VARCHAR; }
     public int getParameterMode(int pos) { return parameterModeIn; }
@@ -138,7 +125,7 @@ final class PrepStmt extends RS
     // PARAMETER FUNCTIONS //////////////////////////////////////////
 
     private void batch(int pos, Object value) throws SQLException {
-        checkExec();
+        checkOpen();
         if (batch == null) batch = new Object[paramCount];
         batch[batchPos + pos - 1] = value;
     }
@@ -203,6 +190,9 @@ final class PrepStmt extends RS
         setLong(pos, x.getTime()); }
     public void setTimestamp(int pos, Timestamp x, Calendar cal)
         throws SQLException { setLong(pos, x.getTime()); }
+
+    public ResultSetMetaData getMetaData() throws SQLException {
+        checkOpen(); return rs; }
 
 
     // UNUSED ///////////////////////////////////////////////////////

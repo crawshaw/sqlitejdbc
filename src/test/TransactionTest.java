@@ -181,6 +181,7 @@ public class TransactionTest
             }
         } }.start();
 
+        try { Thread.sleep(100); } catch (Exception e) {}
         rs.close();
 
         for (int i=0; i < 40; i++) {

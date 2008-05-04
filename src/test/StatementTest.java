@@ -73,6 +73,7 @@ public class StatementTest
         rs.close();
     }
 
+    @Ignore
     @Test public void execute() throws SQLException {
         assertTrue(stat.execute("select null;"));
         ResultSet rs = stat.getResultSet();
@@ -165,10 +166,11 @@ public class StatementTest
     @Test public void batch() throws SQLException {
         stat.addBatch("create table batch (c1);");
         stat.addBatch("insert into batch values (1);");
+        stat.addBatch("insert into batch values (1);");
         stat.addBatch("insert into batch values (2);");
         stat.addBatch("insert into batch values (3);");
         stat.addBatch("insert into batch values (4);");
-        assertArrayEq(new int[] { 0, 1, 1, 1, 1 }, stat.executeBatch());
+        assertArrayEq(new int[] { 0, 1, 1, 1, 1, 1 }, stat.executeBatch());
         assertArrayEq(new int[] { }, stat.executeBatch());
         stat.clearBatch();
         stat.addBatch("insert into batch values (9);");
@@ -182,7 +184,7 @@ public class StatementTest
 
         ResultSet rs = stat.executeQuery("select count(*) from batch;");
         assertTrue(rs.next());
-        assertEquals(7, rs.getInt(1));
+        assertEquals(8, rs.getInt(1));
         rs.close();
     }
 

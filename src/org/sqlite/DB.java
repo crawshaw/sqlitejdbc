@@ -85,11 +85,10 @@ abstract class DB implements Codes
             Iterator i = stmts.entrySet().iterator();
             while (i.hasNext()) {
                 Map.Entry entry = (Map.Entry)i.next();
-                RS stmt = (RS)entry.getValue();
+                Stmt stmt = (Stmt)entry.getValue();
                 finalize(((Long)entry.getKey()).longValue());
                 if (stmt != null) {
                     stmt.pointer = 0;
-                    stmt.db = null;
                 }
                 i.remove();
             }
@@ -111,14 +110,14 @@ abstract class DB implements Codes
         _close();
     }
 
-    final synchronized void prepare(RS stmt) throws SQLException {
+    final synchronized void prepare(Stmt stmt) throws SQLException {
         if (stmt.pointer != 0)
             finalize(stmt);
         stmt.pointer = prepare(stmt.sql);
         stmts.put(new Long(stmt.pointer), stmt);
     }
 
-    final synchronized int finalize(RS stmt) throws SQLException {
+    final synchronized int finalize(Stmt stmt) throws SQLException {
         if (stmt.pointer == 0) return 0;
         int rc = SQLITE_ERROR;
         try {
@@ -249,7 +248,7 @@ abstract class DB implements Codes
         return changes;
     }
 
-    final synchronized boolean execute(RS stmt, Object[] vals)
+    final synchronized boolean execute(Stmt stmt, Object[] vals)
             throws SQLException {
         if (vals != null) {
             final int params = bind_parameter_count(stmt.pointer);
@@ -279,7 +278,7 @@ abstract class DB implements Codes
         }
     }
 
-    final synchronized int executeUpdate(RS stmt, Object[] vals)
+    final synchronized int executeUpdate(Stmt stmt, Object[] vals)
             throws SQLException {
         if (execute(stmt, vals))
             throw new SQLException("query returns results");

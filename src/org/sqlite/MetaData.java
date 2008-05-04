@@ -340,7 +340,7 @@ class MetaData implements DatabaseMetaData
             + "null as TABLE_SCHEM, "
             + "'" + escape(tbl) + "' as TABLE_NAME, "
             + "cn as COLUMN_NAME, "
-            + "-1 as DATA_TYPE, "
+            + "ct as DATA_TYPE, "
             + "tn as TYPE_NAME, "
             + "2000000000 as COLUMN_SIZE, "
             + "2000000000 as BUFFER_LENGTH, "
@@ -372,14 +372,25 @@ class MetaData implements DatabaseMetaData
             String colNotNull = rs.getString(4);
 
             int colNullable = 2;
-            if (colType == null) colType = "TEXT";
             if (colNotNull != null) colNullable = colNotNull.equals("0") ? 1:0;
             if (colFound) sql += " union all ";
             colFound = true;
 
+            colType = colType == null ? "TEXT" : colType.toUpperCase();
+            int colJavaType = -1;
+            if (colType == "INT" || colType == "INTEGER")
+                colJavaType = Types.INTEGER;
+            else if (colType == "TEXT")
+                colJavaType = Types.VARCHAR;
+            else if (colType == "FLOAT")
+                colJavaType = Types.FLOAT;
+            else
+                colJavaType = Types.VARCHAR;
+
             sql += "select "
                 + i + " as ordpos, "
                 + colNullable + " as colnullable, '"
+                + colJavaType + "' as ct, '"
                 + escape(colName) + "' as cn, '"
                 + escape(colType) + "' as tn";
 
