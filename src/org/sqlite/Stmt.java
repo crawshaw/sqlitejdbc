@@ -76,11 +76,6 @@ class Stmt extends Unused implements Statement, Codes
 
     protected void finalize() throws SQLException { close(); }
 
-    public int getUpdateCount() throws SQLException {
-        if (rs.isOpen() || resultsWaiting) return -1;
-        return db.changes();
-    }
-
     public boolean execute(String sql) throws SQLException {
         close();
         this.sql = sql;
@@ -124,6 +119,20 @@ class Stmt extends Unused implements Statement, Codes
         return rs;
     }
 
+    /*
+     * This function has a complex behaviour best understood by carefully
+     * reading the JavaDoc for getMoreResults() and considering the test
+     * StatementTest.execute().
+     */
+    public int getUpdateCount() throws SQLException {
+        if (pointer != 0
+                && !rs.isOpen()
+                && !resultsWaiting
+                && db.column_count(pointer) == 0)
+            return db.changes();
+        return -1;
+    }
+
     public void addBatch(String sql) throws SQLException {
         close();
         if (batch == null || batchPos + 1 >= batch.length)
@@ -164,8 +173,6 @@ class Stmt extends Unused implements Statement, Codes
 
         return changes;
     }
-
-    // SHARED BY Stmt, PrepStmt /////////////////////////////////////
 
     public void setCursorName(String name) {}
 
@@ -208,7 +215,6 @@ class Stmt extends Unused implements Statement, Codes
     public void setFetchDirection(int d) throws SQLException {
         rs.setFetchDirection(d);
     }
-
 
     /** As SQLite's last_insert_rowid() function is DB-specific not
      *  statement specific, this function introduces a race condition

@@ -73,7 +73,6 @@ public class StatementTest
         rs.close();
     }
 
-    @Ignore
     @Test public void execute() throws SQLException {
         assertTrue(stat.execute("select null;"));
         ResultSet rs = stat.getResultSet();

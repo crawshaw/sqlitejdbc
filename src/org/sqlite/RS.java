@@ -117,7 +117,6 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         // do the real work
         switch (db.step(stmt.pointer)) {
             case SQLITE_DONE:
-                open = false;
                 close();      // agressive closing to avoid writer starvation
                 return false;
             case SQLITE_ROW: row++; return true;
