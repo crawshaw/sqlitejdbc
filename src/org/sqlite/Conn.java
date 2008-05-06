@@ -136,8 +136,7 @@ class Conn implements Connection
         { throw new SQLException("not yet implemented");}
 
     public boolean isReadOnly() throws SQLException { return false; } // FIXME
-    public void setReadOnly(boolean ro) throws SQLException
-        { throw new SQLException("not yet implemented"); }
+    public void setReadOnly(boolean ro) throws SQLException {}
 
     public DatabaseMetaData getMetaData() {
         if (meta == null) meta = new MetaData(this);
