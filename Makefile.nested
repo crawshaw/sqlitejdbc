@@ -48,7 +48,7 @@ build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh dl/$(sqlite)-amal.zip
 	@mkdir -p build
 	@mkdir -p build/$(sqlite)-nestedvm
 	unzip -qo dl/$(sqlite)-amal.zip -d build/$(sqlite)-nestedvm
-	cp src/org/sqlite/NestedDB.c build/$(sqlite)-nestedvm
+	cp src/org/sqlite/Nested*.c build/$(sqlite)-nestedvm
 	perl -pi -e "s/sqlite3_api;/sqlite3_api = 0;/g" \
 	    build/$(sqlite)-nestedvm/sqlite3ext.h
 
@@ -63,7 +63,7 @@ build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh dl/$(sqlite)-amal.zip
 	    -DSQLITE_ENABLE_FTS3 \
 	    -DSQLITE_OMIT_LOAD_EXTENSION \
 		sqlite3.c; \
-	$$CC -c $$CFLAGS -o NestedDB.o NestedDB.c)
+	$$CC -c $$CFLAGS -o NestedDB.o Nested*.c)
 
 	./$(nestedvm)/upstream/install/bin/mips-unknown-elf-gcc \
 	        -march=mips1 --static \
