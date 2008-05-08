@@ -425,6 +425,30 @@ public class PrepStmtTest
         prep.executeUpdate();
     }
 
+    @Test public void reusingSetValues() throws SQLException {
+        PreparedStatement prep = conn.prepareStatement("select ?,?;");
+        prep.setInt(1, 9);
+
+        for (int i=0; i < 10; i++) {
+            prep.setInt(2, i);
+            ResultSet rs = prep.executeQuery();
+            assertTrue(rs.next());
+            assertEquals(rs.getInt(1), 9);
+            assertEquals(rs.getInt(2), i);
+        }
+
+        for (int i=0; i < 10; i++) {
+            prep.setInt(2, i);
+            ResultSet rs = prep.executeQuery();
+            assertTrue(rs.next());
+            assertEquals(rs.getInt(1), 9);
+            assertEquals(rs.getInt(2), i);
+            rs.close();
+        }
+
+        prep.close();
+    }
+
     @Test(expected= SQLException.class)
     public void noSuchTable() throws SQLException {
         PreparedStatement prep =
