@@ -84,6 +84,7 @@ final class PrepStmt extends Stmt
     }
 
     public int[] executeBatch() throws SQLException {
+        if (batchPos == 0) return new int[] {};
         return db.executeBatch(pointer, batchPos / paramCount, batch);
     }
 
