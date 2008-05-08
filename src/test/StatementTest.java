@@ -223,6 +223,32 @@ public class StatementTest
         rs.close();
     }
 
+    @Test public void columnNaming() throws SQLException {
+        stat.executeUpdate("create table t1 (c1 integer);");
+        stat.executeUpdate("create table t2 (c1 integer);");
+        stat.executeUpdate("insert into t1 values (1);");
+        stat.executeUpdate("insert into t2 values (1);");
+        ResultSet rs = stat.executeQuery(
+            "select a.c1 from t1 a, t2 where a.c1=t2.c1;");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt("c1"), 1);
+        rs.close();
+    }
+
+    @Ignore
+    @Test(expected= SQLException.class)
+    public void ambiguousColumnNaming() throws SQLException {
+        stat.executeUpdate("create table t1 (c1 int);");
+        stat.executeUpdate("create table t2 (c1 int, c2 int);");
+        stat.executeUpdate("insert into t1 values (1);");
+        stat.executeUpdate("insert into t2 values (2, 1);");
+        ResultSet rs = stat.executeQuery(
+            "select a.c1, b.c1 from t1 a, t2 b where a.c1=b.c2;");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt("c1"), 1);
+        rs.close();
+    }
+
     @Test(expected= SQLException.class)
     public void failToDropWhenRSOpen() throws SQLException {
         stat.executeUpdate("create table t1 (c1);");
