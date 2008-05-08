@@ -179,8 +179,13 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getBytes(findColumn(col)); }
 
     public Date getDate(int col) throws SQLException {
-        return new Date(db.column_long(stmt.pointer, markCol(col))); }
+        if (db.column_type(stmt.pointer, markCol(col)) == SQLITE_NULL)
+            return null;
+        return new Date(db.column_long(stmt.pointer, markCol(col)));
+    }
     public Date getDate(int col, Calendar cal) throws SQLException {
+        if (db.column_type(stmt.pointer, markCol(col)) == SQLITE_NULL)
+            return null;
         if (cal == null) return getDate(col);
         cal.setTimeInMillis(db.column_long(stmt.pointer, markCol(col)));
         return new Date(cal.getTime().getTime());

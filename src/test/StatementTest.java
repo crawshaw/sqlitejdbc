@@ -235,6 +235,13 @@ public class StatementTest
         rs.close();
     }
 
+    @Test public void nullDate() throws SQLException {
+        ResultSet rs = stat.executeQuery("select null;");
+        assertTrue(rs.next());
+        assertEquals(rs.getDate(1), null);
+        rs.close();
+    }
+
     @Ignore
     @Test(expected= SQLException.class)
     public void ambiguousColumnNaming() throws SQLException {
