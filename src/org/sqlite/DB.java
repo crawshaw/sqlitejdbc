@@ -38,9 +38,6 @@ abstract class DB implements Codes
     /** The JDBC Connection that 'owns' this database instance. */
     Conn conn = null;
 
-    /** SQLite connection handle. */
-    long pointer = 0;
-
     /** The "begin;"and  "commit;" statement handles. */
     long begin = 0;
     long commit = 0;
