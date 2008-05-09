@@ -178,27 +178,23 @@ public class TransactionTest
 
             synchronized (lock) {
                 lock.done = true;
+                lock.notify();
             }
         } }.start();
 
-        try { Thread.sleep(100); } catch (Exception e) {}
+        Thread.sleep(100);
         rs.close();
 
-        for (int i=0; i < 40; i++) {
-            boolean isDone = false;
-            synchronized (lock) {
-                isDone = lock.done;
-            }
-            if (isDone)
-                return;
-            try { Thread.sleep(100); } catch (Exception e) {}
+        synchronized (lock) {
+            lock.wait(5000);
+            if (!lock.done)
+                throw new Exception("should be done");
         }
-
-        throw new Exception("should have caught done from second thread");
     }
 
     @Test(expected= SQLException.class)
     public void secondConnMustTimeout() throws SQLException {
+        stat1.setQueryTimeout(1);
         stat1.executeUpdate("create table t (c1);");
         stat1.executeUpdate("insert into t values (1);");
         stat1.executeUpdate("insert into t values (2);");
