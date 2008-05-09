@@ -30,9 +30,7 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     int handle = 0;
 
     /** sqlite binary embedded in nestedvm */
-    private static Runtime rt = null;
-    private static final Object rtLock = new Object();
-    private static int open = 0;
+    private Runtime rt = null;
 
     /** user defined functions referenced by position (stored in used data) */
     private Function[] functions = null;
@@ -56,33 +54,26 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
             }
         }
 
-        synchronized (rtLock) {
-            if (rt == null) {
-                // start the nestedvm runtime
-                try {
-                    rt = (Runtime)Class.forName("org.sqlite.SQLite")
-                        .newInstance();
-                    rt.start();
-                } catch (Exception e) {
-                    throw new CausedSQLException(e);
-                }
-
-                // callback for user defined functions
-                rt.setCallJavaCB(this); // XXX need multiple callbacks
-            }
+        // start the nestedvm runtime
+        try {
+            rt = (Runtime)Class.forName("org.sqlite.SQLite")
+                .newInstance();
+            rt.start();
+        } catch (Exception e) {
+            throw new CausedSQLException(e);
         }
 
-        synchronized (rtLock) {
-            // open the db and retrieve sqlite3_db* pointer
-            open++;
-            int passback = rt.xmalloc(4);
-            int str = rt.strdup(filename);
-            if (call("sqlite3_open", str, passback) != SQLITE_OK)
-                throwex();
-            handle = deref(passback);
-            rt.free(str);
-            rt.free(passback);
-        }
+        // callback for user defined functions
+        rt.setCallJavaCB(this);
+
+        // open the db and retrieve sqlite3_db* pointer
+        int passback = rt.xmalloc(4);
+        int str = rt.strdup(filename);
+        if (call("sqlite3_open", str, passback) != SQLITE_OK)
+            throwex();
+        handle = deref(passback);
+        rt.free(str);
+        rt.free(passback);
     }
 
     /* callback for Runtime.CallJavaCB above */
@@ -98,12 +89,8 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
                 throwex();
         } finally {
             handle = 0;
-            synchronized (rtLock) {
-                if (--open == 0) {
-                    rt.stop();
-                    rt = null;
-                }
-            }
+            rt.stop();
+            rt = null;
         }
     }
 
@@ -114,7 +101,6 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         call("sqlite3_busy_timeout", handle, ms);
     }
     protected synchronized long prepare(String sql) throws SQLException {
-        synchronized (rtLock) {
         int passback = rt.xmalloc(4);
         int str = rt.strdup(sql);
         int ret = call("sqlite3_prepare_v2", handle, str, -1, passback, 0);
@@ -126,17 +112,12 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         int pointer = deref(passback);
         rt.free(passback);
         return pointer;
-        }
     }
     synchronized String errmsg() throws SQLException {
-        synchronized (rtLock) {
-            return cstring(call("sqlite3_errmsg", handle));
-        }
+        return cstring(call("sqlite3_errmsg", handle));
     }
     synchronized String libversion() throws SQLException {
-        synchronized (rtLock) {
-            return cstring(call("sqlite3_libversion", handle));
-        }
+        return cstring(call("sqlite3_libversion", handle));
     }
     synchronized int changes() throws SQLException {
         return call("sqlite3_changes", handle); }
@@ -158,23 +139,17 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     synchronized int column_type(long stmt, int col) throws SQLException {
         return call("sqlite3_column_type", (int)stmt, col); }
     synchronized String column_name(long stmt, int col) throws SQLException {
-        synchronized (rtLock) {
-            return utfstring(call("sqlite3_column_name", (int)stmt, col));
-        }
+        return utfstring(call("sqlite3_column_name", (int)stmt, col));
     }
     synchronized String column_text(long stmt, int col) throws SQLException {
-        synchronized (rtLock) {
-            return utfstring(call("sqlite3_column_text", (int)stmt, col));
-        }
+        return utfstring(call("sqlite3_column_text", (int)stmt, col));
     }
     synchronized byte[] column_blob(long stmt, int col) throws SQLException {
-        synchronized (rtLock) {
-            int addr = call("sqlite3_column_blob", (int)stmt, col);
-            if (addr == 0) return null;
-            byte[] blob = new byte[call("sqlite3_column_bytes", (int)stmt, col)];
-            copyin(addr, blob, blob.length);
-            return blob;
-        }
+        int addr = call("sqlite3_column_blob", (int)stmt, col);
+        if (addr == 0) return null;
+        byte[] blob = new byte[call("sqlite3_column_bytes", (int)stmt, col)];
+        copyin(addr, blob, blob.length);
+        return blob;
     }
     synchronized double column_double(long stmt, int col) throws SQLException {
         try { return Double.parseDouble(column_text(stmt, col)); }
@@ -188,15 +163,11 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         return call("sqlite3_column_int", (int)stmt, col); }
     synchronized String column_decltype(long stmt, int col)
             throws SQLException {
-        synchronized (rtLock) {
-            return utfstring(call("sqlite3_column_decltype", (int)stmt, col));
-        }
+        return utfstring(call("sqlite3_column_decltype", (int)stmt, col));
     }
     synchronized String column_table_name(long stmt, int col)
             throws SQLException {
-        synchronized (rtLock) {
-            return utfstring(call("sqlite3_column_table_name", (int)stmt, col));
-        }
+        return utfstring(call("sqlite3_column_table_name", (int)stmt, col));
     }
 
     synchronized int bind_null(long stmt, int pos) throws SQLException {
@@ -214,40 +185,32 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     }
     synchronized int bind_text(long stmt, int pos, String v)
             throws SQLException {
-        synchronized (rtLock) {
-            if (v == null) return bind_null(stmt, pos);
-            return call("sqlite3_bind_text", (int)stmt, pos, rt.strdup(v),
-                        -1, rt.lookupSymbol("free"));
-        }
+        if (v == null) return bind_null(stmt, pos);
+        return call("sqlite3_bind_text", (int)stmt, pos, rt.strdup(v),
+                    -1, rt.lookupSymbol("free"));
     }
     synchronized int bind_blob(long stmt, int pos, byte[] buf)
             throws SQLException {
-        synchronized (rtLock) {
-            if (buf == null || buf.length < 1) return bind_null(stmt, pos);
-            int len = buf.length;
-            int blob = rt.xmalloc(len); // free()ed by sqlite3_bind_blob
-            copyout(buf, blob, len);
-            return call("sqlite3_bind_blob", (int)stmt, pos, blob, len,
-                        rt.lookupSymbol("free"));
-        }
+        if (buf == null || buf.length < 1) return bind_null(stmt, pos);
+        int len = buf.length;
+        int blob = rt.xmalloc(len); // free()ed by sqlite3_bind_blob
+        copyout(buf, blob, len);
+        return call("sqlite3_bind_blob", (int)stmt, pos, blob, len,
+                    rt.lookupSymbol("free"));
     }
 
     synchronized void result_null(long cxt) throws SQLException {
         call("sqlite3_result_null", (int)cxt); }
     synchronized void result_text(long cxt, String val) throws SQLException {
-        synchronized (rtLock) {
-            call("sqlite3_result_text", (int)cxt, rt.strdup(val), -1,
-                 rt.lookupSymbol("free"));
-        }
+        call("sqlite3_result_text", (int)cxt, rt.strdup(val), -1,
+             rt.lookupSymbol("free"));
     }
     synchronized void result_blob(long cxt, byte[] val) throws SQLException {
-        synchronized (rtLock) {
-            if (val == null || val.length == 0) { result_null(cxt); return; }
-            int blob = rt.xmalloc(val.length);
-            copyout(val, blob, val.length);
-            call("sqlite3_result_blob", (int)cxt, blob,
-                 val.length, rt.lookupSymbol("free"));
-        }
+        if (val == null || val.length == 0) { result_null(cxt); return; }
+        int blob = rt.xmalloc(val.length);
+        copyout(val, blob, val.length);
+        call("sqlite3_result_blob", (int)cxt, blob,
+             val.length, rt.lookupSymbol("free"));
     }
     synchronized void result_double(long cxt, double val) throws SQLException {
         result_text(cxt, Double.toString(val)); } // TODO
@@ -256,29 +219,23 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     synchronized void result_int(long cxt, int val) throws SQLException {
         call("sqlite3_result_int", (int)cxt, val); }
     synchronized void result_error(long cxt, String err) throws SQLException {
-        synchronized (rtLock) {
-            int str = rt.strdup(err);
-            call("sqlite3_result_error", (int)cxt, str, -1);
-            rt.free(str);
-        }
+        int str = rt.strdup(err);
+        call("sqlite3_result_error", (int)cxt, str, -1);
+        rt.free(str);
     }
 
     synchronized int value_bytes(Function f, int arg) throws SQLException {
         return call("sqlite3_value_bytes", value(f, arg));
     }
     synchronized String value_text(Function f, int arg) throws SQLException {
-        synchronized (rtLock) {
-            return utfstring(call("sqlite3_value_text", value(f, arg)));
-        }
+        return utfstring(call("sqlite3_value_text", value(f, arg)));
     }
     synchronized byte[] value_blob(Function f, int arg) throws SQLException {
-        synchronized (rtLock) {
-            int addr = call("sqlite3_value_blob", value(f, arg));
-            if (addr == 0) return null;
-            byte[] blob = new byte[value_bytes(f, arg)];
-            copyin(addr, blob, blob.length);
-            return blob;
-        }
+        int addr = call("sqlite3_value_blob", value(f, arg));
+        if (addr == 0) return null;
+        byte[] blob = new byte[value_bytes(f, arg)];
+        copyin(addr, blob, blob.length);
+        return blob;
     }
     synchronized double value_double(Function f, int arg) throws SQLException {
         return Double.parseDouble(value_text(f, arg)); // TODO
@@ -323,12 +280,10 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         functions[pos] = func;
         funcNames[pos] = name;
         int rc;
-        synchronized (rtLock) {
-            int str = rt.strdup(name);
-            rc = call("create_function_helper", handle, str, pos,
-                          func instanceof Function.Aggregate ? 1 : 0);
-            rt.free(str);
-        }
+        int str = rt.strdup(name);
+        rc = call("create_function_helper", handle, str, pos,
+                      func instanceof Function.Aggregate ? 1 : 0);
+        rt.free(str);
         return rc;
     }
 
@@ -346,11 +301,9 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
 
         // deregister function
         int rc;
-        synchronized (rtLock) {
-            int str = rt.strdup(name);
-            rc = call("create_function_helper", handle, str, -1, 0);
-            rt.free(str);
-        }
+        int str = rt.strdup(name);
+        rc = call("create_function_helper", handle, str, -1, 0);
+        rt.free(str);
         return rc;
     }
 
@@ -361,7 +314,6 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     synchronized void xUDF(int xType, int context, int args, int value) {
         Function func = null;
 
-        synchronized (rtLock) {
         try {
             int pos = call("sqlite3_user_data", context);
             func = functions[pos];
@@ -394,7 +346,6 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
                 func.args = 0;
             }
         }
-        }
     }
 
 
@@ -404,18 +355,16 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         boolean[][] meta = new boolean[colCount][3];
         int pass;
         
-        synchronized (rtLock) {
-            pass = rt.xmalloc(12); // struct metadata
+        pass = rt.xmalloc(12); // struct metadata
 
-            for (int i=0; i < colCount; i++) {
-                call("column_metadata_helper", handle, (int)stmt, i, pass);
-                meta[i][0] = deref(pass) == 1;
-                meta[i][1] = deref(pass + 4) == 1;
-                meta[i][2] = deref(pass + 8) == 1;
-            }
-
-            rt.free(pass);
+        for (int i=0; i < colCount; i++) {
+            call("column_metadata_helper", handle, (int)stmt, i, pass);
+            meta[i][0] = deref(pass) == 1;
+            meta[i][1] = deref(pass + 4) == 1;
+            meta[i][2] = deref(pass + 8) == 1;
         }
+
+        rt.free(pass);
         return meta;
     }
 
@@ -449,31 +398,29 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
     }
     private int call(String func, int[] args) throws SQLException {
         try {
-            synchronized (rtLock) {
-                return rt.call(func, args);
-            }
+            return rt.call(func, args);
         } catch (Runtime.CallException e) { throw new CausedSQLException(e); }
     }
 
     /** Dereferences a pointer, returning the word it points to. */
     private int deref(int pointer) throws SQLException {
-        try { synchronized (rtLock) { return rt.memRead(pointer); } }
+        try { return rt.memRead(pointer); }
         catch (Runtime.ReadFaultException e) { throw new CausedSQLException(e);}
     }
     private String utfstring(int str) throws SQLException {
-        try { synchronized (rtLock) { return rt.utfstring(str); } }
+        try { return rt.utfstring(str); }
         catch (Runtime.ReadFaultException e) { throw new CausedSQLException(e);}
     }
     private String cstring(int str) throws SQLException {
-        try { synchronized (rtLock) { return rt.cstring(str); } }
+        try { return rt.cstring(str); }
         catch (Runtime.ReadFaultException e) { throw new CausedSQLException(e);}
     }
     private void copyin(int addr, byte[] buf, int count) throws SQLException {
-        try { synchronized (rtLock) { rt.copyin(addr, buf, count); } }
+        try { rt.copyin(addr, buf, count); }
         catch (Runtime.ReadFaultException e) { throw new CausedSQLException(e);}
     }
     private void copyout(byte[] buf, int addr, int count) throws SQLException {
-        try { synchronized (rtLock) { rt.copyout(buf, addr, count); } }
+        try { rt.copyout(buf, addr, count); }
         catch (Runtime.FaultException e) { throw new CausedSQLException(e);}
     }
 
