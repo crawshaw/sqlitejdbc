@@ -19,6 +19,8 @@ wherever possible. Binaries are provided for Windows and Mac OS X.</p>
 
 <h3>News</h3>
 <ul class="mono">
+    <li>2008-05-10: Version v046 released: major internal work
+        plugs a long standing memory leak.</li>
     <li>2008-04-17: Version v044 released: minor bug fixes and
         an upgrade to 3.5.8.</li>
     <li>2008-03-16: Version v043 released: support for multiple
@@ -31,8 +33,6 @@ wherever possible. Binaries are provided for Windows and Mac OS X.</p>
         bug fix,
         <a href="http://article.gmane.org/gmane.comp.db.sqlite.jdbc/579"
             >details</a>.</li>
-    <li>2008-02-13: Version v040 released: Upgrade to 3.5.6,
-        fix for JDK bug on read-only shares.</li>
 </ul>
 
 <h3>Getting Started</h3>
@@ -78,7 +78,7 @@ public class Test {
 }
 </pre>
 Run with:
-<tt>java -cp .:sqlitejdbc-v044-native.jar -Djava.library.path=. Test</tt>
+<tt>java -cp .:sqlitejdbc-v046-native.jar -Djava.library.path=. Test</tt>
 
 <h3>Getting Help</h3>
 <p>If you have any problems or questions, there is a public mailing list
@@ -120,15 +120,15 @@ or<br />
 
 
 </td><td id="aside">
-<p>Current Version: <b>v044</b> (SQLite 3.5.8)</p>
+<p>Current Version: <b>v046</b> (SQLite 3.5.8)</p>
 
 <h3>Download</h3>
 <ul>
-    <li><a href="dist/sqlitejdbc-v044-nested.tgz">Pure Java</a></li>
-    <li><a href="dist/sqlitejdbc-v044-Win-i386.tgz">Windows</a></li>
-    <li><a href="dist/sqlitejdbc-v044-Mac.tgz">Mac OS X</a></li>
-    <li><a href="dist/sqlitejdbc-v044-Linux-i386.tgz">Linux</a></li>
-    <li><a href="dist/sqlitejdbc-v044-src.tgz">Source Code</a></li>
+    <li><a href="dist/sqlitejdbc-v046-nested.tgz">Pure Java</a></li>
+    <li><a href="dist/sqlitejdbc-v046-Win-i386.tgz">Windows</a></li>
+    <li><a href="dist/sqlitejdbc-v046-Mac.tgz">Mac OS X</a></li>
+    <li><a href="dist/sqlitejdbc-v046-Linux-i386.tgz">Linux</a></li>
+    <li><a href="dist/sqlitejdbc-v046-src.tgz">Source Code</a></li>
 </ul>
 
 <script type="text/javascript"><!--
