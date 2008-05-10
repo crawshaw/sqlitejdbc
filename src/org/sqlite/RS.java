@@ -232,9 +232,13 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getString(findColumn(col)); }
 
     public Time getTime(int col) throws SQLException {
+        if (db.column_type(stmt.pointer, markCol(col)) == SQLITE_NULL)
+            return null;
         return new Time(db.column_long(stmt.pointer, markCol(col))); }
     public Time getTime(int col, Calendar cal) throws SQLException {
         if (cal == null) return getTime(col);
+        if (db.column_type(stmt.pointer, markCol(col)) == SQLITE_NULL)
+            return null;
         cal.setTimeInMillis(db.column_long(stmt.pointer, markCol(col)));
         return new Time(cal.getTime().getTime());
     }

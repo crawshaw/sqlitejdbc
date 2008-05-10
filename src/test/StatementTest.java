@@ -239,6 +239,7 @@ public class StatementTest
         ResultSet rs = stat.executeQuery("select null;");
         assertTrue(rs.next());
         assertEquals(rs.getDate(1), null);
+        assertEquals(rs.getTime(1), null);
         rs.close();
     }
 
