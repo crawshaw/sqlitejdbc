@@ -97,9 +97,21 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     // returns col in [1,x] form
     public int findColumn(String col) throws SQLException {
         checkOpen();
-        for (int i=0; i < cols.length; i++)
-            if (col.equalsIgnoreCase(cols[i])) return i+1;
-        throw new SQLException("no such column: '"+col+"'");
+        int c = -1;
+        for (int i=0; i < cols.length; i++) {
+            if (col.equalsIgnoreCase(cols[i])
+                || (cols[i].toUpperCase().endsWith(col.toUpperCase()) &&
+                    cols[i].charAt(cols[i].length() - col.length()) == '.')) {
+                if (c == -1)
+                    c = i;
+                else
+                    throw new SQLException("ambiguous column: '"+col+"'");
+            }
+        }
+        if (c == -1)
+            throw new SQLException("no such column: '"+col+"'");
+        else
+            return c + 1;
     }
 
     public boolean next() throws SQLException {

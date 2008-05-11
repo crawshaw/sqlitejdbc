@@ -243,7 +243,6 @@ public class StatementTest
         rs.close();
     }
 
-    @Ignore
     @Test(expected= SQLException.class)
     public void ambiguousColumnNaming() throws SQLException {
         stat.executeUpdate("create table t1 (c1 int);");
