@@ -51,6 +51,7 @@ tar cfz dist/$sqlitejdbc-Mac.tgz README \
 # windows
 #
 echo '*** compiling for windows ***'
+darcs push -a debian:repo/sqlitejdbc
 ssh debian "cd repo/sqlitejdbc && make os=Win arch=i586 dist/$sqlitejdbc-Win-i586.tgz"
 scp debian:repo/sqlitejdbc/dist/$sqlitejdbc-Win-i586.tgz \
     dist/$sqlitejdbc-Win-i586.tgz
@@ -59,7 +60,6 @@ scp debian:repo/sqlitejdbc/dist/$sqlitejdbc-Win-i586.tgz \
 # linux
 #
 echo '*** compiling for linux ***'
-darcs push -a debian:repo/sqlitejdbc
 ssh debian "cd repo/sqlitejdbc && make arch=i386 dist/$sqlitejdbc-Default-i386.tgz"
 scp debian:repo/sqlitejdbc/dist/$sqlitejdbc-Default-i386.tgz \
     dist/$sqlitejdbc-Linux-i386.tgz
