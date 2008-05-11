@@ -13,11 +13,6 @@ include Makefile.common
 
 default: test
 
-dl/$(sqlite)-amal.zip:
-	@mkdir -p dl
-	curl -odl/$(sqlite)-amal.zip \
-	    http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
-
 build/$(sqlite)-%/sqlite3.o: dl/$(sqlite)-amal.zip
 	@mkdir -p build/$(sqlite)-$*
 	unzip -qo dl/$(sqlite)-amal.zip -d build/$(sqlite)-$*

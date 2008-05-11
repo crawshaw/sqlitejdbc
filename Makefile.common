@@ -85,3 +85,9 @@ CFLAGS := $(CFLAGS) -Ibuild/$(sqlite)-$(target) -Ibuild
 ifneq ($(jni_include),)
 CFLAGS := $(CFLAGS) -I$(jni_include)
 endif
+
+dl/$(sqlite)-amal.zip:
+	@mkdir -p dl
+	curl -odl/$(sqlite)-amal.zip \
+	    http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
+

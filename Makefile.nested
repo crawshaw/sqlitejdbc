@@ -5,6 +5,15 @@ nestedvm := nestedvm-$(nestedvm_version)
 
 default: test
 
+test: build/$(sqlitejdbc)-pure.jar $(test_classes)
+	$(JAVA) -cp "build/$(sqlitejdbc)-pure.jar$(sep)build$(sep)$(libjunit)" \
+	    org.junit.runner.JUnitCore $(tests)
+
+build/$(sqlitejdbc)-pure.jar: build/org/sqlite/SQLite.class $(java_classes)
+	cd build && jar cf $(sqlitejdbc)-pure.jar \
+	    org/sqlite/SQLite.class $(java_classlist) \
+	    -C ../$(nestedvm)/build org/ibex
+
 build/org/%.class: src/org/%.java
 	@mkdir -p build
 	$(JAVAC) -source 1.2 -target 1.2 -classpath "$(nestedvm)/build" \
@@ -15,27 +24,8 @@ build/test/%.class: src/test/%.java
 	$(JAVAC) -target 1.5 -classpath "build$(sep)$(libjunit)" \
 	    -sourcepath src/test -d build $<
 
-nested: build/org/sqlite/SQLite.class $(java_classes)
-	cd build && jar cf $(sqlitejdbc)-nested.jar \
-	    org/sqlite/SQLite.class $(java_classlist) \
-	    -C ../$(nestedvm)/build org/ibex
-
-dist/$(sqlitejdbc)-nested.tgz: nested
-	@mkdir -p dist
-	tar cfz dist/$(sqlitejdbc)-nested.tgz \
-	    README -C build $(sqlitejdbc)-nested.jar
-
-test: nested $(test_classes)
-	$(JAVA) -cp "build/$(sqlitejdbc)-nested.jar$(sep)build$(sep)$(libjunit)" \
-	    org.junit.runner.JUnitCore $(tests)
-
 $(nestedvm)/%:
 	$(MAKE) -C $(nestedvm) $*
-
-dl/$(sqlite)-amal.zip:
-	@mkdir -p dl
-	curl -odl/$(sqlite)-amal.zip \
-	    http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
 
 dl/$(nestedvm).tgz:
 	@mkdir -p dl
