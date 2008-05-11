@@ -48,6 +48,11 @@ dist/$(sqlitejdbc)-$(target).tgz: native
 	tar cfz dist/$(sqlitejdbc)-$(target).tgz README \
 	    -C build $(sqlitejdbc)-native.jar -C $(target) $(LIBNAME)
 
+dl/$(sqlite)-amal.zip:
+	@mkdir -p dl
+	curl -odl/$(sqlite)-amal.zip \
+	    http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
+
 test: native $(test_classes)
 	$(JAVA) -Djava.library.path=build/$(target) \
 	    -cp "build/$(sqlitejdbc)-native.jar$(sep)build$(sep)$(libjunit)" \
