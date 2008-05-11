@@ -51,8 +51,9 @@ tar cfz dist/$sqlitejdbc-Mac.tgz README \
 # windows
 #
 echo '*** compiling for windows ***'
-make os=Win arch=i386 \
-    dist/$sqlitejdbc-Win-i386.tgz
+ssh debian "cd repo/sqlitejdbc && make os=Win arch=i586 dist/$sqlitejdbc-Win-i586.tgz"
+scp debian:repo/sqlitejdbc/dist/$sqlitejdbc-Win-i586.tgz \
+    dist/$sqlitejdbc-Win-i586.tgz
 
 #
 # linux
