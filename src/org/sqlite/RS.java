@@ -115,7 +115,6 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
     }
 
     public boolean next() throws SQLException {
-        //XXX System.out.println("next(): open="+open+", row="+row+", maxRows="+maxRows+", limitRows="+limitRows);
         if (!open) return false;  // finished ResultSet
         lastCol = -1;
 
