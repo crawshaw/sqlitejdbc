@@ -99,9 +99,9 @@ echo '</ul></div></body></html>' >> changes.html
 # push release to web server
 #
 if [ "$1" = "push" ]; then
-    echo '*** pushing release to afs ***'
-    darcs push -a $repo
-    cp dist/$sqlitejdbc-*.tgz $afs/dist/
-    cp changes.html web/*.html web/*.css $afs/
+    echo '*** pushing release to server ***'
+    darcs push -a hcoop:$repo
+    scp dist/$sqlitejdbc-*.tgz hcoop:$afs/dist/
+    scp changes.html web/*.html web/*.css hcoop:$afs/
     rm changes.html
 fi
