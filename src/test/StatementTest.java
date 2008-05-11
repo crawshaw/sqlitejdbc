@@ -229,7 +229,7 @@ public class StatementTest
         stat.executeUpdate("insert into t1 values (1);");
         stat.executeUpdate("insert into t2 values (1);");
         ResultSet rs = stat.executeQuery(
-            "select a.c1 from t1 a, t2 where a.c1=t2.c1;");
+            "select a.c1 AS c1 from t1 a, t2 where a.c1=t2.c1;");
         assertTrue(rs.next());
         assertEquals(rs.getInt("c1"), 1);
         rs.close();
