@@ -331,7 +331,8 @@ class MetaData implements DatabaseMetaData
         // determine exact table name
         getColumnsTblName.setString(1, tbl);
         rs = getColumnsTblName.executeQuery();
-        if (!rs.next()) return null;
+        if (!rs.next())
+            return rs;
         tbl = rs.getString(1);
         rs.close();
 

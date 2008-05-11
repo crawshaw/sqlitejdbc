@@ -143,6 +143,9 @@ public class DBMetaDataTest
         assertTrue(rs.next());
         assertEquals(rs.getString("COLUMN_NAME"), "sn");
         assertFalse(rs.next());
+
+        rs = meta.getColumns(null, null, "doesnotexist", "%");
+        assertFalse(rs.next());
     }
 
     @Test public void columnOrderOfgetTables() throws SQLException {
