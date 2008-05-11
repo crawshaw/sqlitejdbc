@@ -16,7 +16,7 @@
 
 package org.sqlite;
 
-import java.io.File;
+import java.io.*;
 import java.sql.SQLException;
 
 /** This class provides a thin JNI layer over the SQLite3 C API. */
@@ -34,16 +34,53 @@ final class NativeDB extends DB
         String libname = System.getProperty("org.sqlite.lib.name");
         if (libname == null) libname = System.mapLibraryName("sqlitejdbc");
 
+        // look for a pre-installed library
         try {
             if (libpath == null) System.loadLibrary("sqlitejdbc");
             else System.load(new File(libpath, libname).getAbsolutePath());
-        } catch (UnsatisfiedLinkError e) {
-            loaded = Boolean.FALSE;
-            return false;
-        }
 
-        loaded = Boolean.TRUE;
-        return true;
+            loaded = Boolean.TRUE;
+            return true;
+        } catch (UnsatisfiedLinkError e) { } // fall through
+
+	// guess what a bundled library would be called
+        String osname = System.getProperty("os.name").toLowerCase();
+        String osarch = System.getProperty("os.arch");
+        if (osname.startsWith("mac os")) {
+            osname = "mac";
+            osarch = "universal";
+        }
+        if (osname.startsWith("windows"))
+            osname = "win";
+        if (osname.startsWith("sunos"))
+            osname = "solaris";
+        if (osarch.startsWith("i") && osarch.endsWith("86"))
+            osarch = "x86";
+        libname = osname + '-' + osarch + ".lib";
+
+        // try a bundled library
+        try {
+            ClassLoader cl = NativeDB.class.getClassLoader();
+            InputStream in = cl.getResourceAsStream(libname);
+            if (in == null)
+                throw new Exception("libname: "+libname+" not found");
+            File tmplib = File.createTempFile("libsqlitejdbc-", ".lib");
+            tmplib.deleteOnExit();
+            OutputStream out = new FileOutputStream(tmplib);
+            byte[] buf = new byte[1024];
+            for (int len; (len = in.read(buf)) != -1;)
+                out.write(buf, 0, len);
+            in.close();
+            out.close();
+
+            System.load(tmplib.getAbsolutePath());
+
+            loaded = Boolean.TRUE;
+            return true;
+        } catch (Exception e) { }
+
+        loaded = Boolean.FALSE;
+        return false;
     }
 
 
