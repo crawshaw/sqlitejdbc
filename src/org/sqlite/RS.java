@@ -259,9 +259,13 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         return getTime(findColumn(col), cal); }
 
     public Timestamp getTimestamp(int col) throws SQLException {
+        if (db.column_type(stmt.pointer, markCol(col)) == SQLITE_NULL)
+            return null;
         return new Timestamp(db.column_long(stmt.pointer, markCol(col))); }
     public Timestamp getTimestamp(int col, Calendar cal) throws SQLException {
         if (cal == null) return getTimestamp(col);
+        if (db.column_type(stmt.pointer, markCol(col)) == SQLITE_NULL)
+            return null;
         cal.setTimeInMillis(db.column_long(stmt.pointer, markCol(col)));
         return new Timestamp(cal.getTime().getTime());
     }
