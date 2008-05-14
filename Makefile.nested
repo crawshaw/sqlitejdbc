@@ -50,6 +50,7 @@ build/SQLite.mips: $(nestedvm)/Makefile $(nestedvm)/env.sh dl/$(sqlite)-amal.zip
 
 	# we need a dummy main
 	echo 'int main() { return 0; }' >> build/$(sqlite)-nestedvm/sqlite3.c
+	perl -pi -e "s/utimes\(.*?\);//g" build/$(sqlite)-nestedvm/sqlite3.c
 
 	(. ./$(nestedvm)/env.sh; cd build/$(sqlite)-nestedvm; \
 	$$CC -c $$CFLAGS -o sqlite3.o \
