@@ -449,6 +449,17 @@ public class PrepStmtTest
         prep.close();
     }
 
+    @Test public void setmaxrows() throws SQLException {
+        PreparedStatement prep = conn.prepareStatement(
+            "select 1 union select 2;");
+        prep.setMaxRows(1);
+        ResultSet rs = prep.executeQuery();
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 1);
+        assertFalse(rs.next());
+        prep.close();
+    }
+
     @Test(expected= SQLException.class)
     public void noSuchTable() throws SQLException {
         PreparedStatement prep =
