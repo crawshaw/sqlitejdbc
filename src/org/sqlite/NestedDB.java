@@ -94,6 +94,11 @@ final class NestedDB extends DB implements Runtime.CallJavaCB
         }
     }
 
+    int shared_cache(boolean enable) throws SQLException {
+        // The shared cache is per-process, so it is useless as
+        // each nested connection is its own process.
+        return -1;
+    }
     synchronized void interrupt() throws SQLException {
         call("sqlite3_interrupt", handle);
     }

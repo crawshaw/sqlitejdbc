@@ -52,6 +52,7 @@ abstract class DB implements Codes
     abstract String errmsg() throws SQLException;
     abstract String libversion() throws SQLException;
     abstract int changes() throws SQLException;
+    abstract int shared_cache(boolean enable) throws SQLException;
 
     final synchronized void exec(String sql) throws SQLException {
         long pointer = 0;

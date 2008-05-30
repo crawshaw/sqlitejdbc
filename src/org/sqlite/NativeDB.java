@@ -55,6 +55,7 @@ final class NativeDB extends DB
 
     protected native synchronized void _open(String file) throws SQLException;
     protected native synchronized void _close() throws SQLException;
+    native synchronized int shared_cache(boolean enable);
     native synchronized void interrupt();
     native synchronized void busy_timeout(int ms);
     //native synchronized void exec(String sql) throws SQLException;

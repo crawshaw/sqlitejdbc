@@ -28,6 +28,11 @@ class Conn implements Connection
     private boolean autoCommit = true;
     private int timeout = 0;
 
+    public Conn(String url, String filename, boolean sharedCache)
+            throws SQLException {
+        this(url, filename);
+        db.shared_cache(sharedCache);
+    }
     public Conn(String url, String filename) throws SQLException {
         // check the path to the file exists
         if (!":memory:".equals(filename)) {

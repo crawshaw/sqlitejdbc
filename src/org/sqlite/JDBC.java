@@ -42,7 +42,14 @@ public class JDBC implements Driver
 
     public DriverPropertyInfo[] getPropertyInfo(String url, Properties info)
             throws SQLException {
-        return new DriverPropertyInfo[] {};
+        DriverPropertyInfo sharedCache = new DriverPropertyInfo(
+            "shared_cache", "false");
+        sharedCache.choices = new String[] { "true", "false" };
+        sharedCache.description =
+            "Enable SQLite Shared-Cache mode, native driver only.";
+        sharedCache.required = false;
+
+        return new DriverPropertyInfo[] { sharedCache };
     }
 
     public Connection connect(String url, Properties info) throws SQLException {
@@ -50,7 +57,13 @@ public class JDBC implements Driver
         url = url.trim();
 
         // if no file name is given use a memory database
-        return new Conn(url, PREFIX.equalsIgnoreCase(url) ?
-            ":memory:" : url.substring(PREFIX.length()));
+        String file = PREFIX.equalsIgnoreCase(url) ?
+            ":memory:" : url.substring(PREFIX.length());
+
+        if (info.getProperty("shared_cache") == null)
+            return new Conn(url, file);
+        else
+            return new Conn(url, file,
+                Boolean.parseBoolean(info.getProperty("shared_cache")));
     }
 }
