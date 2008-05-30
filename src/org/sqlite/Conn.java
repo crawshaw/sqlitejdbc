@@ -49,11 +49,8 @@ class Conn implements Connection
 
             // check write access if file does not exist
             try {
-                /*
-                 * The extra check to exists() is necessary as createNewFile() does
-                 * not follow the JavaDoc when used on read-only shares. Pointed out
-                 * by armesschwein@googlemail.com.
-                 */
+                 // The extra check to exists() is necessary as createNewFile()
+                 // does not follow the JavaDoc when used on read-only shares.
                 if (!file.exists() && file.createNewFile()) file.delete();
             } catch (Exception e) {
                 throw new SQLException(
