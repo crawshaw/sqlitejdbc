@@ -1,0 +1,63 @@
+# This file is a nasty piece of work I use for building SQLiteJDBC
+# across multiple architectures. It also contains the code for the
+# embedded release, which is hopefully easier to understand
+
+include Makefile.common
+
+afsdir 		:= /afs/hcoop.net/user/c/cr/crawshaw
+repo   		:= $(afsdir)/repo/sqlitejdbc
+files  		:= $(afsdir)/files/sqlitejdbc
+
+release: dist/$(sqlitejdbc).jar
+	darcs push -a hcoop:$(repo)
+	scp dist/$(sqlitejdbc)-*.tgz hcoop:$(files)/
+
+dist/$(sqlitejdbc).jar: dist/$(sqlitejdbc)-src.tgz dist/$(sqlitejdbc)-Mac.tgz dist/$(sqlitejdbc)-Linux-i386.tgz dist/$(sqlitejdbc)-Win-i586.tgz dist/$(sqlitejdbc)-pure.jar
+	@mkdir -p work
+	(cd work; $(foreach tgz,$(wildcard dist/$(sqlitejdbc)-*.tgz),tar xfz ../$(tgz);))
+	(cd work; \
+	    mv $(Darwin_LIBNAME)  mac-universal.lib; \
+		mv $(Win_LIBNAME)     win-x86.lib; \
+		mv $(Default_LIBNAME) linux-x86.lib; \
+		mv $(sqlitejdbc)-pure.jar $(sqlitejdbc).jar; \
+		jar uf $(sqlitejdbc).jar *.lib; \
+	)
+	mv work/$(sqlitejdbc).jar $@
+	@rm -rf work
+
+dist/$(sqlitejdbc)-src.tgz:
+	@mkdir -p dist work/$(sqlitejdbc)/src
+	cp Makefile* work/$(sqlitejdbc)/.
+	cp README LICENSE VERSION work/$(sqlitejdbc)/.
+	cp -R src/org work/$(sqlitejdbc)/src/.
+	cp -R src/test work/$(sqlitejdbc)/src/.
+	cp -R _darcs work/$(sqlitejdbc)/.
+	cp -R lib work/$(sqlitejdbc)/.
+	(cd work && tar cfz ../$@ $(sqlitejdbc))
+	@rm -rf work
+
+dist/$(sqlitejdbc)-Mac.tgz:
+	@mkdir -p dist build/Darwin-universal
+	$(make) -f Makefile os=Darwin arch=ppc native
+	$(make) os=Darwin arch=i386 native
+	lipo -create build/Darwin-ppc/$(maclib) build/Darwin-i386/$(maclib) \
+	     -output build/Darwin-universal/$(maclib)
+	tar cfz $@ README \
+	    -C build $(sqlitejdbc)-native.jar \
+	    -C Darwin-universal $maclib)
+
+dist/$(sqlitejdbc)-Win-i586.tgz:
+	darcs push -a debian:repo/sqlitejdbc
+	ssh debian "cd repo/sqlitejdbc && make os=Win arch=i586 $@"
+	scp debian:repo/sqlitejdbc/$@ $@
+
+dist/$(sqlitejdbc)-Linux-i386.tgz:
+	darcs push -a debian:repo/sqlitejdbc
+	ssh debian \
+	  "cd repo/sqlitejdbc && make arch=i386 dist/$(sqlitejdbc)-Default-i386.tgz"
+	scp debian:repo/sqlitejdbc/dist/$(sqlitejdbc)-Default-i386.tgz $@
+
+dist/$(sqlitejdbc)-pure.jar
+	darcs push -a debian:repo/sqlitejdbc
+	ssh debian "cd repo/sqlitejdbc && make -f Makefile.nested test $@"
+	scp debian:repo/sqlitejdbc/$@ $@
