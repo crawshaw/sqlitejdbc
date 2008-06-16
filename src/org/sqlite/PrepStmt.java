@@ -102,6 +102,8 @@ final class PrepStmt extends Stmt
             System.arraycopy(batch, 0, nb, 0, batch.length);
             batch = nb;
         }
+        System.arraycopy(batch, batchPos - paramCount,
+                         batch, batchPos, paramCount);
     }
 
 

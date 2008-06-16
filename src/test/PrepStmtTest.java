@@ -330,6 +330,35 @@ public class PrepStmtTest
         stat.executeUpdate("drop table test;");
     }
 
+    @Test public void retainKeysInBatch() throws SQLException {
+        stat.executeUpdate("create table test (c1, c2);");
+        PreparedStatement prep = conn.prepareStatement(
+            "insert into test values (?, ?);"
+        );
+        prep.setInt(1, 10);  prep.setString(2, "ten");       prep.addBatch();
+        prep.setInt(1, 100); prep.setString(2, "hundred");   prep.addBatch();
+        prep.setString(2, "one hundred");                    prep.addBatch();
+        prep.setInt(1, 1000); prep.setString(2, "thousand"); prep.addBatch();
+        prep.executeBatch();
+        prep.close();
+
+        ResultSet rs = stat.executeQuery("select * from test;");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 10);
+        assertEquals(rs.getString(2), "ten");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 100);
+        assertEquals(rs.getString(2), "hundred");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 100);
+        assertEquals(rs.getString(2), "one hundred");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 1000);
+        assertEquals(rs.getString(2), "thousand");
+        assertFalse(rs.next());
+        rs.close();
+    }
+
     @Test public void dblock() throws SQLException {
         stat.executeUpdate("create table test (c1);");
         stat.executeUpdate("insert into test values (1);");
