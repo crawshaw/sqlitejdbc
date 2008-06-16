@@ -16,7 +16,8 @@ release: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz
 dist/$(sqlitejdbc).jar: build/mac-universal.lib build/win-x86.lib build/linux-x86.lib dist/$(sqlitejdbc)-pure.jar
 	cp dist/$(sqlitejdbc)-pure.jar build/$(sqlitejdbc).jar
 	(cd build; jar uf $(sqlitejdbc.jar) *.lib)
-	mv build/$(sqlitejdbc).jar $@
+	cp build/$(sqlitejdbc).jar $@
+	rm build/$(sqlitejdbc).jar
 
 dist/$(sqlitejdbc)-src.tgz:
 	@mkdir -p dist work/$(sqlitejdbc)/src
