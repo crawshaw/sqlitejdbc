@@ -7,6 +7,8 @@ afsdir 		:= /afs/hcoop.net/user/c/cr/crawshaw
 repo   		:= $(afsdir)/repo/sqlitejdbc
 files  		:= $(afsdir)/files/sqlitejdbc
 
+default: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz
+
 release: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz
 	darcs push -a hcoop:$(repo)
 	scp dist/$(sqlitejdbc)* hcoop:$(files)/
