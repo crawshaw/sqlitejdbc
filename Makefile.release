@@ -9,7 +9,7 @@ files  		:= $(afsdir)/files/sqlitejdbc
 
 default: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz
 
-release: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz
+release: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz dist/$(sqlitejdbc)-bin.tgz
 	darcs push -a hcoop:$(repo)
 	scp dist/$(sqlitejdbc)* hcoop:$(files)/
 
@@ -29,6 +29,14 @@ dist/$(sqlitejdbc)-src.tgz:
 	cp -R lib work/$(sqlitejdbc)/.
 	(cd work && tar cfz ../$@ $(sqlitejdbc))
 	@rm -rf work
+
+dist/$(sqlitejdbc)-bin.tgz: dist/$(sqlitejdbc).jar
+	cp build/mac-universal.lib build/libsqlitejdbc.jnilib
+	cp build/win-x86.lib build/libsqlitejdbc.dll
+	cp build/linux-x86.lib build/libsqlitejdbc.so
+	$(MAKE) build/$(sqlitejdbc)-native.jar
+	cd build; tar cfz ../$@ $(sqlitejdbc)-native.jar \
+	    libsqlitejdbc.jnilib libsqlitejdbc.dll libsqlitejdbc.so \
 
 dist/$(sqlitejdbc)-pure.jar:
 	darcs push -a debian:repo/sqlitejdbc
