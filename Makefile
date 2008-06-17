@@ -24,12 +24,12 @@ test: native $(test_classes)
 	    -cp "build/$(sqlitejdbc)-native.jar$(sep)build$(sep)$(libjunit)" \
 	    org.junit.runner.JUnitCore $(tests)
 
-native: build/$(target)/$(LIBNAME) build/$(sqlitejdbc)-native.jar
+native: build/$(sqlitejdbc)-native.jar build/$(target)/$(LIBNAME)
 
 build/$(sqlitejdbc)-native.jar: $(native_classes)
 	cd build && jar cf $(sqlitejdbc)-native.jar $(java_classlist)
 
-build/$(target)/$(LIBNAME): build/$(sqlite)-$(target)/sqlite3.o
+build/$(target)/$(LIBNAME): build/$(sqlite)-$(target)/sqlite3.o build/org/sqlite/NativeDB.class
 	@mkdir -p build/$(target)
 	$(JAVAH) -classpath build -jni -o build/NativeDB.h org.sqlite.NativeDB
 	$(CC) $(CFLAGS) -c -o build/$(target)/NativeDB.o \
@@ -64,4 +64,4 @@ dl/$(sqlite)-amal.zip:
 	http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
 
 clean:
-	rm -rf build
+	rm -rf build dist
