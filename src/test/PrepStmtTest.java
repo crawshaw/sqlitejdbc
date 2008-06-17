@@ -421,11 +421,15 @@ public class PrepStmtTest
                 "insert into t values(?);");
         prep.setDate(1, d1);
         prep.executeUpdate();
+        prep.setDate(1, null);
+        prep.executeUpdate();
 
         ResultSet rs = stat.executeQuery("select c1 from t;");
         assertTrue(rs.next());
         assertEquals(rs.getLong(1), d1.getTime());
         assertTrue(rs.getDate(1).equals(d1));
+        assertTrue(rs.next());
+        assertEquals(rs.getDate(1), null);
         rs.close();
     }
 

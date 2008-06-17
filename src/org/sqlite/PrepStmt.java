@@ -160,11 +160,17 @@ final class PrepStmt extends Stmt
     public void setNull(int pos, int u1, String u2) throws SQLException {
         batch(pos, null);
     }
-    public void setObject(int pos , Object value) throws SQLException {
+    public void setObject(int pos, Object value) throws SQLException {
         if (value == null)
             batch(pos, null);
         else if (value instanceof java.util.Date)
             batch(pos, new Long(((java.util.Date)value).getTime()));
+        else if (value instanceof Date)
+            batch(pos, new Long(((Date)value).getTime()));
+        else if (value instanceof Time)
+            batch(pos, new Long(((Time)value).getTime()));
+        else if (value instanceof Timestamp)
+            batch(pos, new Long(((Timestamp)value).getTime()));
         else if (value instanceof Long) batch(pos, value);
         else if (value instanceof Integer) batch(pos, value);
         else if (value instanceof Float) batch(pos, value);
@@ -182,17 +188,19 @@ final class PrepStmt extends Stmt
         batch(pos, value);
     }
     public void setDate(int pos, Date x) throws SQLException {
-        setLong(pos, x.getTime()); }
+        setObject(pos, x); }
     public void setDate(int pos, Date x, Calendar cal) throws SQLException {
-        setLong(pos, x.getTime()); }
+        setObject(pos, x); }
     public void setTime(int pos, Time x) throws SQLException {
-        setLong(pos, x.getTime()); }
+        setObject(pos, x); }
     public void setTime(int pos, Time x, Calendar cal) throws SQLException {
-        setLong(pos, x.getTime()); }
+        setObject(pos, x); }
     public void setTimestamp(int pos, Timestamp x) throws SQLException {
-        setLong(pos, x.getTime()); }
+        setObject(pos, x); }
     public void setTimestamp(int pos, Timestamp x, Calendar cal)
-        throws SQLException { setLong(pos, x.getTime()); }
+            throws SQLException {
+        setObject(pos, x);
+    }
 
     public ResultSetMetaData getMetaData() throws SQLException {
         checkOpen(); return rs; }
