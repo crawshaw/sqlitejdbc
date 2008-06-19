@@ -30,12 +30,12 @@ $(nestedvm)/%:
 
 dl/$(nestedvm).tgz:
 	@mkdir -p dl
-	curl -odl/$(nestedvm).tgz http://zentus.com/sqlitejdbc/dist/$(nestedvm).tgz
+	curl -odl/$(nestedvm).tgz http://files.zentus.com/sqlitejdbc/$(nestedvm).tgz
 
 dl/$(sqlite)-amal.zip:
 	@mkdir -p dl
 	curl -odl/$(sqlite)-amal.zip \
-	    http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
+	http://www.sqlite.org/sqlite-amalgamation-$(subst .,_,$(sqlite_version)).zip
 
 $(nestedvm)/Makefile: dl/$(nestedvm).tgz
 	tar xfz dl/$(nestedvm).tgz
