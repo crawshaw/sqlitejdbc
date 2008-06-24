@@ -135,8 +135,12 @@ class Stmt extends Unused implements Statement, Codes
 
     public void addBatch(String sql) throws SQLException {
         close();
-        if (batch == null || batchPos + 1 >= batch.length)
-            batch = new Object[Math.max(10, batchPos * 2)];
+        if (batch == null || batchPos + 1 >= batch.length) {
+            Object[] nb = new Object[Math.max(10, batchPos * 2)];
+            if (batch != null)
+                System.arraycopy(batch, 0, nb, 0, batch.length);
+            batch = nb;
+        }
         batch[batchPos++] = sql;
     }
 

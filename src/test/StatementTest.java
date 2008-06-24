@@ -169,7 +169,16 @@ public class StatementTest
         stat.addBatch("insert into batch values (2);");
         stat.addBatch("insert into batch values (3);");
         stat.addBatch("insert into batch values (4);");
-        assertArrayEq(new int[] { 0, 1, 1, 1, 1, 1 }, stat.executeBatch());
+        stat.addBatch("insert into batch values (5);");
+        stat.addBatch("insert into batch values (6);");
+        stat.addBatch("insert into batch values (7);");
+        stat.addBatch("insert into batch values (8);");
+        stat.addBatch("insert into batch values (9);");
+        stat.addBatch("insert into batch values (10);");
+        stat.addBatch("insert into batch values (11);");
+        stat.addBatch("insert into batch values (12);");
+        assertArrayEq(new int[] { 0,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            stat.executeBatch());
         assertArrayEq(new int[] { }, stat.executeBatch());
         stat.clearBatch();
         stat.addBatch("insert into batch values (9);");
@@ -183,7 +192,7 @@ public class StatementTest
 
         ResultSet rs = stat.executeQuery("select count(*) from batch;");
         assertTrue(rs.next());
-        assertEquals(8, rs.getInt(1));
+        assertEquals(16, rs.getInt(1));
         rs.close();
     }
 
