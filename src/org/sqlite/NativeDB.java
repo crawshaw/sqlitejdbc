@@ -43,7 +43,7 @@ final class NativeDB extends DB
             return true;
         } catch (UnsatisfiedLinkError e) { } // fall through
 
-	// guess what a bundled library would be called
+        // guess what a bundled library would be called
         String osname = System.getProperty("os.name").toLowerCase();
         String osarch = System.getProperty("os.arch");
         if (osname.startsWith("mac os")) {
