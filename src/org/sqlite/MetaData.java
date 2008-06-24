@@ -132,9 +132,10 @@ class MetaData implements DatabaseMetaData
 
     public String getDatabaseProductName() { return "SQLite"; }
     public String getDatabaseProductVersion() throws SQLException {
-        return conn.libversion(); }
+        return conn.libversion();
+    }
     public String getDriverName() { return "SQLiteJDBC"; }
-    public String getDriverVersion() { return "1"; }
+    public String getDriverVersion() { return conn.getDriverVersion(); }
     public String getExtraNameCharacters() { return ""; }
     public String getCatalogSeparator() { return "."; }
     public String getCatalogTerm() { return "catalog"; }

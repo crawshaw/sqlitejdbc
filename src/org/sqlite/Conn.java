@@ -224,6 +224,18 @@ class Conn implements Connection
         return new PrepStmt(this, sql);
     }
 
+    /** Used to supply DatabaseMetaData.getDriverVersion(). */
+    String getDriverVersion() {
+        if (db != null) {
+            String dbname = db.getClass().getName();
+            if (dbname.indexOf("NestedDB") >= 0)
+                return "pure";
+            if (dbname.indexOf("NativeDB") >= 0)
+                return "native";
+        }
+        return "unloaded";
+    }
+
 
     // UNUSED FUNCTIONS /////////////////////////////////////////////
 

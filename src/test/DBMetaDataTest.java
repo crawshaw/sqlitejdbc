@@ -409,5 +409,9 @@ public class DBMetaDataTest
 
     @Test public void version() throws SQLException {
         assertNotNull(meta.getDatabaseProductVersion());
+        assertTrue(
+            "pure".equals(meta.getDriverVersion()) ||
+            "native".equals(meta.getDriverVersion())
+        );
     }
 }
