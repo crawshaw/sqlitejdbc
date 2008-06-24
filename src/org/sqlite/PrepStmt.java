@@ -42,12 +42,6 @@ final class PrepStmt extends Stmt
         batchPos = 0;
     }
 
-    public void close() throws SQLException {
-        batch = null;
-        clearParameters();
-        super.close();
-    }
-
     public void clearParameters() throws SQLException {
         checkOpen();
         db.reset(pointer);

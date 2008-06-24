@@ -493,6 +493,14 @@ public class PrepStmtTest
         prep.close();
     }
 
+    @Test public void doubleclose() throws SQLException {
+        PreparedStatement prep = conn.prepareStatement("select null;");
+        ResultSet rs = prep.executeQuery();
+        rs.close();
+        prep.close();
+        prep.close();
+    }
+
     @Test(expected= SQLException.class)
     public void noSuchTable() throws SQLException {
         PreparedStatement prep =
