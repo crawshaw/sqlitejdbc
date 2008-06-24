@@ -332,7 +332,14 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
         }
     }
     public String getColumnTypeName(int col) throws SQLException {
-        return db.column_decltype(stmt.pointer, checkCol(col));
+        switch (db.column_type(stmt.pointer, checkCol(col))) {
+            case SQLITE_INTEGER: return "integer";
+            case SQLITE_FLOAT:   return "float";
+            case SQLITE_BLOB:    return "blob";
+            case SQLITE_NULL:    return "null";
+            case SQLITE_TEXT:
+            default:             return "text";
+        }
     }
     public int getPrecision(int col) throws SQLException { return 0; } // FIXME
     public int getScale(int col) throws SQLException { return 0; }
