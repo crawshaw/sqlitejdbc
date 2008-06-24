@@ -20,15 +20,8 @@ dist/$(sqlitejdbc).jar: build/mac-universal.lib build/win-x86.lib build/linux-x8
 	rm build/$(sqlitejdbc).jar
 
 dist/$(sqlitejdbc)-src.tgz:
-	@mkdir -p dist work/$(sqlitejdbc)/src
-	cp Makefile* work/$(sqlitejdbc)/.
-	cp LICENSE VERSION work/$(sqlitejdbc)/.
-	cp -R src/org work/$(sqlitejdbc)/src/.
-	cp -R src/test work/$(sqlitejdbc)/src/.
-	cp -R _darcs work/$(sqlitejdbc)/.
-	cp -R lib work/$(sqlitejdbc)/.
-	(cd work && tar cfz ../$@ $(sqlitejdbc))
-	@rm -rf work
+	darcs dist -d $(sqlitejdbc)-src
+	mv $(sqlitejdbc)-src.tar.gz $@
 
 dist/$(sqlitejdbc)-bin.tgz: dist/$(sqlitejdbc).jar
 	cp build/mac-universal.lib build/libsqlitejdbc.jnilib
