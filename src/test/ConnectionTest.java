@@ -20,6 +20,7 @@ public class ConnectionTest
 
     @Test public void isClosed() throws SQLException {
         Connection conn = DriverManager.getConnection("jdbc:sqlite:");
+        assertFalse(conn.isReadOnly());
         conn.close();
         assertTrue(conn.isClosed());
     }
@@ -27,9 +28,17 @@ public class ConnectionTest
     @Test public void openFile() throws SQLException {
         File testdb = new File("test.db");
         if (testdb.exists()) testdb.delete();
+
         assertFalse(testdb.exists());
         Connection conn = DriverManager.getConnection("jdbc:sqlite:test.db");
+        assertFalse(conn.isReadOnly());
         conn.close();
+
+        assertTrue(testdb.exists());
+        conn = DriverManager.getConnection("jdbc:sqlite:test.db");
+        assertFalse(conn.isReadOnly());
+        conn.close();
+
         assertTrue(testdb.exists());
         testdb.delete();
     }

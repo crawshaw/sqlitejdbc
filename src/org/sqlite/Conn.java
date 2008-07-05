@@ -23,6 +23,7 @@ import java.lang.ref.WeakReference;
 class Conn implements Connection
 {
     private final String url;
+    private final boolean readOnly;
     private DB db = null;
     private MetaData meta = null;
     private boolean autoCommit = true;
@@ -34,6 +35,8 @@ class Conn implements Connection
         db.shared_cache(sharedCache);
     }
     public Conn(String url, String filename) throws SQLException {
+        boolean ro = false;
+
         // check the path to the file exists
         if (!":memory:".equals(filename)) {
             File file = new File(filename).getAbsoluteFile();
@@ -57,7 +60,11 @@ class Conn implements Connection
                     "opening db: '" + filename + "': " +e.getMessage());
             }
             filename = file.getAbsolutePath();
+            if (file.exists())
+                ro = !file.canWrite();
         }
+
+        readOnly = ro;
 
         // TODO: library variable to explicitly control load type
         // attempt to use the Native library first
@@ -137,7 +144,7 @@ class Conn implements Connection
     public void setTypeMap(Map map) throws SQLException
         { throw new SQLException("not yet implemented");}
 
-    public boolean isReadOnly() throws SQLException { return false; } // FIXME
+    public boolean isReadOnly() throws SQLException { return readOnly; }
     public void setReadOnly(boolean ro) throws SQLException {}
 
     public DatabaseMetaData getMetaData() {
