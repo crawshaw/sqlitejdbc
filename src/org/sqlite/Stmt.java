@@ -243,4 +243,6 @@ class Stmt extends Unused implements Statement, Codes
         return ResultSet.CLOSE_CURSORS_AT_COMMIT; }
     public int getResultSetType() throws SQLException {
         return ResultSet.TYPE_FORWARD_ONLY; }
+
+    public void setEscapeProcessing(boolean enable) {}
 }
