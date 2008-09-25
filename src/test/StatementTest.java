@@ -244,6 +244,16 @@ public class StatementTest
         rs.close();
     }
 
+    @Test public void maxRows() throws SQLException {
+        stat.setMaxRows(1);
+        assertEquals(stat.getMaxRows(), 1);
+        ResultSet rs = stat.executeQuery("select 1 union select 2;");
+        assertTrue(rs.next());
+        assertEquals(rs.getInt(1), 1);
+        assertFalse(rs.next());
+        rs.close();
+    }
+
     @Test public void nullDate() throws SQLException {
         ResultSet rs = stat.executeQuery("select null;");
         assertTrue(rs.next());

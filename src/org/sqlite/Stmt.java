@@ -194,13 +194,10 @@ class Stmt extends Unused implements Statement, Codes
         conn.setTimeout(1000 * seconds);
     }
 
-    // TODO: write test
     public int getMaxRows() throws SQLException {
-        checkOpen();
         return rs.maxRows;
     }
     public void setMaxRows(int max) throws SQLException {
-        checkOpen();
         if (max < 0) throw new SQLException("max row count must be >= 0");
         rs.maxRows = max;
     }
