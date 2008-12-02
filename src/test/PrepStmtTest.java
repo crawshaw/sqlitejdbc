@@ -316,6 +316,7 @@ public class PrepStmtTest
             prep.addBatch();
         }
         assertArrayEq(prep.executeBatch(), new int[] { 1,1,1,1,1,1,1,1,1,1 });
+        assertEquals(prep.executeBatch().length, 0);
         prep.close();
 
         rs = stat.executeQuery("select * from test;");
