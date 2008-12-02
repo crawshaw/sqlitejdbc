@@ -79,6 +79,10 @@ final class RS extends Unused implements ResultSet, ResultSetMetaData, Codes
 
     // ResultSet Functions //////////////////////////////////////////
 
+    public boolean isClosed() throws SQLException {
+        return !open;
+    }
+
     public void close() throws SQLException {
         cols = null;
         colsMeta = null;
