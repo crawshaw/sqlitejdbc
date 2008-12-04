@@ -28,12 +28,12 @@ ifeq ($(arch),)
 arch := $(shell uname -m)
 endif
 
-sqlite_version := 3.6.1
+sqlite_version := 3.6.3
 sqlite := sqlite-$(sqlite_version)
 
 sqlitejdbc := sqlitejdbc-v$(shell cat VERSION)
 
-jni_md := $(shell find -L "$(JAVA_HOME)" -name jni_md.h)
+jni_md := $(shell find -L "$(JAVA_HOME)/include" -name jni_md.h)
 ifneq ($(jni_md),)
 jni_include := $(shell dirname "$(jni_md)")
 endif
