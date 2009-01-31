@@ -10,7 +10,7 @@ files  		:= $(afsdir)/files/sqlitejdbc
 default: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz dist/$(sqlitejdbc)-bin.tgz
 
 release: dist/$(sqlitejdbc).jar dist/$(sqlitejdbc)-src.tgz dist/$(sqlitejdbc)-bin.tgz
-	darcs push -a hcoop:$(repo)
+	git push hcoop:$(repo)
 	scp dist/$(sqlitejdbc)* hcoop:$(files)/
 
 dist/$(sqlitejdbc).jar: build/mac-universal.lib build/win-x86.lib build/linux-x86.lib build/linux-amd64.lib dist/$(sqlitejdbc)-pure.jar
@@ -20,8 +20,7 @@ dist/$(sqlitejdbc).jar: build/mac-universal.lib build/win-x86.lib build/linux-x8
 	rm build/$(sqlitejdbc).jar
 
 dist/$(sqlitejdbc)-src.tgz:
-	darcs dist -d $(sqlitejdbc)-src
-	mv $(sqlitejdbc)-src.tar.gz $@
+	git archive --format=tar --prefix=$(sqlitejdbc) HEAD | gzip > $@
 
 dist/$(sqlitejdbc)-bin.tgz: dist/$(sqlitejdbc).jar
 	cp build/mac-universal.lib build/libsqlitejdbc.jnilib
@@ -32,7 +31,7 @@ dist/$(sqlitejdbc)-bin.tgz: dist/$(sqlitejdbc).jar
 	    libsqlitejdbc.jnilib sqlitejdbc.dll libsqlitejdbc.so \
 
 dist/$(sqlitejdbc)-pure.jar:
-	darcs push -a debian:repo/sqlitejdbc
+	git push debian:repo/sqlitejdbc
 	ssh debian "cd repo/sqlitejdbc && make -f Makefile.nested test $@"
 	scp debian:repo/sqlitejdbc/$@ $@
 
@@ -45,17 +44,17 @@ build/mac-universal.lib:
 	     -output $@
 
 build/win-x86.lib:
-	darcs push -a debian:repo/sqlitejdbc
+	git push debian:repo/sqlitejdbc
 	ssh debian "cd repo/sqlitejdbc && make os=Win arch=i586 native"
 	scp debian:repo/sqlitejdbc/build/Win-i586/$(Win_LIBNAME) $@
 
 build/linux-x86.lib:
-	darcs push -a debian:repo/sqlitejdbc
+	git push debian:repo/sqlitejdbc
 	ssh debian "cd repo/sqlitejdbc && make arch=i386 test"
 	scp debian:repo/sqlitejdbc/build/Default-i386/$(Default_LIBNAME) $@
 
 build/linux-amd64.lib:
-	darcs push -a debian64:repo/sqlitejdbc
+	git push debian64:repo/sqlitejdbc
 	ssh debian64 "cd repo/sqlitejdbc && make arch=amd64 test"
 	scp debian64:repo/sqlitejdbc/build/Default-amd64/$(Default_LIBNAME) $@
 
