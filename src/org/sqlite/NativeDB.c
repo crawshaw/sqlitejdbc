@@ -301,6 +301,8 @@ JNIEXPORT void JNICALL Java_org_sqlite_NativeDB__1open(
         return;
     }
 
+    sqlite3_initialize();
+
     str = (*env)->GetStringUTFChars(env, file, 0); 
     if (sqlite3_open(str, &db)) {
         throwex(env, this);
