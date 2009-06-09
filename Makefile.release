@@ -39,8 +39,10 @@ build/mac-universal.lib:
 	@mkdir -p dist build/Darwin-universal
 	$(MAKE) os=Darwin arch=ppc native
 	$(MAKE) os=Darwin arch=i386 native
+	$(MAKE) os=Darwin arch=x86_64 native
 	lipo -create build/Darwin-ppc/$(Darwin_LIBNAME) \
 	             build/Darwin-i386/$(Darwin_LIBNAME) \
+	             build/Darwin-x86_64/$(Darwin_LIBNAME) \
 	     -output $@
 
 build/win-x86.lib:
