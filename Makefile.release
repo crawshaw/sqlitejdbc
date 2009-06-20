@@ -20,7 +20,7 @@ dist/$(sqlitejdbc).jar: build/mac-universal.lib build/win-x86.lib build/linux-x8
 	rm build/$(sqlitejdbc).jar
 
 dist/$(sqlitejdbc)-src.tgz:
-	git archive --format=tar --prefix=$(sqlitejdbc) HEAD | gzip > $@
+	git archive --format=tar --prefix=$(sqlitejdbc)/ HEAD | gzip > $@
 
 dist/$(sqlitejdbc)-bin.tgz: dist/$(sqlitejdbc).jar
 	cp build/mac-universal.lib build/libsqlitejdbc.jnilib
